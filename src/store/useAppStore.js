@@ -19,6 +19,15 @@ export const useAppStore = create((set) => ({
   sensoryDesc: '',
   aiOpen: {},
   answerCheckOpen: false,
+  stageCompletion: {
+    video: false,
+    sensory: false,
+    analytical: false,
+    voice: false,
+    piano: false,
+    history: false,
+    aesthetic: false
+  },
   q1: '',
   q2: '',
   q3: '',
@@ -57,6 +66,9 @@ export const useAppStore = create((set) => ({
   setQ2: (v) => set({ q2: v }),
   setQ3: (v) => set({ q3: v }),
   setQ2Type: (v) => set({ q2Type: v }),
+  setStageCompletion: (key, value = true) => set((s) => ({
+    stageCompletion: { ...s.stageCompletion, [key]: value }
+  })),
   setAnalyticalCharacter: (idx, value) => set((s) => ({
     analyticalCharacters: s.analyticalCharacters.map((item, i) => (i === idx ? value : item))
   })),

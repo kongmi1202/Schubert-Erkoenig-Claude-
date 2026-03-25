@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAppStore } from '../../store/useAppStore';
 
 function setupDraw(canvas, getBrush) {
   const ctx = canvas.getContext('2d');
@@ -41,6 +42,7 @@ function setupDraw(canvas, getBrush) {
 }
 
 function PianoAnalysis({ go }) {
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const rhRef = useRef(null);
   const lhRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -144,7 +146,7 @@ function PianoAnalysis({ go }) {
         {!ready ? <div className="small-note">캔버스 로딩 중...</div> : null}
 
         {canCheckAnswer ? (
-          <button type="button" className="answer-check-toggle" onClick={() => setShowCompare((v) => !v)} aria-expanded={showCompare}>
+          <button type="button" className="answer-check-toggle" onClick={() => { setShowCompare((v) => !v); setStageCompletion('piano', true); }} aria-expanded={showCompare}>
             <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {showCompare ? '▲' : '▼'}

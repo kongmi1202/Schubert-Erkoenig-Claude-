@@ -31,6 +31,7 @@ const cards = [
 function HistoryCards({ go }) {
   const flippedCards = useAppStore((s) => s.flippedCards);
   const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [allDone, setAllDone] = useState(false);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ function HistoryCards({ go }) {
         {!allDone ? <div className="small-note">카드 4장을 모두 뒤집어야 다음 단계로 넘어갈 수 있어요.</div> : null}
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('pianoAnalysis')}>← 이전</button>
-          <button className="btn-p" disabled={!allDone} onClick={() => go('aestheticPage')} style={!allDone ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}>다음 단계 →</button>
+          <button className="btn-p" disabled={!allDone} onClick={() => { setStageCompletion('history', true); go('aestheticPage'); }} style={!allDone ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}>다음 단계 →</button>
         </div>
       </div>
     </div>

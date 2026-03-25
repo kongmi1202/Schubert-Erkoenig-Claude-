@@ -13,6 +13,7 @@ function AnalyticalOverview({ go }) {
   const story = useAppStore((s) => s.analyticalStory);
   const setAnalyticalCharacter = useAppStore((s) => s.setAnalyticalCharacter);
   const setAnalyticalStory = useAppStore((s) => s.setAnalyticalStory);
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
 
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
@@ -80,7 +81,7 @@ function AnalyticalOverview({ go }) {
         </div>
 
         {isAllFilled ? (
-          <button type="button" className="answer-check-toggle" onClick={() => setAnswerCheckOpen(!answerCheckOpen)} aria-expanded={answerCheckOpen}>
+          <button type="button" className="answer-check-toggle" onClick={() => { setAnswerCheckOpen(!answerCheckOpen); setStageCompletion('analytical', true); }} aria-expanded={answerCheckOpen}>
             <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {answerCheckOpen ? '▲' : '▼'}

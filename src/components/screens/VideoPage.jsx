@@ -1,4 +1,7 @@
+import { useAppStore } from '../../store/useAppStore';
+
 function VideoPage({ go }) {
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const lyrics = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
 [👨아버지] 아들아, 무엇 때문에 떠느냐?
 [👦아들] 아빠, 마왕이 안 보여요? 검은 옷에다 관을 썼는데.
@@ -29,7 +32,7 @@ function VideoPage({ go }) {
           </div>
         </div>
         <div className="fb show info">🎵 영상을 감상하며 음악이 주는 느낌을 자유롭게 느껴보세요.</div>
-        <div className="btn-row"><button className="btn-s" onClick={() => go('studentInfo')}>← 이전</button><button className="btn-p" onClick={() => go('sensoryPage')}>감상 완료, 다음 →</button></div>
+        <div className="btn-row"><button className="btn-s" onClick={() => go('studentInfo')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('video', true); go('sensoryPage'); }}>감상 완료, 다음 →</button></div>
       </div>
     </div>
   );

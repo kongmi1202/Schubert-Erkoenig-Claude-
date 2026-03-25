@@ -44,6 +44,7 @@ function SensoryPage({ go }) {
   const toggleColor = useAppStore((s) => s.toggleColor);
   const setSensoryDesc = useAppStore((s) => s.setSensoryDesc);
   const toggleAi = useAppStore((s) => s.toggleAi);
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const sensoryArtifacts = useAppStore((s) => s.sensoryArtifacts);
   const setSensoryArtifacts = useAppStore((s) => s.setSensoryArtifacts);
   const [selectedActivities, setSelectedActivities] = useState(sensoryArtifacts.selectedActivities || []);
@@ -315,7 +316,7 @@ function SensoryPage({ go }) {
           </div>
         ) : null}
 
-        <div className="btn-row"><button className="btn-s" onClick={() => go('videoPage')}>← 이전</button><button className="btn-p" onClick={() => go('analyticalOverview')}>다음 단계 →</button></div>
+        <div className="btn-row"><button className="btn-s" onClick={() => go('videoPage')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('sensory', true); go('analyticalOverview'); }}>다음 단계 →</button></div>
       </div>
     </div>
   );

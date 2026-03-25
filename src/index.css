@@ -134,6 +134,10 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 
 .bottom-widget-icon{font-size:22px;line-height:1}
 .bottom-widget-label{font-size:11px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bottom-widget-state{font-size:12px;line-height:1}
+.bottom-widget-state.done{color:#22c55e}
+.bottom-widget-state.current{color:var(--purple-light)}
+.bottom-widget-state.todo{color:var(--text-faint)}
 
 #stage2-subbar{
   position:fixed;left:12px;right:12px;

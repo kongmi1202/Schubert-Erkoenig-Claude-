@@ -17,6 +17,7 @@ const answerKey = {
 function VoiceDesign({ go }) {
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
+  const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [selectedChars, setSelectedChars] = useState(['해설자', '아버지']);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [voiceDesign, setVoiceDesign] = useState({
@@ -119,7 +120,7 @@ function VoiceDesign({ go }) {
         </div>
 
         {canCheckAnswer ? (
-          <button type="button" className="answer-check-toggle" onClick={() => setShowCompare((v) => !v)} aria-expanded={showCompare}>
+          <button type="button" className="answer-check-toggle" onClick={() => { setShowCompare((v) => !v); setStageCompletion('voice', true); }} aria-expanded={showCompare}>
             <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {showCompare ? '▲' : '▼'}

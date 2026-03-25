@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useAppStore } from '../store/useAppStore';
 
 const stage2SubSteps = [
   { screen: 'analyticalOverview', label: '개요 파악' },
@@ -17,6 +18,7 @@ const bottomItems = [
 
 function BottomWidgetBar({ currentScreen, go }) {
   const stage2Screens = useMemo(() => stage2SubSteps.map((s) => s.screen), []);
+  const stageCompletion = useAppStore((s) => s.stageCompletion);
 
   const shouldShow = useMemo(
     () => ['videoPage', 'sensoryPage', 'analyticalOverview', 'voiceDesign', 'pianoAnalysis', 'historyCards', 'aestheticPage', 'finalCard'].includes(currentScreen),
@@ -42,6 +44,13 @@ function BottomWidgetBar({ currentScreen, go }) {
   };
 
   if (!shouldShow) return null;
+  const topDone = {
+    videoPage: stageCompletion.video,
+    sensoryPage: stageCompletion.sensory,
+    stage2: stageCompletion.analytical && stageCompletion.voice && stageCompletion.piano && stageCompletion.history,
+    aestheticPage: stageCompletion.aesthetic,
+    finalCard: false
+  };
 
   return (
     <>
@@ -64,6 +73,8 @@ function BottomWidgetBar({ currentScreen, go }) {
       <nav id="bottom-widgetbar" aria-label="하단 위젯바">
         {bottomItems.map((item) => {
           const isActive = item.id === activeTopId || (item.id === 'stage2' && isInStage2);
+          const stageState = isActive ? 'current' : (topDone[item.id] ? 'done' : 'todo');
+          const stateSymbol = stageState === 'done' ? '●' : (stageState === 'current' ? '◐' : '○');
           return (
             <button
               key={item.id}
@@ -76,6 +87,7 @@ function BottomWidgetBar({ currentScreen, go }) {
                 {item.icon}
               </span>
               <span className="bottom-widget-label">{item.label}</span>
+              <span className={`bottom-widget-state ${stageState}`} aria-hidden="true">{stateSymbol}</span>
             </button>
           );
         })}
