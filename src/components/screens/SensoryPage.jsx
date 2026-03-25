@@ -60,6 +60,7 @@ function SensoryPage({ go }) {
   const [drawColor, setDrawColor] = useState('#000000');
   const [drawSize, setDrawSize] = useState(4);
   const [drawingSaved, setDrawingSaved] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const mathCanvasRef = useRef(null);
@@ -80,8 +81,10 @@ function SensoryPage({ go }) {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraOn(true);
     } catch (e) {
       alert('카메라를 사용할 수 없습니다. 권한을 확인해주세요.');
+      setCameraOn(false);
     }
   };
 
@@ -90,6 +93,7 @@ function SensoryPage({ go }) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    setCameraOn(false);
   };
 
   const capturePhoto = () => {
@@ -256,11 +260,16 @@ function SensoryPage({ go }) {
                 <video ref={videoRef} autoPlay playsInline />
                 <div className="btn-row" style={{ paddingBottom: 0 }}>
                   <button className="btn-s" onClick={startCamera}>카메라 켜기</button>
-                  <button className="btn-p" onClick={capturePhoto}>사진 찍기</button>
+                  <button className="btn-p" disabled={!cameraOn} style={!cameraOn ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={capturePhoto}>사진 찍기</button>
                 </div>
               </div>
             ) : (
-              <img src={pePhoto} alt="촬영 사진" className="captured-img" />
+              <>
+                <img src={pePhoto} alt="촬영 사진" className="captured-img" />
+                <div className="btn-row" style={{ paddingBottom: 0 }}>
+                  <button className="btn-s" onClick={() => setPePhoto('')}>다시 찍기</button>
+                </div>
+              </>
             )}
             {pePhoto ? (
               <>
