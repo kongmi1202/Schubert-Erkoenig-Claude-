@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -191,6 +191,37 @@ function SensoryPage({ go }) {
     setDrawingSaved(true);
   };
 
+  const isStage1Complete = useMemo(() => {
+    const hasKeywords = selectedKeywords.length > 0;
+    const hasColors = selectedColors.length >= 2;
+    const hasSensoryDesc = sensoryDesc.trim().length > 0;
+    const hasTwoActivities = selectedActivities.length === 2;
+    if (!hasKeywords || !hasColors || !hasSensoryDesc || !hasTwoActivities) return false;
+
+    const activityDone = selectedActivities.every((activity) => {
+      if (activity === '체육') return !!pePhoto && peAnswer.trim().length > 0;
+      if (activity === '과학') return scienceSelected.length > 0 && scienceAnswer.trim().length > 0;
+      if (activity === '사회') return !!mapAddress && mapAnswer.trim().length > 0;
+      if (activity === '수학') return !!mathDrawing && mathAnswer.trim().length > 0;
+      return true;
+    });
+
+    return activityDone;
+  }, [
+    selectedKeywords,
+    selectedColors,
+    sensoryDesc,
+    selectedActivities,
+    pePhoto,
+    peAnswer,
+    scienceSelected,
+    scienceAnswer,
+    mapAddress,
+    mapAnswer,
+    mathDrawing,
+    mathAnswer
+  ]);
+
   return (
     <div className="screen active">
       <div className="stage-header"><div className="s-eyebrow">STAGE 1 · 감각적 감상</div><div className="s-title">음악을 느껴보세요</div></div>
@@ -316,7 +347,7 @@ function SensoryPage({ go }) {
           </div>
         ) : null}
 
-        <div className="btn-row"><button className="btn-s" onClick={() => go('videoPage')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('sensory', true); go('analyticalOverview'); }}>다음 단계 →</button></div>
+        <div className="btn-row"><button className="btn-s" onClick={() => go('videoPage')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('sensory', isStage1Complete); go('analyticalOverview'); }}>다음 단계 →</button></div>
       </div>
     </div>
   );
