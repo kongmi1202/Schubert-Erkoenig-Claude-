@@ -1,18 +1,16 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { screenOrder, stepNames } from './store/useAppStore';
 import Intro from './components/screens/Intro';
 import StudentInfo from './components/screens/StudentInfo';
 import VideoPage from './components/screens/VideoPage';
 import SensoryPage from './components/screens/SensoryPage';
 import AnalyticalOverview from './components/screens/AnalyticalOverview';
-import AnalyticalOverviewAnswer from './components/screens/AnalyticalOverviewAnswer';
 import VoiceDesign from './components/screens/VoiceDesign';
-import VoiceAnswer from './components/screens/VoiceAnswer';
 import PianoAnalysis from './components/screens/PianoAnalysis';
-import PianoAnswer from './components/screens/PianoAnswer';
 import HistoryCards from './components/screens/HistoryCards';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
+import BottomWidgetBar from './components/BottomWidgetBar';
 
 const screens = {
   intro: Intro,
@@ -20,11 +18,8 @@ const screens = {
   videoPage: VideoPage,
   sensoryPage: SensoryPage,
   analyticalOverview: AnalyticalOverview,
-  analyticalOverviewAnswer: AnalyticalOverviewAnswer,
   voiceDesign: VoiceDesign,
-  voiceAnswer: VoiceAnswer,
   pianoAnalysis: PianoAnalysis,
-  pianoAnswer: PianoAnswer,
   historyCards: HistoryCards,
   aestheticPage: AestheticPage,
   finalCard: FinalCard
@@ -87,6 +82,8 @@ function App() {
       </div>
 
       <Current go={setCurrentScreen} />
+
+      <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
     </>
   );
 }

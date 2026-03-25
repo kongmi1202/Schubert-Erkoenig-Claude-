@@ -57,7 +57,7 @@ function HistoryCards({ go }) {
         <div className={`fb ${allDone ? 'show ok' : ''}`}>✓ 4장을 모두 확인했어요! 다음 단계로 이동하세요.</div>
         {!allDone ? <div className="small-note">카드 4장을 모두 뒤집어야 다음 단계로 넘어갈 수 있어요.</div> : null}
         <div className="btn-row">
-          <button className="btn-s" onClick={() => go('pianoAnswer')}>← 이전</button>
+          <button className="btn-s" onClick={() => go('pianoAnalysis')}>← 이전</button>
           <button className="btn-p" disabled={!allDone} onClick={() => go('aestheticPage')} style={!allDone ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}>다음 단계 →</button>
         </div>
       </div>

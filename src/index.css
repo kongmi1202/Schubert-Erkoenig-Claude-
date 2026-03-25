@@ -57,7 +57,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .stage-header{padding:52px 24px 32px;text-align:center;border-bottom:1px solid var(--border);background:linear-gradient(to bottom,var(--bg2),var(--bg))}
 .s-title{font-family:'IM Fell English',serif;font-size:clamp(22px,5vw,38px);margin-bottom:10px}
 .s-desc{font-size:12px;color:var(--text-dim)}
-.body{padding:32px 20px;max-width:680px;margin:0 auto;width:100%;flex:1}
+.body{padding:32px 20px 120px;max-width:680px;margin:0 auto;width:100%;flex:1}
 .video-page-body{max-width:1120px}
 .sec{margin-bottom:14px;display:flex;align-items:center;gap:10px;color:var(--purple)}
 .sec::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -107,6 +107,98 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .btn-row{display:flex;gap:10px;justify-content:flex-end;padding-top:8px;padding-bottom:44px}
 .btn-p{background:linear-gradient(135deg,var(--purple) 0%,var(--purple-light) 100%);color:#fff;border:none}
 .btn-enter{padding:16px 52px;background:linear-gradient(135deg,var(--crimson),var(--purple));border:none;color:#fff;cursor:pointer}
+
+:root { --bottom-widget-h: 74px; }
+
+#bottom-widgetbar{
+  position:fixed;left:12px;right:12px;bottom:12px;z-index:500;
+  display:flex;gap:8px;justify-content:space-between;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:rgba(26,21,32,.72);border:1px solid var(--border);
+  border-radius:18px;backdrop-filter: blur(10px);
+}
+
+.bottom-widget-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:transparent;border:none;color:var(--text-dim);cursor:pointer;
+  padding:8px 0;border-radius:12px;position:relative;min-width:0;
+}
+
+.bottom-widget-btn:hover{background:rgba(139,92,246,.08);color:var(--text)}
+
+.bottom-widget-btn.active{color:var(--purple-light)}
+.bottom-widget-btn.active::before{
+  content:'';position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+  width:22px;height:2px;background:var(--purple-light);border-radius:2px;
+}
+
+.bottom-widget-icon{font-size:22px;line-height:1}
+.bottom-widget-label{font-size:11px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+#stage2-subbar{
+  position:fixed;left:12px;right:12px;
+  bottom:calc(12px + var(--bottom-widget-h) + 10px + env(safe-area-inset-bottom));
+  z-index:501;pointer-events:auto;
+  display:flex;justify-content:flex-start;align-items:center;gap:22px;
+  padding:10px 8px 6px;
+  background:rgba(8,6,8,.86);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.stage2-tab{
+  border:none;background:transparent;color:var(--text-dim);
+  font-size:13px;letter-spacing:.02em;cursor:pointer;
+  padding:0 2px 8px;position:relative;display:flex;align-items:center;gap:6px;
+}
+.stage2-tab-dot{font-size:10px;line-height:1}
+.stage2-tab.active{color:var(--purple-light)}
+.stage2-tab.active::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:var(--purple-light);border-radius:2px;
+}
+
+.answer-check-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:16px 18px;
+  margin:16px 0 10px;
+  background:rgba(26,21,32,.72);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;
+  color:var(--purple-light);
+  cursor:pointer;
+}
+.answer-check-toggle:hover{
+  border-color:rgba(139,92,246,.45);
+}
+.answer-check-toggle-label{
+  font-size:14px;
+  letter-spacing:.02em;
+  font-weight:700;
+}
+.answer-check-toggle-chevron{
+  color:var(--purple-light);
+  font-size:12px;
+}
+
+.answer-compare-slide{
+  overflow:hidden;
+  max-height:0;
+  opacity:0;
+  transform:translateY(-6px);
+  transition:max-height .45s ease, opacity .25s ease, transform .25s ease;
+}
+.answer-compare-slide.open{
+  max-height:900px;
+  opacity:1;
+  transform:translateY(0);
+}
+.answer-compare-inner{
+  padding-top:8px;
+}
 
 .canvas-wrap{border:1px solid var(--border);background:var(--surface);margin-bottom:10px}
 canvas{display:block;width:100%;touch-action:none}

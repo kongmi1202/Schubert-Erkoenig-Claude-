@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -7,6 +7,12 @@ const chars = [
   { name: '아들', icon: '👦', lyric: `"아빠, 마왕이 안 보여요?\n저 마왕이 내게 손짓해요!"`, audioTitle: '아들 구간 듣기' },
   { name: '마왕', icon: '👁️', lyric: `"사랑스런 아가야, 나와 함께 가자\n아름다운 꽃들이 피어 있단다"`, audioTitle: '마왕 구간 듣기' }
 ];
+const answerKey = {
+  해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
+  아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
+  아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
+  마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
+};
 
 function VoiceDesign({ go }) {
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
@@ -19,6 +25,7 @@ function VoiceDesign({ go }) {
     아들: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
     마왕: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' }
   });
+  const [showCompare, setShowCompare] = useState(false);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
 
@@ -44,6 +51,16 @@ function VoiceDesign({ go }) {
   };
 
   const isSel = (category, value) => voiceDesign[selectedCharacter]?.[category] === value;
+  const isCharacterFilled = (name) => {
+    const row = voiceDesign[name];
+    if (!row) return false;
+    return ['음높이', '음계', '리듬꼴', '음색'].every((k) => row[k]);
+  };
+  const canCheckAnswer = useMemo(
+    () =>
+      selectedChars.length === 2 && selectedChars.every(isCharacterFilled),
+    [selectedChars, voiceDesign]
+  );
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">인물의 목소리를 설계해보세요</div><div className="s-desc">알아보고 싶은 등장인물 2명을 선택하고 목소리를 설계해보세요.<br />음악 요소: <strong>음색</strong></div></div>
@@ -101,7 +118,45 @@ function VoiceDesign({ go }) {
           </div>
         </div>
 
-        <div className="btn-row"><button className="btn-s" onClick={() => go('analyticalOverviewAnswer')}>← 이전</button><button className="btn-p" onClick={() => go('voiceAnswer')}>정답 비교 →</button></div>
+        {canCheckAnswer ? (
+          <button type="button" className="answer-check-toggle" onClick={() => setShowCompare((v) => !v)} aria-expanded={showCompare}>
+            <span className="answer-check-toggle-label">정답 확인하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">
+              {showCompare ? '▲' : '▼'}
+            </span>
+          </button>
+        ) : null}
+
+        <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
+          <div className="answer-compare-inner">
+            <table className="cmp-table">
+              <thead>
+                <tr>
+                  <th>인물</th>
+                  <th>요소</th>
+                  <th>내 설계</th>
+                  <th>모범 설계</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedChars.flatMap((name) => (['음높이', '음계', '리듬꼴', '음색'].map((key) => (
+                  <tr key={`${name}-${key}`}>
+                    <td className="row-label">{name}</td>
+                    <td>{key}</td>
+                    <td>{voiceDesign[name][key] || '—'}</td>
+                    <td>{answerKey[name][key]}</td>
+                  </tr>
+                ))))}
+              </tbody>
+            </table>
+            <div className="fb show info">💬 시의 인물 성격에 따라 음높이·음계·리듬꼴·음색이 달라지도록 설계했는지 비교해보세요.</div>
+          </div>
+        </div>
+
+        <div className="btn-row">
+          <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>
+          <button className="btn-p" disabled={!canCheckAnswer} style={!canCheckAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => go('pianoAnalysis')}>다음 단계 →</button>
+        </div>
       </div>
     </div>
   );

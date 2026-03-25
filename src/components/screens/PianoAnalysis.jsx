@@ -51,6 +51,7 @@ function PianoAnalysis({ go }) {
   const [lhPlaying, setLhPlaying] = useState(false);
   const [rhScene, setRhScene] = useState('');
   const [lhScene, setLhScene] = useState('');
+  const [showCompare, setShowCompare] = useState(false);
 
   useEffect(() => {
     const cleanups = [];
@@ -67,6 +68,7 @@ function PianoAnalysis({ go }) {
     ctx.clearRect(0, 0, c.width, c.height);
     setSaved((prev) => ({ ...prev, [key]: false }));
   };
+  const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">피아노 전주 분석하기</div><div className="s-desc">오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
@@ -140,7 +142,56 @@ function PianoAnalysis({ go }) {
         </div>
 
         {!ready ? <div className="small-note">캔버스 로딩 중...</div> : null}
-        <div className="btn-row"><button className="btn-s" onClick={() => go('voiceAnswer')}>← 이전</button><button className="btn-p" onClick={() => go('pianoAnswer')}>제출하고 비교하기 →</button></div>
+
+        {canCheckAnswer ? (
+          <button type="button" className="answer-check-toggle" onClick={() => setShowCompare((v) => !v)} aria-expanded={showCompare}>
+            <span className="answer-check-toggle-label">정답 확인하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">
+              {showCompare ? '▲' : '▼'}
+            </span>
+          </button>
+        ) : null}
+
+        <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
+          <div className="answer-compare-inner">
+            <div className="sec">오른손 가락선 비교</div>
+            <div className="cv-compare">
+              <div className="cv-box">
+                <div className="cv-label">내가 그린 선</div>
+                <div className="cv-panel"><canvas width="520" height="190" /></div>
+              </div>
+              <div className="cv-box">
+                <div className="cv-label">모범 악보</div>
+                <div className="cv-panel score-panel">
+                  <img src="/assets/rh-score.png" alt="오른손 모범 악보" className="score-image" />
+                  <a href="/assets/rh-score.png" target="_blank" rel="noreferrer" className="score-link">원본 보기</a>
+                </div>
+              </div>
+            </div>
+            <div className="fb show info">오른손: 빠르고 불규칙하게 오르내리는 셋잇단음표 -&gt; 말발굽 소리를 묘사해요</div>
+
+            <div className="sec">왼손 가락선 비교</div>
+            <div className="cv-compare">
+              <div className="cv-box">
+                <div className="cv-label">내가 그린 선</div>
+                <div className="cv-panel"><canvas width="520" height="190" /></div>
+              </div>
+              <div className="cv-box">
+                <div className="cv-label">모범 악보</div>
+                <div className="cv-panel score-panel">
+                  <img src="/assets/lh-score.png" alt="왼손 모범 악보" className="score-image" />
+                  <a href="/assets/lh-score.png" target="_blank" rel="noreferrer" className="score-link">원본 보기</a>
+                </div>
+              </div>
+            </div>
+            <div className="fb show info">왼손: 느리고 강하게 반복되는 베이스 -&gt; 심장이 두근거리는 긴박감을 표현해요</div>
+          </div>
+        </div>
+
+        <div className="btn-row">
+          <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
+          <button className="btn-p" disabled={!canCheckAnswer} style={!canCheckAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => go('historyCards')}>다음 단계 →</button>
+        </div>
       </div>
     </div>
   );

@@ -1,15 +1,12 @@
 import { create } from 'zustand';
 
-export const screenOrder = ['intro','studentInfo','videoPage','sensoryPage','analyticalOverview','analyticalOverviewAnswer','voiceDesign','voiceAnswer','pianoAnalysis','pianoAnswer','historyCards','aestheticPage','finalCard'];
+export const screenOrder = ['intro','studentInfo','videoPage','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
 
 export const stepNames = {
   sensoryPage: '1단계 감각적 감상',
   analyticalOverview: '2단계 분석적 감상',
-  analyticalOverviewAnswer: '2단계 분석적 감상',
   voiceDesign: '음색 설계',
-  voiceAnswer: '음색 비교',
   pianoAnalysis: '피아노 반주',
-  pianoAnswer: '반주 비교',
   historyCards: '역사적 맥락',
   aestheticPage: '3단계 심미적 감상',
   finalCard: '최종 감상문'
@@ -21,6 +18,7 @@ export const useAppStore = create((set) => ({
   selectedColors: [],
   sensoryDesc: '',
   aiOpen: {},
+  answerCheckOpen: false,
   q1: '',
   q2: '',
   q3: '',
@@ -67,5 +65,6 @@ export const useAppStore = create((set) => ({
   setSelectedCharacter: (v) => set({ selectedCharacter: v }),
   flipHistoryCard: (id) => set((s) => ({
     flippedCards: s.flippedCards.includes(id) ? s.flippedCards : [...s.flippedCards, id]
-  }))
+  })),
+  setAnswerCheckOpen: (v) => set({ answerCheckOpen: v })
 }));
