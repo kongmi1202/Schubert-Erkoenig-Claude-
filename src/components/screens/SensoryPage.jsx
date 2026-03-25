@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
+import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -19,12 +18,6 @@ const ccItems = [
   { name: '사회', icon: '🗺️', desc: '지도에서 장소 선택' },
   { name: '수학', icon: '△', desc: '도형 그리기' }
 ];
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
-});
 
 function MapClickHandler({ onPick }) {
   useMapEvents({
@@ -128,9 +121,26 @@ function SensoryPage({ go }) {
     if (!mapPosition) return;
     const run = async () => {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${mapPosition.lat}&lon=${mapPosition.lng}`);
-        const data = await res.json();
-        setMapAddress(data.display_name || '주소를 찾을 수 없습니다.');
+        const lat = mapPosition.lat;
+        const lng = mapPosition.lng;
+        const nominatimRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=ko,en&lat=${lat}&lon=${lng}`);
+        const nominatimData = await nominatimRes.json();
+        const nominatimAddress = nominatimData?.display_name?.trim();
+
+        if (nominatimAddress) {
+          setMapAddress(nominatimAddress);
+          return;
+        }
+
+        // Fallback: works well for many countries when Nominatim is sparse/rate-limited.
+        const fallbackRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ko`);
+        const fallbackData = await fallbackRes.json();
+        const parts = [
+          fallbackData?.locality,
+          fallbackData?.city || fallbackData?.principalSubdivision,
+          fallbackData?.countryName
+        ].filter(Boolean);
+        setMapAddress(parts.length ? parts.join(', ') : '주소를 찾을 수 없습니다.');
       } catch (e) {
         setMapAddress('주소를 불러오지 못했습니다.');
       }
@@ -307,7 +317,13 @@ function SensoryPage({ go }) {
               <MapContainer center={[37.5665, 126.978]} zoom={5} style={{ height: '280px', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <MapClickHandler onPick={setMapPosition} />
-                {mapPosition ? <Marker position={mapPosition} /> : null}
+                {mapPosition ? (
+                  <CircleMarker
+                    center={mapPosition}
+                    radius={9}
+                    pathOptions={{ color: '#a78bfa', fillColor: '#8b5cf6', fillOpacity: 0.85, weight: 2 }}
+                  />
+                ) : null}
               </MapContainer>
             </div>
             {mapPosition ? <div className="map-address">선택한 위치: {mapAddress}</div> : <div className="small-note">지도를 클릭해 마커를 찍어주세요.</div>}
