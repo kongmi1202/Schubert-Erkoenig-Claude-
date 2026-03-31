@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -42,6 +42,86 @@ const answerKey = {
   마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
 };
 
+let ytApiPromise = null;
+function loadYouTubeIframeApi() {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === 'function') prev();
+      resolve(window.YT);
+    };
+    document.body.appendChild(script);
+  });
+  return ytApiPromise;
+}
+
+function SegmentYoutubePlayer({ videoId, start, end, title, replaySignal }) {
+  const hostRef = useRef(null);
+  const playerRef = useRef(null);
+  const lastReplayRef = useRef(replaySignal);
+
+  useEffect(() => {
+    let mounted = true;
+    loadYouTubeIframeApi().then((YT) => {
+      if (!mounted || !hostRef.current) return;
+      if (playerRef.current?.destroy) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+      playerRef.current = new YT.Player(hostRef.current, {
+        width: '100%',
+        height: '100%',
+        videoId,
+        playerVars: {
+          start,
+          end,
+          rel: 0,
+          playsinline: 1,
+          modestbranding: 1,
+          controls: 1
+        },
+        events: {
+          onStateChange: (event) => {
+            // 구간 재생이 끝나면 시작점으로 되감고 멈춤 상태로 둡니다.
+            // 사용자가 가운데 재생 버튼을 누르면 항상 해당 구간부터 다시 시작됩니다.
+            if (event.data === YT.PlayerState.ENDED) {
+              event.target.seekTo(start, true);
+              event.target.pauseVideo();
+            }
+          }
+        }
+      });
+    });
+    return () => {
+      mounted = false;
+      if (playerRef.current?.destroy) playerRef.current.destroy();
+      playerRef.current = null;
+    };
+  }, [videoId, start, end]);
+
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player) return;
+    if (replaySignal === lastReplayRef.current) return;
+    lastReplayRef.current = replaySignal;
+    if (typeof player.seekTo === 'function') {
+      player.seekTo(start, true);
+      player.playVideo();
+    }
+  }, [replaySignal, start]);
+
+  return (
+    <div className="video-wrap" style={{ marginBottom: 0 }}>
+      <div ref={hostRef} title={title} style={{ position: 'absolute', inset: 0 }} />
+    </div>
+  );
+}
+
 function VoiceDesign({ go }) {
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
@@ -54,11 +134,10 @@ function VoiceDesign({ go }) {
     마왕: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' }
   });
   const [showCompare, setShowCompare] = useState(false);
-  const [segmentReloadKey, setSegmentReloadKey] = useState(0);
+  const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
-  const segmentSrc = `https://www.youtube.com/embed/${videoId}?start=${active.start}&end=${active.end}&rel=0&modestbranding=1&playsinline=1&k=${segmentReloadKey}`;
 
   const toggleChar = (name) => {
     setSelectedChars((prev) => {
@@ -117,16 +196,15 @@ function VoiceDesign({ go }) {
         <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
             <div className="aud-title-sm">{active.audioTitle}</div>
-            <button className="btn-s" type="button" onClick={() => setSegmentReloadKey((k) => k + 1)}>다시 듣기</button>
+            <button className="btn-s" type="button" onClick={() => setSegmentReplaySignal((k) => k + 1)}>다시 듣기</button>
           </div>
-          <div className="video-wrap" style={{ marginBottom: 0 }}>
-            <iframe
-              src={segmentSrc}
-              title={`${active.name} 구간 영상`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
+          <SegmentYoutubePlayer
+            videoId={videoId}
+            start={active.start}
+            end={active.end}
+            title={`${active.name} 구간 영상`}
+            replaySignal={segmentReplaySignal}
+          />
         </div>
 
         <div className="vd-item">
