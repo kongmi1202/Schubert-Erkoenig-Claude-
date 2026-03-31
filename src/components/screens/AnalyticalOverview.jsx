@@ -3,10 +3,22 @@ import { useAppStore } from '../../store/useAppStore';
 
 const correctCharacters = ['해설자', '아버지', '아들', '마왕'];
 const correctStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+const colorMap = {
+  '짙은 보라': '#4c1d95',
+  '어두운 붉은색': '#991b1b',
+  '짙은 남색': '#1e3a8a',
+  검정: '#374151',
+  '어두운 황토': '#a16207',
+  '어두운 초록': '#166534',
+  갈색: '#92400e',
+  자주: '#86198f'
+};
 
 function AnalyticalOverview({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
+  const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
+  const sensoryArtifacts = useAppStore((s) => s.sensoryArtifacts);
   const aiOpen = useAppStore((s) => s.aiOpen);
   const toggleAi = useAppStore((s) => s.toggleAi);
   const characters = useAppStore((s) => s.analyticalCharacters);
@@ -35,7 +47,7 @@ function AnalyticalOverview({ go }) {
       </div>
       <div className="body">
         <div className="sec">1단계 감각적 감상 결과</div>
-        <div className="review-card">
+        <div className="review-card" style={{ marginBottom: 14 }}>
           <div className="review-grid">
             <div>
               <div className="review-section-title">감성 키워드</div>
@@ -45,6 +57,54 @@ function AnalyticalOverview({ go }) {
               <div className="review-section-title">서술</div>
               <div className="review-item">{sensoryDesc || '서술 없음'}</div>
             </div>
+          </div>
+        </div>
+        <div className="review-card">
+          <div className="review-grid">
+            <div>
+              <div className="review-section-title">핵심 색상</div>
+              <div className="swatch-row">
+                {selectedColors.length
+                  ? selectedColors.map((c) => <span key={c} className="review-swatch" style={{ background: colorMap[c] || '#555' }} title={c} />)
+                  : <span className="review-empty">선택 없음</span>}
+              </div>
+              <div className="review-item" style={{ marginBottom: 0 }}>{selectedColors.length ? selectedColors.join(', ') : ''}</div>
+            </div>
+            <div>
+              <div className="review-section-title">교과 연계 활동 선택</div>
+              <div className="review-item">{sensoryArtifacts?.selectedActivities?.length ? sensoryArtifacts.selectedActivities.join(', ') : '선택 없음'}</div>
+            </div>
+          </div>
+
+          <div className="artifact-grid">
+            {sensoryArtifacts?.pePhoto ? (
+              <div className="artifact-card">
+                <div className="review-item">체육 사진</div>
+                <img src={sensoryArtifacts.pePhoto} alt="체육 활동 사진" className="captured-img" />
+                {sensoryArtifacts.peAnswer ? <div className="small-note">{sensoryArtifacts.peAnswer}</div> : null}
+              </div>
+            ) : null}
+            {sensoryArtifacts?.scienceSelected?.length ? (
+              <div className="artifact-card">
+                <div className="review-item">과학 선택</div>
+                <div className="chip-row">{sensoryArtifacts.scienceSelected.map((s) => <span key={s} className="review-chip">{s}</span>)}</div>
+                {sensoryArtifacts.scienceAnswer ? <div className="small-note">{sensoryArtifacts.scienceAnswer}</div> : null}
+              </div>
+            ) : null}
+            {sensoryArtifacts?.mapAddress ? (
+              <div className="artifact-card">
+                <div className="review-item">사회 선택 장소</div>
+                <div className="map-address">{sensoryArtifacts.mapAddress}</div>
+                {sensoryArtifacts.mapAnswer ? <div className="small-note">{sensoryArtifacts.mapAnswer}</div> : null}
+              </div>
+            ) : null}
+            {sensoryArtifacts?.mathDrawing ? (
+              <div className="artifact-card">
+                <div className="review-item">수학 도형 그림</div>
+                <img src={sensoryArtifacts.mathDrawing} alt="수학 활동 그림" className="captured-img" />
+                {sensoryArtifacts.mathAnswer ? <div className="small-note">{sensoryArtifacts.mathAnswer}</div> : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
