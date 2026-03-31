@@ -2,10 +2,38 @@ import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
-  { name: '해설자', icon: '🗣️', lyric: `"이 밤 폭풍 속 누가 말달려\n그는 아버지, 그 아들 그는 아..."`, audioTitle: '해설자 구간 듣기' },
-  { name: '아버지', icon: '👨', lyric: `"걱정 마라, 안개란다"\n"아가, 그것은 안개다"`, audioTitle: '아버지 구간 듣기' },
-  { name: '아들', icon: '👦', lyric: `"아빠, 마왕이 안 보여요?\n저 마왕이 내게 손짓해요!"`, audioTitle: '아들 구간 듣기' },
-  { name: '마왕', icon: '👁️', lyric: `"사랑스런 아가야, 나와 함께 가자\n아름다운 꽃들이 피어 있단다"`, audioTitle: '마왕 구간 듣기' }
+  {
+    name: '해설자',
+    icon: '🗣️',
+    lyric: `"이 밤 폭풍 속 누가 말 달려 그들은 아버지와 아들"\n(독일 원어: "Wer reitet so spät durch Nacht und Wind? Es ist der Vater mit seinem Kind.")`,
+    audioTitle: '해설자 구간 영상',
+    start: 20,
+    end: 36
+  },
+  {
+    name: '아버지',
+    icon: '👨',
+    lyric: `"진정해, 진정해라, 아가. 마른 버들잎 소리란다."\n(독일 원어: "Sei ruhig, bleibe ruhig, mein Kind; in dürren Blättern säuselt der Wind.")`,
+    audioTitle: '아버지 구간 영상',
+    start: 121,
+    end: 130
+  },
+  {
+    name: '아들',
+    icon: '👦',
+    lyric: `"아버지, 아버지, 들리잖아요. 저 마왕이 내게 속삭여요."\n(독일 원어: "Mein Vater, mein Vater, und hörest du nicht, was Erlenkönig mir leise verspricht?")`,
+    audioTitle: '아들 구간 영상',
+    start: 108,
+    end: 121
+  },
+  {
+    name: '마왕',
+    icon: '👁️',
+    lyric: `"예쁜 아가, 나와 가자. 참 재미나는 놀이하며 아름다운 꽃동산에서 비단 옷도 많이 입혀주마."\n(독일 원어: "Du liebdes Kind, komm, geh' mit mir! Gar schöne Spiele spiel' ich mit dir; Mach' bunte Blumen sind an dem Strand,  meine Mutter hat manch' gülden Gewand.")`,
+    audioTitle: '마왕 구간 영상',
+    start: 86,
+    end: 109
+  }
 ];
 const answerKey = {
   해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
@@ -19,7 +47,6 @@ function VoiceDesign({ go }) {
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [selectedChars, setSelectedChars] = useState(['해설자', '아버지']);
-  const [audioPlaying, setAudioPlaying] = useState(false);
   const [voiceDesign, setVoiceDesign] = useState({
     해설자: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
     아버지: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
@@ -27,8 +54,11 @@ function VoiceDesign({ go }) {
     마왕: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' }
   });
   const [showCompare, setShowCompare] = useState(false);
+  const [segmentReloadKey, setSegmentReloadKey] = useState(0);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
+  const videoId = '8noeFpdfWcQ';
+  const segmentSrc = `https://www.youtube.com/embed/${videoId}?start=${active.start}&end=${active.end}&rel=0&modestbranding=1&playsinline=1&k=${segmentReloadKey}`;
 
   const toggleChar = (name) => {
     setSelectedChars((prev) => {
@@ -84,11 +114,19 @@ function VoiceDesign({ go }) {
           </div>
         </div>
 
-        <div className="audio-bar voice-audio-bar">
-          <button className="aud-btn" onClick={() => setAudioPlaying((p) => !p)}>
-            {audioPlaying ? '❚❚' : '▶'}
-          </button>
-          <div className="aud-title">{active.audioTitle}</div>
+        <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+            <div className="aud-title-sm">{active.audioTitle}</div>
+            <button className="btn-s" type="button" onClick={() => setSegmentReloadKey((k) => k + 1)}>다시 듣기</button>
+          </div>
+          <div className="video-wrap" style={{ marginBottom: 0 }}>
+            <iframe
+              src={segmentSrc}
+              title={`${active.name} 구간 영상`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
 
         <div className="vd-item">
