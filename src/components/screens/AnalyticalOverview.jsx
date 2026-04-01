@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const correctCharacters = ['해설자', '아버지', '아들', '마왕'];
@@ -13,6 +13,13 @@ const colorMap = {
   갈색: '#92400e',
   자주: '#86198f'
 };
+const storyPromptHints = [
+  '줄거리를 "처음-중간-끝"으로 나누지 말고, 가장 긴장된 순간부터 거꾸로 설명해볼래?',
+  '이야기의 핵심 갈등을 한 문장으로 쓰고, 그 이유를 한 문장으로 덧붙여봐.',
+  '등장인물 입장에서 각각 한 줄씩 말풍선을 만든다면 어떤 말이 나올까?',
+  '해설자가 이 장면을 뉴스처럼 전달한다면 어떤 표현을 쓸까?',
+  '결말을 모르는 친구에게 스포일러 없이 분위기만 전달한다면 어떻게 쓸래?'
+];
 
 function AnalyticalOverview({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
@@ -29,6 +36,7 @@ function AnalyticalOverview({ go }) {
 
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
+  const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
 
   // 사용자 입력을 전부 채웠을 때만 "정답 확인하기" 아이콘이 표시되도록 합니다.
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
@@ -38,6 +46,11 @@ function AnalyticalOverview({ go }) {
   useEffect(() => {
     if (!isAllFilled) setAnswerCheckOpen(false);
   }, [isAllFilled]);
+  const showRandomStoryHint = () => {
+    const next = storyPromptHints[Math.floor(Math.random() * storyPromptHints.length)];
+    setStoryHint(next);
+    if (!aiOpen.story) toggleAi('story');
+  };
 
   return (
     <div className="screen active">
@@ -134,10 +147,11 @@ function AnalyticalOverview({ go }) {
           onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder="마왕의 줄거리를 써보세요..."
         />
-        <button className="ai-btn" onClick={() => toggleAi('story')}>✨ AI 도우미 예시 보기</button>
+        <button className="ai-btn" onClick={showRandomStoryHint}>✨ 생각 질문 보기</button>
+        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.story ? 'show' : ''}`}>
-          <div className="ai-bubble-label">AI 서술 예시</div>
-          폭풍우 치는 밤, 아버지가 아픈 아들을 안고 말을 달린다.
+          <div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>
+          {storyHint}
         </div>
 
         {isAllFilled ? (

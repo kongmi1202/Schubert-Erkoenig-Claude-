@@ -1,4 +1,5 @@
 import { useAppStore } from '../../store/useAppStore';
+import { useState } from 'react';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -10,6 +11,18 @@ const colorMap = {
   갈색: '#92400e',
   자주: '#86198f'
 };
+const q1Hints = [
+  '처음 느낌과 지금 느낌이 달라졌다면, 가장 크게 바뀐 단어 1개는 무엇일까?',
+  '분석 전에 놓쳤던 소리 하나를 지금은 어떻게 해석하고 있니?',
+  '처음 판단을 스스로 반박한다면 어떤 문장을 쓸 수 있을까?',
+  '친구가 "왜 그렇게 생각해?"라고 물으면 근거로 어떤 장면을 말할래?'
+];
+const q2Hints = [
+  '선택한 분석 요소가 어느 장면에서 가장 잘 들렸는지 먼저 적어봐.',
+  '그 요소가 없다면 음악 느낌이 어떻게 달라질지 상상해볼래?',
+  '요소-장면-감정 순서로 연결해서 한 문장을 만들어봐.',
+  '네 해석과 다른 해석도 가능하다고 본다면, 그 차이는 어디서 생길까?'
+];
 
 function AestheticPage({ go }) {
   const {
@@ -18,6 +31,18 @@ function AestheticPage({ go }) {
   } = useAppStore();
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+  const [q1Hint, setQ1Hint] = useState(q1Hints[0]);
+  const [q2Hint, setQ2Hint] = useState(q2Hints[0]);
+  const showRandomQ1Hint = () => {
+    const next = q1Hints[Math.floor(Math.random() * q1Hints.length)];
+    setQ1Hint(next);
+    if (!aiOpen.q1) toggleAi('q1');
+  };
+  const showRandomQ2Hint = () => {
+    const next = q2Hints[Math.floor(Math.random() * q2Hints.length)];
+    setQ2Hint(next);
+    if (!aiOpen.q2) toggleAi('q2');
+  };
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3 · 심미적 감상</div><div className="s-title">나의 음악적 가치 판단</div><div className="s-desc">감각적·분석적 감상을 종합하여 이 음악을 평가해보세요.</div></div>
@@ -94,14 +119,16 @@ function AestheticPage({ go }) {
           처음엔 <span style={{ color: 'var(--purple-light)', fontStyle: 'italic' }}>[감각적 감상 키워드]</span>고 느꼈는데,<br />
           분석해 보니 <input className="fill-input" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="___________" /> 라고 느꼈다.
         </div>
-        <button className="ai-btn" onClick={() => toggleAi('q1')}>✨ AI 도우미 예시 보기</button>
-        <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">AI 서술 예시</div>처음엔 무섭고 긴박하게 느꼈는데, 분석해 보니 감정을 정교하게 설계한 음악이라고 느꼈다.</div>
+        <button className="ai-btn" onClick={showRandomQ1Hint}>✨ 생각 질문 보기</button>
+        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
+        <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
         <div className="sec">Q2. 분석 요소와 연결</div>
         <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">등장인물의 음색</option><option value="반주">피아노 반주</option><option value="맥락">사회·역사적 맥락</option></select>
         {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
-        <button className="ai-btn" onClick={() => toggleAi('q2')}>✨ AI 도우미 예시 보기</button>
-        <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">AI 서술 예시</div>음색이 인물의 감정을 다르게 들리게 해서 이야기 장면이 더 선명하게 느껴졌다.</div>
+        <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 생각 질문 보기</button>
+        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
+        <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
 
         <div className="sec">Q3. 오늘날 삶과 연결</div>
         <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder="200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" />

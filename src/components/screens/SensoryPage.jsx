@@ -18,6 +18,13 @@ const ccItems = [
   { name: '사회', icon: '🗺️', desc: '지도에서 장소 선택' },
   { name: '수학', icon: '△', desc: '도형 그리기' }
 ];
+const sensoryPromptHints = [
+  '이 음악을 한 장면의 영화로 바꾼다면 어떤 순간을 고를래?',
+  '친구에게 이 곡 분위기를 10초 안에 설명한다면 어떤 단어 3개를 고를래?',
+  '처음 들었을 때와 끝까지 들은 뒤 느낌이 어떻게 달라졌는지 적어볼래?',
+  '같은 음악을 다른 친구는 다르게 느낄 수도 있어. 너의 해석 근거 1가지는 무엇일까?',
+  '이 곡의 기분을 날씨나 자연 현상 하나에 비유하면 무엇이고, 왜 그렇게 느꼈을까?'
+];
 
 function MapClickHandler({ onPick }) {
   useMapEvents({
@@ -54,6 +61,7 @@ function SensoryPage({ go }) {
   const [drawSize, setDrawSize] = useState(4);
   const [drawingSaved, setDrawingSaved] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
+  const [sensoryHint, setSensoryHint] = useState(sensoryPromptHints[0]);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const mathCanvasRef = useRef(null);
@@ -204,6 +212,11 @@ function SensoryPage({ go }) {
     if (canvas) setMathDrawing(canvas.toDataURL('image/png'));
     setDrawingSaved(true);
   };
+  const showRandomSensoryHint = () => {
+    const next = sensoryPromptHints[Math.floor(Math.random() * sensoryPromptHints.length)];
+    setSensoryHint(next);
+    if (!aiOpen.sensory) toggleAi('sensory');
+  };
 
   const isStage1Complete = useMemo(() => {
     const hasKeywords = selectedKeywords.length > 0;
@@ -248,8 +261,12 @@ function SensoryPage({ go }) {
         <div className="pal-selected-names">{selectedColors.length ? selectedColors.join(', ') : '선택한 색상 이름이 여기에 표시됩니다.'}</div>
         <div className="sec">느낌·분위기 서술</div>
         <textarea className="txt" value={sensoryDesc} onChange={(e) => setSensoryDesc(e.target.value)} placeholder="자유롭게 써보세요" />
-        <button className="ai-btn" onClick={() => toggleAi('sensory')}>✨ AI 도우미 예시 보기</button>
-        <div className={`ai-bubble ${aiOpen.sensory ? 'show' : ''}`}><div className="ai-bubble-label">AI 서술 예시</div>이 음악은 폭풍우가 몰아치는 숲속을 달리는 느낌이다.</div>
+        <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 생각 질문 보기</button>
+        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
+        <div className={`ai-bubble ${aiOpen.sensory ? 'show' : ''}`}>
+          <div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>
+          {sensoryHint}
+        </div>
 
         <div className="sec">음악 말고 다른 방식으로 표현하기 (2개 선택)</div>
         <div className="cc-grid">
