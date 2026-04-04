@@ -13,37 +13,77 @@ const MSG_NO_KEY = `──
 · 배포 사이트: GitHub Pages·Netlify 등에는 \`.env.local\`이 올라가지 않습니다. 호스트의 “Build environment variables”에 같은 이름으로 키를 넣고 **다시 빌드·배포**해야 합니다.`;
 
 function msgApiFailed(status) {
+  if (status === 429) {
+    return `──
+OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「AI 맞춤 피드백 받기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
+  }
   return `──
 OpenAI 요청이 실패했습니다${status ? ` (HTTP ${status})` : ''}. API 키가 맞는지, 결제·크레딧이 있는지 확인해 보세요. 브라우저에서 F12 → 네트워크 탭에서 \`api.openai.com\` 응답 본문을 보면 원인 힌트가 나오는 경우가 많아요.`;
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function retryAfterMs(res) {
+  const raw = res.headers.get('retry-after');
+  if (!raw) return null;
+  const sec = parseInt(raw, 10);
+  if (Number.isFinite(sec)) return Math.min(Math.max(sec, 1), 60) * 1000;
+  const retryDate = Date.parse(raw);
+  if (Number.isFinite(retryDate)) return Math.min(Math.max(retryDate - Date.now(), 1000), 60_000);
+  return null;
 }
 
 async function requestCompareFeedback(prompt, fallbackBody) {
   const apiKey = getViteOpenAiKey();
   if (!apiKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        input: prompt
-      })
-    });
-    if (!res.ok) {
+  const maxAttempts = 4;
+  let lastStatus = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          input: prompt
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = extractTextFromResponse(json);
+        const trimmed = text?.trim();
+        if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
+        return trimmed;
+      }
+
+      lastStatus = res.status;
+      const retryable = res.status === 429 || res.status === 503;
+      if (retryable && attempt < maxAttempts - 1) {
+        const fromHeader = retryAfterMs(res);
+        const backoff = fromHeader ?? Math.min(2500 * 2 ** attempt, 20_000);
+        await sleep(backoff);
+        continue;
+      }
+
       return `${fallbackBody}\n\n${msgApiFailed(res.status)}`;
+    } catch {
+      if (attempt < maxAttempts - 1) {
+        await sleep(Math.min(1500 * (attempt + 1), 8000));
+        continue;
+      }
+      return `${fallbackBody}\n\n${msgApiFailed(lastStatus)}`;
     }
-    const json = await res.json();
-    const text = extractTextFromResponse(json);
-    const trimmed = text?.trim();
-    if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
-    return trimmed;
-  } catch {
-    return `${fallbackBody}\n\n${msgApiFailed()}`;
   }
+
+  return `${fallbackBody}\n\n${msgApiFailed(429)}`;
 }
 
 function normalizeList(str) {

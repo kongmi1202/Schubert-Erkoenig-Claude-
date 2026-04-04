@@ -38,6 +38,8 @@ const chars = [
     end: 109
   }
 ];
+const VOICE_CHAR_NAMES = ['해설자', '아버지', '아들', '마왕'];
+
 const answerKey = {
   해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
   아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
@@ -181,11 +183,11 @@ function VoiceDesign({ go }) {
     if (!row) return false;
     return ['음높이', '음계', '리듬꼴', '음색'].every((k) => row[k]);
   };
-  const canCheckAnswer = useMemo(
-    () =>
-      selectedChars.length === 2 && selectedChars.every(isCharacterFilled),
-    [selectedChars, voiceDesign]
-  );
+  /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */
+  const canCheckAnswer = useMemo(() => {
+    const n = VOICE_CHAR_NAMES.filter((name) => isCharacterFilled(name)).length;
+    return n >= 2;
+  }, [voiceDesign]);
 
   /** 현재 편집 중인 인물만 네 항목이 모두 채워졌을 때 정답 확인 UI 표시 */
   const canShowAnswerCheck = useMemo(
@@ -209,9 +211,9 @@ function VoiceDesign({ go }) {
   }, [canShowAnswerCheck]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">인물의 목소리를 설계해보세요</div><div className="s-desc">알아보고 싶은 등장인물 2명을 선택하고 목소리를 설계해보세요.<br />음악 요소: <strong>음색</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">인물의 목소리를 설계해보세요</div><div className="s-desc">등장인물을 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.<br /><strong>서로 다른 두 인물</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
-        <div className="sec">등장인물 선택 (2명)</div>
+        <div className="sec">등장인물 선택 · 설계할 인물로 전환</div>
         <div className="char-tabs">
           {chars.map((c) => (
             <button
@@ -224,7 +226,11 @@ function VoiceDesign({ go }) {
             </button>
           ))}
         </div>
-        <div className="small-note">선택됨: {selectedChars.join(', ')}</div>
+        <div className="small-note">
+          편집 중: {selectedCharacter} · 강조된 두 명: {selectedChars.join(', ')} · 네 인물 중{' '}
+          {VOICE_CHAR_NAMES.filter((n) => isCharacterFilled(n)).length}
+          명 완료 (2명 이상이면 다음 단계 가능)
+        </div>
 
         <div className="char-card voice-char-card">
           <div className="char-emoji">{active.icon}</div>
