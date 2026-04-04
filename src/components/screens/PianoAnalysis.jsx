@@ -1,11 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
-const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generatePianoCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
+
+const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
+const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
+/** HTML audio volume 최대 1을 넘기는 배율 (Web Audio GainNode) */
+const PIANO_PLAYBACK_GAIN = 2;
+
+function connectPianoBoost(el, ctxRef, wiredRef) {
+  if (!el || wiredRef.current) return ctxRef.current;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return ctxRef.current;
+  const ctx = ctxRef.current ?? new AC();
+  ctxRef.current = ctx;
+  try {
+    const src = ctx.createMediaElementSource(el);
+    const gain = ctx.createGain();
+    gain.gain.value = PIANO_PLAYBACK_GAIN;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    el.volume = 1;
+    wiredRef.current = true;
+  } catch {
+    el.volume = 1;
+    wiredRef.current = true;
+  }
+  return ctx;
+}
 
 function setupDraw(canvas, getBrush) {
   const ctx = canvas.getContext('2d');
@@ -62,36 +85,67 @@ function PianoAnalysis({ go }) {
   const [showCompare, setShowCompare] = useState(false);
   const rhAudioRef = useRef(null);
   const lhAudioRef = useRef(null);
+  const pianoCtxRef = useRef(null);
+  const rhBoostWiredRef = useRef(false);
+  const lhBoostWiredRef = useRef(false);
 
   useEffect(() => {
     const rh = rhAudioRef.current;
     const lh = lhAudioRef.current;
     if (!rh) return;
-    if (rhPlaying) {
-      lh?.pause();
-      setLhPlaying(false);
-      rh.play().catch(() => setRhPlaying(false));
-    } else {
-      rh.pause();
-    }
+
+    const run = async () => {
+      if (rhPlaying) {
+        lh?.pause();
+        setLhPlaying(false);
+        connectPianoBoost(rh, pianoCtxRef, rhBoostWiredRef);
+        if (lh) connectPianoBoost(lh, pianoCtxRef, lhBoostWiredRef);
+        const ctx = pianoCtxRef.current;
+        if (ctx?.state === 'suspended') await ctx.resume();
+        try {
+          await rh.play();
+        } catch {
+          setRhPlaying(false);
+        }
+      } else {
+        rh.pause();
+      }
+    };
+    void run();
   }, [rhPlaying]);
 
   useEffect(() => {
     const rh = rhAudioRef.current;
     const lh = lhAudioRef.current;
     if (!lh) return;
-    if (lhPlaying) {
-      rh?.pause();
-      setRhPlaying(false);
-      lh.play().catch(() => setLhPlaying(false));
-    } else {
-      lh.pause();
-    }
+
+    const run = async () => {
+      if (lhPlaying) {
+        rh?.pause();
+        setRhPlaying(false);
+        connectPianoBoost(rh, pianoCtxRef, rhBoostWiredRef);
+        connectPianoBoost(lh, pianoCtxRef, lhBoostWiredRef);
+        const ctx = pianoCtxRef.current;
+        if (ctx?.state === 'suspended') await ctx.resume();
+        try {
+          await lh.play();
+        } catch {
+          setLhPlaying(false);
+        }
+      } else {
+        lh.pause();
+      }
+    };
+    void run();
   }, [lhPlaying]);
 
   useEffect(() => () => {
     rhAudioRef.current?.pause();
     lhAudioRef.current?.pause();
+    pianoCtxRef.current?.close().catch(() => {});
+    pianoCtxRef.current = null;
+    rhBoostWiredRef.current = false;
+    lhBoostWiredRef.current = false;
   }, []);
 
   useEffect(() => {
