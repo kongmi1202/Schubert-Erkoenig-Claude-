@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generatePianoCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 function setupDraw(canvas, getBrush) {
@@ -71,6 +73,8 @@ function PianoAnalysis({ go }) {
     setSaved((prev) => ({ ...prev, [key]: false }));
   };
   const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
+
+  const requestPianoFeedback = useCallback(() => generatePianoCompareFeedback(), []);
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">피아노 전주 분석하기</div><div className="s-desc">오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
@@ -187,6 +191,7 @@ function PianoAnalysis({ go }) {
               </div>
             </div>
             <div className="fb show info">왼손: 느리고 강하게 반복되는 베이스 -&gt; 심장이 두근거리는 긴박감을 표현해요</div>
+            <CompareAiFeedbackBlock requestFn={requestPianoFeedback} />
           </div>
         </div>
 

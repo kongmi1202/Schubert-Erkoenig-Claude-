@@ -15,7 +15,7 @@ function buildFallbackEssay(data) {
 특히 ${q2}. 그래서 나는 이 음악이 단순히 옛날 작품이 아니라 오늘의 삶에도 의미가 있는 작품이라고 본다. ${q3}.`;
 }
 
-function extractTextFromResponse(json) {
+export function extractTextFromResponse(json) {
   if (json?.output_text) return json.output_text;
   const texts = [];
   (json?.output || []).forEach((item) => {
@@ -27,7 +27,9 @@ function extractTextFromResponse(json) {
 }
 
 export async function generateFinalEssay(data) {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  const apiKey = typeof import.meta.env.VITE_OPENAI_API_KEY === 'string'
+    ? import.meta.env.VITE_OPENAI_API_KEY.trim()
+    : '';
   if (!apiKey) return buildFallbackEssay(data);
 
   const prompt = `다음 학습 기록을 바탕으로 초등/중학생 눈높이의 자연스러운 한국어 감상문 3문단을 작성해줘.

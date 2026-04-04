@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const correctCharacters = ['해설자', '아버지', '아들', '마왕'];
@@ -42,6 +44,23 @@ function AnalyticalOverview({ go }) {
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
   const q2AllFilled = useMemo(() => typeof story === 'string' && story.trim().length > 0, [story]);
   const isAllFilled = q1AllFilled && q2AllFilled;
+
+  const userCharactersText = useMemo(
+    () => characters.filter((c) => c && c.trim()).join(', '),
+    [characters]
+  );
+
+  const requestAnalyticalFeedback = useCallback(
+    () =>
+      generateAnalyticalCompareFeedback({
+        userCharacterSlots: characters,
+        userCharactersText,
+        correctCharacters,
+        userStory: story,
+        correctStory
+      }),
+    [characters, userCharactersText, story]
+  );
 
   useEffect(() => {
     if (!isAllFilled) setAnswerCheckOpen(false);
@@ -186,6 +205,8 @@ function AnalyticalOverview({ go }) {
               <div className="review-section-title">정답</div>
               <div className="review-item">{correctStory}</div>
             </div>
+
+            <CompareAiFeedbackBlock requestFn={requestAnalyticalFeedback} />
           </div>
         </div>
 

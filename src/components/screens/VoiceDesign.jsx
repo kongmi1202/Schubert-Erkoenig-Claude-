@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -40,6 +42,18 @@ const answerKey = {
   아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
   아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
   마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
+};
+
+/** 정답 확인 패널 하단 모범 해설 (스크린샷 스타일 안내) */
+const voiceCompareCommentary = {
+  해설자:
+    '해설자는 밤길 상황을 듣는 이에게 차분히 전달하는 역할이에요. 단조의 어두운 음계와 길게 이어지는 리듬으로 처음부터 긴장감을 깔고, 중간 높이·두꺼운 음색으로 이야기의 무게를 실어 줍니다.',
+  아버지:
+    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮은 음높이와 두꺼운 음색이 어른의 단단함을, 단조와 긴 리듬이 밤길의 압박을 함께 드러냅니다.',
+  아들:
+    '아들은 두려움과 호소가 섞인 목소리로 들려요. 높은 음높이, 짧게 끊기는 리듬, 얇은 음색이 불안과 다급함을 표현하고, 단조는 비극적 분위기와 맞닿아 있습니다.',
+  마왕:
+    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 길게 이어지는 리듬, 중간 음색이 “부드러운 제안”처럼 들리게 설계된 모범안입니다.'
 };
 
 let ytApiPromise = null;
@@ -172,13 +186,39 @@ function VoiceDesign({ go }) {
     [selectedChars, voiceDesign]
   );
 
+  /** 현재 편집 중인 인물만 네 항목이 모두 채워졌을 때 정답 확인 UI 표시 */
+  const canShowAnswerCheck = useMemo(
+    () => isCharacterFilled(selectedCharacter),
+    [selectedCharacter, voiceDesign]
+  );
+
+  const requestVoiceFeedback = useCallback(
+    () => generateVoiceDesignCompareFeedback([selectedCharacter], voiceDesign, answerKey),
+    [selectedCharacter, voiceDesign]
+  );
+
+  const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
+
+  useEffect(() => {
+    if (canCheckAnswer) setStageCompletion('voice', true);
+  }, [canCheckAnswer, setStageCompletion]);
+
+  useEffect(() => {
+    if (!canShowAnswerCheck) setShowCompare(false);
+  }, [canShowAnswerCheck]);
+
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">인물의 목소리를 설계해보세요</div><div className="s-desc">알아보고 싶은 등장인물 2명을 선택하고 목소리를 설계해보세요.<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
         <div className="sec">등장인물 선택 (2명)</div>
         <div className="char-tabs">
           {chars.map((c) => (
-            <button key={c.name} className={`char-tab ${selectedCharacter === c.name ? 'active' : ''} ${selectedChars.includes(c.name) ? 'picked' : ''}`} onClick={() => toggleChar(c.name)}>
+            <button
+              key={c.name}
+              type="button"
+              className={`char-tab ${selectedCharacter === c.name ? 'active' : ''} ${selectedChars.includes(c.name) ? 'picked' : ''}`}
+              onClick={() => toggleChar(c.name)}
+            >
               <span>{c.icon}</span> {c.name}
             </button>
           ))}
@@ -235,40 +275,62 @@ function VoiceDesign({ go }) {
           </div>
         </div>
 
-        {canCheckAnswer ? (
-          <button type="button" className="answer-check-toggle" onClick={() => { setShowCompare((v) => !v); setStageCompletion('voice', true); }} aria-expanded={showCompare}>
-            <span className="answer-check-toggle-label">정답 확인하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">
-              {showCompare ? '▲' : '▼'}
-            </span>
-          </button>
-        ) : null}
+        {canShowAnswerCheck ? (
+          <>
+            <button
+              type="button"
+              className="answer-check-toggle"
+              onClick={() => setShowCompare((v) => !v)}
+              aria-expanded={showCompare}
+            >
+              <span className="answer-check-toggle-label">정답 확인하기 · {selectedCharacter}</span>
+              <span className="answer-check-toggle-chevron" aria-hidden="true">
+                {showCompare ? '▲' : '▼'}
+              </span>
+            </button>
 
-        <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <table className="cmp-table">
-              <thead>
-                <tr>
-                  <th>인물</th>
-                  <th>요소</th>
-                  <th>내 설계</th>
-                  <th>모범 설계</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedChars.flatMap((name) => (['음높이', '음계', '리듬꼴', '음색'].map((key) => (
-                  <tr key={`${name}-${key}`}>
-                    <td className="row-label">{name}</td>
-                    <td>{key}</td>
-                    <td>{voiceDesign[name][key] || '—'}</td>
-                    <td>{answerKey[name][key]}</td>
-                  </tr>
-                ))))}
-              </tbody>
-            </table>
-            <div className="fb show info">💬 시의 인물 성격에 따라 음높이·음계·리듬꼴·음색이 달라지도록 설계했는지 비교해보세요.</div>
-          </div>
-        </div>
+            <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
+              <div className="answer-compare-inner voice-compare-panel">
+                <div className="voice-compare-head">
+                  <span className="voice-compare-badge">{active.icon}</span>
+                  <span className="voice-compare-title">{selectedCharacter} 음색 설계 비교</span>
+                </div>
+                <table className="cmp-table cmp-table-voice">
+                  <thead>
+                    <tr>
+                      <th className="col-element">요소</th>
+                      <th>나의 설계</th>
+                      <th>정답</th>
+                      <th className="col-mark" aria-label="일치 여부" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {designKeys.map((key) => {
+                      const mine = voiceDesign[selectedCharacter]?.[key] || '';
+                      const correct = answerKey[selectedCharacter]?.[key] ?? '—';
+                      const match = mine && mine === correct;
+                      return (
+                        <tr key={key}>
+                          <td className="row-label col-element">{key}</td>
+                          <td>{mine || '—'}</td>
+                          <td className="voice-correct-cell">{correct}</td>
+                          <td className="col-mark">
+                            <span className={`voice-compare-mark ${match ? 'ok' : 'bad'}`} aria-label={match ? '일치' : '불일치 또는 미선택'}>
+                              {match ? '✓' : '✗'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
+                <div className="fb show info">💬 위 정답은 시와 음악 해설에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
+                <CompareAiFeedbackBlock requestFn={requestVoiceFeedback} />
+              </div>
+            </div>
+          </>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>
