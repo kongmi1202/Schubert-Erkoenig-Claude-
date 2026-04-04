@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
@@ -330,6 +331,14 @@ function VoiceDesign({ go }) {
               </div>
             </div>
           </>
+        ) : null}
+
+        {canCheckAnswer ? (
+          <ArtSongTakeaway
+            eyebrow="예술가곡의 첫 번째 특징"
+            title="시와 음악이 하나가 된다"
+            description="괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·리듬꼴로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요."
+          />
         ) : null}
 
         <div className="btn-row">

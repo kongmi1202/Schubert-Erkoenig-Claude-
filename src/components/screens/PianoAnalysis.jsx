@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
+const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generatePianoCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
@@ -56,6 +60,39 @@ function PianoAnalysis({ go }) {
   const [rhScene, setRhScene] = useState('');
   const [lhScene, setLhScene] = useState('');
   const [showCompare, setShowCompare] = useState(false);
+  const rhAudioRef = useRef(null);
+  const lhAudioRef = useRef(null);
+
+  useEffect(() => {
+    const rh = rhAudioRef.current;
+    const lh = lhAudioRef.current;
+    if (!rh) return;
+    if (rhPlaying) {
+      lh?.pause();
+      setLhPlaying(false);
+      rh.play().catch(() => setRhPlaying(false));
+    } else {
+      rh.pause();
+    }
+  }, [rhPlaying]);
+
+  useEffect(() => {
+    const rh = rhAudioRef.current;
+    const lh = lhAudioRef.current;
+    if (!lh) return;
+    if (lhPlaying) {
+      rh?.pause();
+      setRhPlaying(false);
+      lh.play().catch(() => setLhPlaying(false));
+    } else {
+      lh.pause();
+    }
+  }, [lhPlaying]);
+
+  useEffect(() => () => {
+    rhAudioRef.current?.pause();
+    lhAudioRef.current?.pause();
+  }, []);
 
   useEffect(() => {
     const cleanups = [];
@@ -80,9 +117,24 @@ function PianoAnalysis({ go }) {
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">피아노 전주 분석하기</div><div className="s-desc">오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
       <div className="body voice-body">
         <div className="sec">오른손 반주</div>
-        <div className="audio-bar voice-audio-bar">
-          <button className="aud-btn" onClick={() => setRhPlaying((p) => !p)}>{rhPlaying ? '❚❚' : '▶'}</button>
-          <div><div className="aud-title-sm">오른손 반주만 듣기</div><div className="aud-sub">빠른 셋잇단음표 패턴</div></div>
+        <audio
+          ref={rhAudioRef}
+          className="piano-audio-hidden"
+          src={PIANO_RH_AUDIO_SRC}
+          preload="auto"
+          onLoadedMetadata={(e) => {
+            e.currentTarget.volume = 1;
+          }}
+          onEnded={() => setRhPlaying(false)}
+        />
+        <div className="audio-bar voice-audio-bar piano-audio-bar">
+          <button type="button" className="aud-btn" aria-label={rhPlaying ? '오른손 반주 일시정지' : '오른손 반주 재생'} onClick={() => setRhPlaying((p) => !p)}>
+            {rhPlaying ? '❚❚' : '▶'}
+          </button>
+          <div>
+            <div className="aud-title-sm">오른손 반주만 듣기</div>
+            <div className="aud-sub">빠른 셋잇단음표 패턴</div>
+          </div>
         </div>
         <div className="small-note">오른손 반주를 들으며 가락선을 그려보세요</div>
         <div className="palette-bar">
@@ -114,9 +166,24 @@ function PianoAnalysis({ go }) {
         </div>
 
         <div className="sec">왼손 반주</div>
-        <div className="audio-bar voice-audio-bar">
-          <button className="aud-btn" onClick={() => setLhPlaying((p) => !p)}>{lhPlaying ? '❚❚' : '▶'}</button>
-          <div><div className="aud-title-sm">왼손 반주만 듣기</div><div className="aud-sub">느리고 강한 베이스</div></div>
+        <audio
+          ref={lhAudioRef}
+          className="piano-audio-hidden"
+          src={PIANO_LH_AUDIO_SRC}
+          preload="auto"
+          onLoadedMetadata={(e) => {
+            e.currentTarget.volume = 1;
+          }}
+          onEnded={() => setLhPlaying(false)}
+        />
+        <div className="audio-bar voice-audio-bar piano-audio-bar">
+          <button type="button" className="aud-btn" aria-label={lhPlaying ? '왼손 반주 일시정지' : '왼손 반주 재생'} onClick={() => setLhPlaying((p) => !p)}>
+            {lhPlaying ? '❚❚' : '▶'}
+          </button>
+          <div>
+            <div className="aud-title-sm">왼손 반주만 듣기</div>
+            <div className="aud-sub">느리고 강한 베이스</div>
+          </div>
         </div>
         <div className="small-note">왼손 반주를 들으며 가락선을 그려보세요</div>
         <div className="palette-bar">
@@ -194,6 +261,14 @@ function PianoAnalysis({ go }) {
             <CompareAiFeedbackBlock requestFn={requestPianoFeedback} />
           </div>
         </div>
+
+        {canCheckAnswer ? (
+          <ArtSongTakeaway
+            eyebrow="예술가곡의 두 번째 특징"
+            title="피아노는 성악과 동등한 역할을 한다"
+            description="피아노 반주는 단순히 성악을 받쳐주는 게 아니에요. 말이 달리는 장면, 심장이 두근거리는 긴박함을 직접 묘사하며 시의 내용을 음악으로 표현합니다."
+          />
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
