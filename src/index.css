@@ -396,7 +396,8 @@ canvas{display:block;width:100%;touch-action:none}
 .scene-icon{font-size:32px;margin-bottom:8px}
 .scene-name{font-size:16px;font-weight:600}
 .piano-guide{border:1px solid rgba(139,92,246,.35);background:rgba(20,16,30,.45);margin:12px 0 14px}
-.piano-guide-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(139,92,246,.24);color:var(--purple-light);font-weight:600}
+.piano-guide-head{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 18px;border:none;border-bottom:1px solid rgba(139,92,246,.24);background:transparent;color:var(--purple-light);font-weight:600;text-align:left;cursor:pointer}
+.piano-guide-head:hover{background:rgba(139,92,246,.08)}
 .piano-guide-body{padding:14px 18px 16px}
 .piano-guide-body p{margin:0 0 8px;color:var(--text-dim);line-height:1.7}
 .piano-guide-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}

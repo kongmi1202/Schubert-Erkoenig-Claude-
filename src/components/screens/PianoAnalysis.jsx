@@ -83,6 +83,8 @@ function PianoAnalysis({ go }) {
   const [rhScene, setRhScene] = useState('');
   const [lhScene, setLhScene] = useState('');
   const [showCompare, setShowCompare] = useState(false);
+  const [rhGuideOpen, setRhGuideOpen] = useState(true);
+  const [lhGuideOpen, setLhGuideOpen] = useState(true);
   const rhAudioRef = useRef(null);
   const lhAudioRef = useRef(null);
   const pianoCtxRef = useRef(null);
@@ -191,11 +193,12 @@ function PianoAnalysis({ go }) {
           </div>
         </div>
         <div className="piano-guide">
-          <div className="piano-guide-head">
+          <button type="button" className="piano-guide-head" onClick={() => setRhGuideOpen((v) => !v)} aria-expanded={rhGuideOpen}>
             <span>💡 가락선 악보란?</span>
-            <span aria-hidden="true">▲</span>
-          </div>
-          <div className="piano-guide-body">
+            <span aria-hidden="true">{rhGuideOpen ? '▲' : '▼'}</span>
+          </button>
+          {rhGuideOpen ? (
+            <div className="piano-guide-body">
             <p>음악의 높낮이와 흐름을 <strong>선으로</strong> 표현하는 방법이에요.</p>
             <p>악보를 몰라도 괜찮아요! 음악을 들으며 느껴지는 대로 그려보세요.</p>
             <div className="piano-guide-grid">
@@ -211,7 +214,8 @@ function PianoAnalysis({ go }) {
               </svg>
               <div className="piano-guide-caption">빠르고 촘촘하게 오르내리는 선을 떠올려요.</div>
             </div>
-          </div>
+            </div>
+          ) : null}
         </div>
         <div className="small-note">오른손 반주를 들으며 가락선을 그려보세요</div>
         <div className="palette-bar">
@@ -263,11 +267,12 @@ function PianoAnalysis({ go }) {
           </div>
         </div>
         <div className="piano-guide">
-          <div className="piano-guide-head">
+          <button type="button" className="piano-guide-head" onClick={() => setLhGuideOpen((v) => !v)} aria-expanded={lhGuideOpen}>
             <span>💡 가락선 악보 그리는 법</span>
-            <span aria-hidden="true">▲</span>
-          </div>
-          <div className="piano-guide-body">
+            <span aria-hidden="true">{lhGuideOpen ? '▲' : '▼'}</span>
+          </button>
+          {lhGuideOpen ? (
+            <div className="piano-guide-body">
             <p>오른손과 같은 방법으로 왼손 반주를 선으로 표현해보세요.</p>
             <p>왼손 반주는 오른손과 어떻게 다른지 느껴보세요!</p>
             <div className="piano-guide-grid">
@@ -283,7 +288,8 @@ function PianoAnalysis({ go }) {
               </svg>
               <div className="piano-guide-caption">강하게 도약했다가 내려오는 선을 떠올려요.</div>
             </div>
-          </div>
+            </div>
+          ) : null}
         </div>
         <div className="small-note">왼손 반주를 들으며 가락선을 그려보세요</div>
         <div className="palette-bar">
