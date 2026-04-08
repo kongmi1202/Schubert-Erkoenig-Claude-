@@ -78,6 +78,7 @@ function PianoAnalysis({ go }) {
   const [rhBrush, setRhBrush] = useState({ color: '#a78bfa', size: 2, erase: false });
   const [lhBrush, setLhBrush] = useState({ color: '#f87171', size: 2, erase: false });
   const [saved, setSaved] = useState({ rh: false, lh: false });
+  const [savedPreview, setSavedPreview] = useState({ rh: '', lh: '' });
   const [rhPlaying, setRhPlaying] = useState(false);
   const [lhPlaying, setLhPlaying] = useState(false);
   const [rhScene, setRhScene] = useState('');
@@ -164,6 +165,15 @@ function PianoAnalysis({ go }) {
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
     setSaved((prev) => ({ ...prev, [key]: false }));
+    setSavedPreview((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  const saveDrawing = (canvasRef, key) => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const dataUrl = c.toDataURL('image/png');
+    setSaved((prev) => ({ ...prev, [key]: true }));
+    setSavedPreview((prev) => ({ ...prev, [key]: dataUrl }));
   };
   const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
 
@@ -227,7 +237,7 @@ function PianoAnalysis({ go }) {
           <button className={`pal-size ${rhBrush.size === 7 ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, size: 7, erase: false }))}>굵음</button>
           <button className={`pal-tool ${rhBrush.erase ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
           <button className="pal-tool" onClick={() => clearCanvas(rhRef, 'rh')}>전체 지우기</button>
-          <button className="btn-p" onClick={() => setSaved((s) => ({ ...s, rh: true }))}>저장</button>
+          <button className="btn-p" onClick={() => saveDrawing(rhRef, 'rh')}>저장</button>
         </div>
         <div className="canvas-wrap"><canvas ref={rhRef} width="900" height="170" /></div>
         {saved.rh ? <div className="small-note">오른손 가락선이 저장되었습니다.</div> : null}
@@ -301,7 +311,7 @@ function PianoAnalysis({ go }) {
           <button className={`pal-size ${lhBrush.size === 7 ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, size: 7, erase: false }))}>굵음</button>
           <button className={`pal-tool ${lhBrush.erase ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
           <button className="pal-tool" onClick={() => clearCanvas(lhRef, 'lh')}>전체 지우기</button>
-          <button className="btn-p" onClick={() => setSaved((s) => ({ ...s, lh: true }))}>저장</button>
+          <button className="btn-p" onClick={() => saveDrawing(lhRef, 'lh')}>저장</button>
         </div>
         <div className="canvas-wrap"><canvas ref={lhRef} width="900" height="170" /></div>
         {saved.lh ? <div className="small-note">왼손 가락선이 저장되었습니다.</div> : null}
@@ -337,7 +347,13 @@ function PianoAnalysis({ go }) {
             <div className="cv-compare">
               <div className="cv-box">
                 <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel"><canvas width="520" height="190" /></div>
+                <div className="cv-panel">
+                  {savedPreview.rh ? (
+                    <img src={savedPreview.rh} alt="오른손 가락선 저장 이미지" className="cv-drawing-image" />
+                  ) : (
+                    <div className="small-note">아직 저장된 그림이 없어요.</div>
+                  )}
+                </div>
               </div>
               <div className="cv-box">
                 <div className="cv-label">모범 악보</div>
@@ -347,13 +363,19 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">오른손: 빠르고 불규칙하게 오르내리는 셋잇단음표 -&gt; 말발굽 소리를 묘사해요</div>
+            <div className="fb show info">오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표 -&gt; 말발굽 소리를 묘사해요.</div>
 
             <div className="sec">왼손 가락선 비교</div>
             <div className="cv-compare">
               <div className="cv-box">
                 <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel"><canvas width="520" height="190" /></div>
+                <div className="cv-panel">
+                  {savedPreview.lh ? (
+                    <img src={savedPreview.lh} alt="왼손 가락선 저장 이미지" className="cv-drawing-image" />
+                  ) : (
+                    <div className="small-note">아직 저장된 그림이 없어요.</div>
+                  )}
+                </div>
               </div>
               <div className="cv-box">
                 <div className="cv-label">모범 악보</div>
@@ -363,7 +385,7 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">왼손: 느리고 강하게 반복되는 베이스 -&gt; 심장이 두근거리는 긴박감을 표현해요</div>
+            <div className="fb show info">왼손: 강하게 오르내리는 베이스 -&gt; 심장이 두근거리는 긴박감을 표현해요.</div>
             <CompareAiFeedbackBlock requestFn={requestPianoFeedback} />
           </div>
         </div>
