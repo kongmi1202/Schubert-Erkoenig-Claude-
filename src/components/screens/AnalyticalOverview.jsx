@@ -3,8 +3,10 @@ import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
-const correctCharacters = ['해설자', '아버지', '아들', '마왕'];
-const correctStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+const correctCharactersErlkonig = ['해설자', '아버지', '아들', '마왕'];
+const correctStoryErlkonig = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+const correctCharactersHallelujah = ['후렴(Hallelujah) 반복', '합창의 층위', '장조 화성', '점층적 전개'];
+const correctStoryHallelujah = '할렐루야는 후렴이 반복되며 합창 성부가 점층적으로 쌓이고, 장조 화성과 오케스트라가 장엄한 예배적 분위기를 만든다.';
 const colorMap = {
   '짙은 보라': '#4c1d95',
   '어두운 붉은색': '#991b1b',
@@ -22,8 +24,15 @@ const storyPromptHints = [
   '해설자가 이 장면을 뉴스처럼 전달한다면 어떤 표현을 쓸까?',
   '결말을 모르는 친구에게 스포일러 없이 분위기만 전달한다면 어떻게 쓸래?'
 ];
+const hallelujahPromptHints = [
+  '후렴이 어떻게 반복되는지(짧게-길게, 단순-풍성) 순서대로 적어볼래?',
+  '혼자 부르는 느낌에서 합창으로 커지는 순간을 한 문장으로 써봐.',
+  '같은 "할렐루야"가 왜 다르게 들리는지 화성/성부 관점으로 적어봐.'
+];
 
 function AnalyticalOverview({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const isErlkonig = selectedSong !== 'hallelujah';
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
@@ -39,6 +48,9 @@ function AnalyticalOverview({ go }) {
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
   const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
+  const correctCharacters = isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah;
+  const correctStory = isErlkonig ? correctStoryErlkonig : correctStoryHallelujah;
+  const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
 
   // 사용자 입력을 전부 채웠을 때만 "정답 확인하기" 아이콘이 표시되도록 합니다.
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
@@ -66,7 +78,7 @@ function AnalyticalOverview({ go }) {
     if (!isAllFilled) setAnswerCheckOpen(false);
   }, [isAllFilled]);
   const showRandomStoryHint = () => {
-    const next = storyPromptHints[Math.floor(Math.random() * storyPromptHints.length)];
+    const next = promptHints[Math.floor(Math.random() * promptHints.length)];
     setStoryHint(next);
     if (!aiOpen.story) toggleAi('story');
   };
@@ -75,7 +87,7 @@ function AnalyticalOverview({ go }) {
     <div className="screen active">
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-A · 분석적 감상</div>
-        <div className="s-title">전체적인 개요 파악</div>
+        <div className="s-title">{isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악'}</div>
       </div>
       <div className="body">
         <div className="sec">1단계 감각적 감상 결과</div>
@@ -140,12 +152,12 @@ function AnalyticalOverview({ go }) {
           </div>
         </div>
 
-        <div className="sec">마왕 해설 영상</div>
+        <div className="sec">{isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'}</div>
         <div className="video-wrap">
-          <iframe src="https://www.youtube.com/embed/tgfmLln8zjg" title="마왕 해설 영상" allowFullScreen />
+          <iframe src={isErlkonig ? 'https://www.youtube.com/embed/tgfmLln8zjg' : 'https://www.youtube.com/embed/usfiAsWR4qU'} title={isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'} allowFullScreen />
         </div>
 
-        <div className="sec">Q1. 등장인물 4명을 적어보세요</div>
+        <div className="sec">{isErlkonig ? 'Q1. 등장인물 4명을 적어보세요' : 'Q1. 핵심 음악 요소 4가지를 적어보세요'}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
           {characters.map((character, idx) => (
             <input
@@ -159,12 +171,12 @@ function AnalyticalOverview({ go }) {
           ))}
         </div>
 
-        <div className="sec">Q2. 줄거리</div>
+        <div className="sec">{isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기'}</div>
         <textarea
           className="txt"
           value={story}
           onChange={(e) => setAnalyticalStory(e.target.value)}
-          placeholder="마왕의 줄거리를 써보세요..."
+          placeholder={isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...'}
         />
         <button className="ai-btn" onClick={showRandomStoryHint}>✨ 생각 질문 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
@@ -184,7 +196,7 @@ function AnalyticalOverview({ go }) {
 
         <div className={`answer-compare-slide ${answerCheckOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
-            <div className="sec">Q1. 등장인물 비교</div>
+            <div className="sec">{isErlkonig ? 'Q1. 등장인물 비교' : 'Q1. 핵심 요소 비교'}</div>
             <div className="review-card">
               <div className="review-grid">
                 <div>
@@ -198,7 +210,7 @@ function AnalyticalOverview({ go }) {
               </div>
             </div>
 
-            <div className="sec">Q2. 줄거리 비교</div>
+            <div className="sec">{isErlkonig ? 'Q2. 줄거리 비교' : 'Q2. 전개/분위기 비교'}</div>
             <div className="review-card">
               <div className="review-section-title">내 답변</div>
               <div className="review-item" style={{ marginBottom: 14 }}>{story.trim() || '입력 없음'}</div>

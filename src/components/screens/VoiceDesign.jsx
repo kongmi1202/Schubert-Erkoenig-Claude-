@@ -140,6 +140,8 @@ function SegmentYoutubePlayer({ videoId, start, end, title, replaySignal }) {
 }
 
 function VoiceDesign({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const isErlkonig = selectedSong !== 'hallelujah';
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -211,9 +213,9 @@ function VoiceDesign({ go }) {
   }, [canShowAnswerCheck]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">인물의 목소리를 설계해보세요</div><div className="s-desc">등장인물을 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.<br /><strong>서로 다른 두 인물</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)<br />음악 요소: <strong>음색</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물을 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.' : '성부를 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.'}<br /><strong>서로 다른 두 대상</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
-        <div className="sec">등장인물 선택 · 설계할 인물로 전환</div>
+        <div className="sec">{isErlkonig ? '등장인물 선택 · 설계할 인물로 전환' : '성부 선택 · 설계할 대상 전환'}</div>
         <div className="char-tabs">
           {chars.map((c) => (
             <button
@@ -332,7 +334,7 @@ function VoiceDesign({ go }) {
                   </tbody>
                 </table>
                 <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
-                <div className="fb show info">💬 위 정답은 시와 음악 해설에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
+            <div className="fb show info">💬 위 정답은 {isErlkonig ? '시와 음악 해설' : '곡의 성부/화성 해설'}에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
                 <CompareAiFeedbackBlock requestFn={requestVoiceFeedback} />
               </div>
             </div>
@@ -341,9 +343,9 @@ function VoiceDesign({ go }) {
 
         {canCheckAnswer ? (
           <ArtSongTakeaway
-            eyebrow="예술가곡의 첫 번째 특징"
-            title="시와 음악이 하나가 된다"
-            description="괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·리듬꼴로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요."
+            eyebrow={isErlkonig ? '예술가곡의 첫 번째 특징' : '할렐루야 감상의 핵심'}
+            title={isErlkonig ? '시와 음악이 하나가 된다' : '성부의 겹침이 감정을 키운다'}
+            description={isErlkonig ? '괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·리듬꼴로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요.' : '할렐루야는 성부가 겹칠수록 울림이 커지고, 같은 후렴도 다르게 들려요. 성부별 음색과 움직임을 비교해 들으면 곡의 감정 구조가 선명해집니다.'}
           />
         ) : null}
 

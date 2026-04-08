@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { screenOrder, stepNames } from './store/useAppStore';
 import Intro from './components/screens/Intro';
 import StudentInfo from './components/screens/StudentInfo';
+import SongSelect from './components/screens/SongSelect';
 import VideoPage from './components/screens/VideoPage';
 import SensoryPage from './components/screens/SensoryPage';
 import AnalyticalOverview from './components/screens/AnalyticalOverview';
@@ -15,6 +16,7 @@ import BottomWidgetBar from './components/BottomWidgetBar';
 const screens = {
   intro: Intro,
   studentInfo: StudentInfo,
+  songSelect: SongSelect,
   videoPage: VideoPage,
   sensoryPage: SensoryPage,
   analyticalOverview: AnalyticalOverview,

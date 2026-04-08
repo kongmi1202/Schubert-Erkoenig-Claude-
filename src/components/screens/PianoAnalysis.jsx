@@ -71,6 +71,8 @@ function setupDraw(canvas, getBrush) {
 }
 
 function PianoAnalysis({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const isErlkonig = selectedSong !== 'hallelujah';
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const rhRef = useRef(null);
   const lhRef = useRef(null);
@@ -180,7 +182,7 @@ function PianoAnalysis({ go }) {
   const requestPianoFeedback = useCallback(() => generatePianoCompareFeedback(), []);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">피아노 전주 분석하기</div><div className="s-desc">오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">{isErlkonig ? '피아노 전주 분석하기' : '할렐루야 반주 흐름 분석하기'}</div><div className="s-desc">{isErlkonig ? '오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.' : '고음/저음 반주의 흐름을 각각 듣고 가락선으로 표현해보세요.'}<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
       <div className="body voice-body">
         <div className="sec">오른손 반주</div>
         <audio
@@ -363,7 +365,7 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표 -&gt; 말발굽 소리를 묘사해요.</div>
+            <div className="fb show info">{isErlkonig ? '오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표 -> 말발굽 소리를 묘사해요.' : '고음 반주: 밝은 화성과 반복 동기가 위쪽에서 반짝이며 울려요.'}</div>
 
             <div className="sec">왼손 가락선 비교</div>
             <div className="cv-compare">
@@ -385,16 +387,16 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">왼손: 강하게 오르내리는 베이스 -&gt; 심장이 두근거리는 긴박감을 표현해요.</div>
+            <div className="fb show info">{isErlkonig ? '왼손: 강하게 오르내리는 베이스 -> 심장이 두근거리는 긴박감을 표현해요.' : '저음 반주: 반복 베이스와 화성 진행이 바닥을 단단하게 받쳐 장엄함을 만들어요.'}</div>
             <CompareAiFeedbackBlock requestFn={requestPianoFeedback} />
           </div>
         </div>
 
         {canCheckAnswer ? (
           <ArtSongTakeaway
-            eyebrow="예술가곡의 두 번째 특징"
-            title="피아노는 성악과 동등한 역할을 한다"
-            description="피아노 반주는 단순히 성악을 받쳐주는 게 아니에요. 말이 달리는 장면, 심장이 두근거리는 긴박함을 직접 묘사하며 시의 내용을 음악으로 표현합니다."
+            eyebrow={isErlkonig ? '예술가곡의 두 번째 특징' : '할렐루야 감상의 핵심'}
+            title={isErlkonig ? '피아노는 성악과 동등한 역할을 한다' : '반주와 합창이 함께 장엄함을 만든다'}
+            description={isErlkonig ? '피아노 반주는 단순히 성악을 받쳐주는 게 아니에요. 말이 달리는 장면, 심장이 두근거리는 긴박함을 직접 묘사하며 시의 내용을 음악으로 표현합니다.' : '할렐루야의 반주는 합창의 반복 후렴을 떠받치고 화성을 확장해 울림을 키웁니다. 고음/저음의 역할을 분리해 들으면 곡의 구조가 더 또렷하게 보여요.'}
           />
         ) : null}
 

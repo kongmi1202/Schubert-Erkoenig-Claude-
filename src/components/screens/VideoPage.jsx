@@ -2,7 +2,9 @@ import { useAppStore } from '../../store/useAppStore';
 
 function VideoPage({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const lyrics = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const isErlkonig = selectedSong !== 'hallelujah';
+  const lyricsErlkonig = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
 [👨아버지] 아들아, 무엇 때문에 떠느냐?
 [👦아들] 아빠, 마왕이 안 보여요? 검은 옷에다 관을 썼는데.
 [👨아버지] 아들아, 그것은 안개다.
@@ -15,14 +17,21 @@ function VideoPage({ go }) {
 [👑마왕] 니가 좋아, 이 끌리는 예쁜 모습. 니가 싫어해도 데려가야지.
 [👦아들] 아버지, 아버지, 나를 덮쳐요. 마왕이 나를 끌고 가요.
 [🎙️해설자] 아버지 급히 마을 달려가 그의 품 안에 신음하는 아기 / 그가 집에 다 왔을 때, 품 속의 아기는 죽었네.`;
+  const lyricsHallelujah = `Hallelujah, hallelujah.
+할렐루야 후렴이 반복되며 점층적으로 쌓여요.
+성부가 겹치고 화성이 전개되면서 장엄한 분위기가 만들어집니다.
+합창과 오케스트라가 함께 울리며 웅장한 종결로 향합니다.`;
+  const pageTitle = isErlkonig ? "슈베르트의 '마왕'을 감상해보세요" : "헨델의 '할렐루야'를 감상해보세요";
+  const iframeSrc = isErlkonig ? 'https://www.youtube.com/embed/BXeE7rIAiTM' : 'https://www.youtube.com/embed/usfiAsWR4qU';
+  const lyrics = isErlkonig ? lyricsErlkonig : lyricsHallelujah;
 
   return (
     <div className="screen active">
-      <div className="stage-header"><div className="s-eyebrow">감상하기</div><div className="s-title">슈베르트의 '마왕'을 감상해보세요</div><div className="s-desc">영상을 끝까지 감상한 후 다음 단계로 이동하세요.</div></div>
+      <div className="stage-header"><div className="s-eyebrow">감상하기</div><div className="s-title">{pageTitle}</div><div className="s-desc">영상을 끝까지 감상한 후 다음 단계로 이동하세요.</div></div>
       <div className="body video-page-body">
         <div className="video-lyrics-layout">
           <div className="video-wrap" style={{ marginBottom: 0 }}>
-            <iframe src="https://www.youtube.com/embed/BXeE7rIAiTM" allowFullScreen />
+            <iframe src={iframeSrc} allowFullScreen />
           </div>
           <div className="lyrics-panel">
             <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>가사</div>
@@ -32,7 +41,7 @@ function VideoPage({ go }) {
           </div>
         </div>
         <div className="fb show info">🎵 영상을 감상하며 음악이 주는 느낌을 자유롭게 느껴보세요.</div>
-        <div className="btn-row"><button className="btn-s" onClick={() => go('studentInfo')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('video', true); go('sensoryPage'); }}>감상 완료, 다음 →</button></div>
+        <div className="btn-row"><button className="btn-s" onClick={() => go('songSelect')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('video', true); go('sensoryPage'); }}>감상 완료, 다음 →</button></div>
       </div>
     </div>
   );

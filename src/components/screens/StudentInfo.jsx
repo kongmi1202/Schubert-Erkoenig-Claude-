@@ -10,7 +10,7 @@ function StudentInfo({ go }) {
       <div className="body">
         <div className="field"><label>학번</label><input value={student.id} onChange={(e) => setStudentField('id', e.target.value)} placeholder="예) 20240101" /></div>
         <div className="field"><label>이름</label><input value={student.name} onChange={(e) => setStudentField('name', e.target.value)} placeholder="홍길동" /></div>
-        <div className="btn-row"><button className="btn-p" onClick={() => go('videoPage')}>다음 →</button></div>
+        <div className="btn-row"><button className="btn-p" onClick={() => go('songSelect')}>다음 →</button></div>
       </div>
     </div>
   );

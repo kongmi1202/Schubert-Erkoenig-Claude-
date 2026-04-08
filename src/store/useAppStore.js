@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const screenOrder = ['intro','studentInfo','videoPage','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
+export const screenOrder = ['intro','studentInfo','songSelect','videoPage','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
 
 export const stepNames = {
   sensoryPage: '1단계 감각적 감상',
@@ -14,6 +14,7 @@ export const stepNames = {
 
 export const useAppStore = create((set) => ({
   student: { id: '', name: '', className: '' },
+  selectedSong: 'erlkonig',
   selectedKeywords: [],
   selectedColors: [],
   sensoryDesc: '',
@@ -48,6 +49,7 @@ export const useAppStore = create((set) => ({
   selectedCharacter: '해설자',
   flippedCards: [],
   setStudentField: (field, value) => set((s) => ({ student: { ...s.student, [field]: value } })),
+  setSelectedSong: (songId) => set({ selectedSong: songId }),
   toggleKeyword: (kw) => set((s) => ({
     selectedKeywords: s.selectedKeywords.includes(kw)
       ? s.selectedKeywords.filter((k) => k !== kw)
