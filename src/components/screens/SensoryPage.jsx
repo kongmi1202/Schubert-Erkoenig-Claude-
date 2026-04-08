@@ -272,7 +272,7 @@ function SensoryPage({ go }) {
         <div className="cc-grid">
           {ccItems.map((item) => (
             <button key={item.name} className={`cc-btn ${isActivityOn(item.name) ? 'on' : ''}`} onClick={() => toggleActivity(item.name)}>
-              <div className="cc-icon">{item.icon}</div>
+              <div className={`cc-icon ${item.name === '수학' ? 'cc-icon-math' : ''}`}>{item.icon}</div>
               <div className="cc-name">{item.name}</div>
               <div className="cc-desc">{item.desc}</div>
             </button>

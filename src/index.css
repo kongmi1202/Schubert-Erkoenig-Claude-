@@ -79,6 +79,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .cc-btn:hover{border-color:rgba(139,92,246,.45)}
 .cc-btn.on{border-color:var(--purple);background:var(--purple-pale)}
 .cc-icon{font-size:34px;margin-bottom:10px}
+.cc-icon-math{color:var(--gold-light);text-shadow:0 0 10px rgba(184,150,62,.35)}
 .cc-name{font-size:18px;font-weight:600;margin-bottom:6px;color:#f4ecff}
 .cc-desc{font-size:14px;color:var(--text-dim)}
 .act-panel{border:1px solid var(--border);background:var(--bg3);padding:16px;margin-bottom:14px}
