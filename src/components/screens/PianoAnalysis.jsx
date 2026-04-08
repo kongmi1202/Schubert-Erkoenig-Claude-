@@ -190,6 +190,29 @@ function PianoAnalysis({ go }) {
             <div className="aud-sub">빠른 셋잇단음표 패턴</div>
           </div>
         </div>
+        <div className="piano-guide">
+          <div className="piano-guide-head">
+            <span>💡 가락선 악보란?</span>
+            <span aria-hidden="true">▲</span>
+          </div>
+          <div className="piano-guide-body">
+            <p>음악의 높낮이와 흐름을 <strong>선으로</strong> 표현하는 방법이에요.</p>
+            <p>악보를 몰라도 괜찮아요! 음악을 들으며 느껴지는 대로 그려보세요.</p>
+            <div className="piano-guide-grid">
+              <div className="piano-guide-chip">🔼 음이 높아지면 → 선을 위로</div>
+              <div className="piano-guide-chip">🔽 음이 낮아지면 → 선을 아래로</div>
+              <div className="piano-guide-chip">⚡ 음이 빠르면 → 짧게 자주 그려요</div>
+              <div className="piano-guide-chip">〰️ 음이 느리면 → 길게 천천히 그려요</div>
+            </div>
+            <div className="piano-guide-example">
+              <div className="piano-guide-example-title">예시</div>
+              <svg viewBox="0 0 760 90" className="piano-guide-svg" role="img" aria-label="빠르고 촘촘하게 오르내리는 선 예시">
+                <polyline points="10,62 55,54 95,40 135,48 180,32 225,45 275,30 325,40 375,25 425,35 475,28 525,40 575,32 625,45 675,35 730,48" />
+              </svg>
+              <div className="piano-guide-caption">빠르고 촘촘하게 오르내리는 선을 떠올려요.</div>
+            </div>
+          </div>
+        </div>
         <div className="small-note">오른손 반주를 들으며 가락선을 그려보세요</div>
         <div className="palette-bar">
           {['#a78bfa', '#f87171', '#34d399', '#fbbf24', '#60a5fa'].map((c) => (
@@ -237,6 +260,29 @@ function PianoAnalysis({ go }) {
           <div>
             <div className="aud-title-sm">왼손 반주만 듣기</div>
             <div className="aud-sub">느리고 강한 베이스</div>
+          </div>
+        </div>
+        <div className="piano-guide">
+          <div className="piano-guide-head">
+            <span>💡 가락선 악보 그리는 법</span>
+            <span aria-hidden="true">▲</span>
+          </div>
+          <div className="piano-guide-body">
+            <p>오른손과 같은 방법으로 왼손 반주를 선으로 표현해보세요.</p>
+            <p>왼손 반주는 오른손과 어떻게 다른지 느껴보세요!</p>
+            <div className="piano-guide-grid">
+              <div className="piano-guide-chip">🔼 음이 높아지면 → 선을 위로</div>
+              <div className="piano-guide-chip">🔽 음이 낮아지면 → 선을 아래로</div>
+              <div className="piano-guide-chip">⚡ 음이 빠르면 → 짧게 자주 그려요</div>
+              <div className="piano-guide-chip">〰️ 음이 느리면 → 길게 천천히 그려요</div>
+            </div>
+            <div className="piano-guide-example">
+              <div className="piano-guide-example-title">예시</div>
+              <svg viewBox="0 0 760 90" className="piano-guide-svg piano-guide-svg-lh" role="img" aria-label="강하게 도약했다가 내려오는 선 예시">
+                <polyline points="10,52 85,52 85,80 160,80 160,52 235,52 235,80 310,80 310,52 385,52 385,80 460,80 460,52 535,52 535,80 610,80 610,52 685,52 685,80 760,80" />
+              </svg>
+              <div className="piano-guide-caption">강하게 도약했다가 내려오는 선을 떠올려요.</div>
+            </div>
           </div>
         </div>
         <div className="small-note">왼손 반주를 들으며 가락선을 그려보세요</div>
