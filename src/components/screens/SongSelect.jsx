@@ -2,14 +2,14 @@ import { useAppStore } from '../../store/useAppStore';
 
 const SONGS = [
   {
-    id: 'erlkonig',
+    id: 'mawang',
     icon: '🎭',
     title: '마왕',
     composer: 'SCHUBERT · 1815',
     tags: ['낭만주의', '예술가곡', '4명의 등장인물']
   },
   {
-    id: 'hallelujah',
+    id: 'handel',
     icon: '🎵',
     title: '할렐루야',
     composer: 'HANDEL · 1741',

@@ -9,9 +9,14 @@ import AnalyticalOverview from './components/screens/AnalyticalOverview';
 import VoiceDesign from './components/screens/VoiceDesign';
 import PianoAnalysis from './components/screens/PianoAnalysis';
 import HistoryCards from './components/screens/HistoryCards';
+import AnalyticalOverviewHandel from './components/screens/AnalyticalOverviewHandel';
+import TonePaintingHandel from './components/screens/TonePaintingHandel';
+import MelodyCanvasHandel from './components/screens/MelodyCanvasHandel';
+import HistoryCardsHandel from './components/screens/HistoryCardsHandel';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
+import { useAppStore } from './store/useAppStore';
 
 const screens = {
   intro: Intro,
@@ -29,6 +34,7 @@ const screens = {
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('intro');
+  const selectedSong = useAppStore((s) => s.selectedSong);
   const [raindrops, setRaindrops] = useState([]);
 
   useEffect(() => {
@@ -50,7 +56,15 @@ function App() {
 
   const idx = useMemo(() => screenOrder.indexOf(currentScreen), [currentScreen]);
   const progress = (idx / (screenOrder.length - 1)) * 100;
-  const Current = screens[currentScreen];
+  const Current = useMemo(() => {
+    if (selectedSong === 'handel') {
+      if (currentScreen === 'analyticalOverview') return AnalyticalOverviewHandel;
+      if (currentScreen === 'voiceDesign') return TonePaintingHandel;
+      if (currentScreen === 'pianoAnalysis') return MelodyCanvasHandel;
+      if (currentScreen === 'historyCards') return HistoryCardsHandel;
+    }
+    return screens[currentScreen];
+  }, [currentScreen, selectedSong]);
 
   return (
     <>

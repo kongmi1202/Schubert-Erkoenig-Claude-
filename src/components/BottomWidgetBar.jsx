@@ -17,7 +17,18 @@ const bottomItems = [
 ];
 
 function BottomWidgetBar({ currentScreen, go }) {
-  const stage2Screens = useMemo(() => stage2SubSteps.map((s) => s.screen), []);
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const stage2Steps = useMemo(() => (
+    selectedSong === 'handel'
+      ? [
+          { screen: 'analyticalOverview', label: '개요 파악' },
+          { screen: 'voiceDesign', label: '음화법' },
+          { screen: 'pianoAnalysis', label: '가락선' },
+          { screen: 'historyCards', label: '역사 맥락' }
+        ]
+      : stage2SubSteps
+  ), [selectedSong]);
+  const stage2Screens = useMemo(() => stage2Steps.map((s) => s.screen), [stage2Steps]);
   const stageCompletion = useAppStore((s) => s.stageCompletion);
 
   const shouldShow = useMemo(
@@ -56,7 +67,7 @@ function BottomWidgetBar({ currentScreen, go }) {
     <>
       {isInStage2 ? (
         <div id="stage2-subbar" aria-label="2단계 서브 위젯바">
-          {stage2SubSteps.map((s) => (
+          {stage2Steps.map((s) => (
             <button
               key={s.screen}
               type="button"

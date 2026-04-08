@@ -14,7 +14,7 @@ export const stepNames = {
 
 export const useAppStore = create((set) => ({
   student: { id: '', name: '', className: '' },
-  selectedSong: 'erlkonig',
+  selectedSong: null,
   selectedKeywords: [],
   selectedColors: [],
   sensoryDesc: '',
@@ -35,6 +35,8 @@ export const useAppStore = create((set) => ({
   q2Type: '',
   analyticalCharacters: ['', '', '', ''],
   analyticalStory: '',
+  handelLyricMeaning: '',
+  handelOperaDiff: '',
   sensoryArtifacts: {
     selectedActivities: [],
     pePhoto: '',
@@ -75,6 +77,8 @@ export const useAppStore = create((set) => ({
     analyticalCharacters: s.analyticalCharacters.map((item, i) => (i === idx ? value : item))
   })),
   setAnalyticalStory: (value) => set({ analyticalStory: value }),
+  setHandelLyricMeaning: (value) => set({ handelLyricMeaning: value }),
+  setHandelOperaDiff: (value) => set({ handelOperaDiff: value }),
   setSensoryArtifacts: (partial) => set((s) => ({ sensoryArtifacts: { ...s.sensoryArtifacts, ...partial } })),
   setSelectedCharacter: (v) => set({ selectedCharacter: v }),
   flipHistoryCard: (id) => set((s) => ({
