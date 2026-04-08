@@ -30,8 +30,8 @@ function Intro({ go }) {
       </div>
       <div className="intro-badge">MUSIK · APPRECIATION · LEARNING</div>
       <div className="intro-de">Der Erlkönig</div>
-      <div className="intro-title">마왕</div>
-      <div className="intro-composer">F. P. SCHUBERT · 1815 · 괴테 시</div>
+      <div className="intro-title">음악 감상 학습</div>
+      <div className="intro-composer">Music Appreciation Learning System</div>
       <div className="intro-stages">
         <div className="intro-stage">① 감각적 감상</div><div className="intro-stage">② 분석적 감상</div><div className="intro-stage">③ 심미적 감상</div>
       </div>
