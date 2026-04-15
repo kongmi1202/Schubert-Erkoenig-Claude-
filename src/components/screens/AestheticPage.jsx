@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/useAppStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -51,6 +51,17 @@ function AestheticPage({ go }) {
     setQ2Hint(next);
     if (!aiOpen.q2) toggleAi('q2');
   };
+
+  useEffect(() => {
+    const updateById = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    const keywordText = selectedKeywords.length ? selectedKeywords.join(', ') : '없음';
+    const descText = sensoryDesc || '없음';
+    updateById('rv-kw-hy', keywordText);
+    updateById('rv-desc-hy', descText);
+  }, [selectedKeywords, sensoryDesc]);
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3 · 심미적 감상</div><div className="s-title">나의 음악적 가치 판단</div><div className="s-desc">감각적·분석적 감상을 종합하여 이 음악을 평가해보세요.</div></div>
@@ -150,7 +161,7 @@ function AestheticPage({ go }) {
         <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
         <div className="sec">Q2. 분석 요소와 연결</div>
-        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option></select>
+        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option><option value="현악음색">현악 4중주 음색 (종달새)</option><option value="주제비교">두 주제 비교 (종달새)</option></select>
         {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
         <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 생각 질문 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
