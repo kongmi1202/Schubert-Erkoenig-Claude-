@@ -499,8 +499,11 @@ canvas{display:block;width:100%;touch-action:none}
 .instr-btn.ok{border-color:var(--green);background:var(--green-pale);}
 .instr-btn.ng{border-color:var(--crimson);background:var(--crimson-pale);}
 .instr-icon{font-size:28px;margin-bottom:6px;}
-.instr-name{font-size:12px;font-weight:400;}
-.instr-desc{font-size:10px;color:var(--text-dim);font-weight:300;margin-top:3px;}
+.instr-icon.size-v1,.instr-icon.size-v2{font-size:26px;}
+.instr-icon.size-va{font-size:32px;}
+.instr-icon.size-vc{font-size:38px;}
+.instr-name{font-size:12px;font-weight:500;color:#f2ecff;}
+.instr-desc{font-size:10px;color:#c8bde0;font-weight:400;margin-top:3px;}
 
 @media (max-width: 900px){.video-lyrics-layout{grid-template-columns:1fr}.lyrics-panel{max-height:none}}
 @media (max-width: 700px){.cv-compare{grid-template-columns:1fr}.song-select-grid{grid-template-columns:1fr 1fr}}

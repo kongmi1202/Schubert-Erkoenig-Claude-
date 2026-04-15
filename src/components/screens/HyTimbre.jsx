@@ -8,10 +8,10 @@ const AUDIO_SRC = {
 };
 
 const INSTRUMENTS = [
-  { id: 'violin1', icon: '🎻', name: '제1바이올린', desc: '가장 높은 음역' },
-  { id: 'violin2', icon: '🎻', name: '제2바이올린', desc: '중간 높은 음역' },
-  { id: 'viola', icon: '🎼', name: '비올라', desc: '중간 음역' },
-  { id: 'cello', icon: '🎸', name: '첼로', desc: '가장 낮은 음역' }
+  { id: 'violin1', icon: '🎻', name: '제1바이올린', desc: '가장 높은 음역', sizeClass: 'size-v1' },
+  { id: 'violin2', icon: '🎻', name: '제2바이올린', desc: '중간 높은 음역', sizeClass: 'size-v2' },
+  { id: 'viola', icon: '🎻', name: '비올라', desc: '중간 음역', sizeClass: 'size-va' },
+  { id: 'cello', icon: '🎻', name: '첼로', desc: '가장 낮은 음역', sizeClass: 'size-vc' }
 ];
 
 const SEGMENTS = [
@@ -153,7 +153,7 @@ function HyTimbre({ go }) {
                         className={`instr-btn ${stateClass}`}
                         onClick={() => selInstr(instrument.name, segment.gridId)}
                       >
-                        <div className="instr-icon">{instrument.icon}</div>
+                        <div className={`instr-icon ${instrument.sizeClass}`}>{instrument.icon}</div>
                         <div className="instr-name">{instrument.name}</div>
                         <div className="instr-desc">{instrument.desc}</div>
                       </button>
