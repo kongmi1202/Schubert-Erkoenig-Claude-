@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 
 const AUDIO_SRC = {
   'hy-th1': '/audio/haydn-theme-1.mp3',
@@ -76,6 +77,7 @@ function HyTheme({ go }) {
   const [playing, setPlaying] = useState('');
   const [myPreview, setMyPreview] = useState({ t1: '', t2: '' });
   const [cvOpen, setCvOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState({ t1: true, t2: false });
 
   const [feelT1, setFeelT1] = useState('');
   const [feelT2, setFeelT2] = useState('');
@@ -231,69 +233,91 @@ function HyTheme({ go }) {
       <div className="body voice-body">
         <div className="sec">파트 1 — 두 주제 듣고 가락선 그리기</div>
 
-        <div className="audio-bar voice-audio-bar" style={{ borderLeft: '3px solid #4a7fc1' }}>
-          <audio id="hy-th1" ref={t1AudioRef} src={AUDIO_SRC['hy-th1']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th1' ? '' : p))} />
+        <div className="sec">제1주제</div>
+        <audio id="hy-th1" ref={t1AudioRef} src={AUDIO_SRC['hy-th1']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th1' ? '' : p))} />
+        <div className="audio-bar voice-audio-bar">
           <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#4a7fc1,#6b9fd4)' }} onClick={() => toggleAudio('hy-th1')}>
             {playing === 'hy-th1' ? '❚❚' : '▶'}
           </button>
           <div>
-            <div className="aud-title-sm">제1주제</div>
-            <div className="aud-sub" style={{ color: '#6b9fd4' }}>밝고 도약적인 선율</div>
+            <div className="aud-title-sm">제1주제만 듣기</div>
+            <div className="aud-sub">밝고 도약적인 선율</div>
           </div>
         </div>
+        <div className="piano-guide">
+          <button type="button" className="piano-guide-head" onClick={() => setGuideOpen((v) => ({ ...v, t1: !v.t1 }))} aria-expanded={guideOpen.t1}>
+            <span>💡 가락선 악보 그리는 법</span>
+            <span aria-hidden="true">{guideOpen.t1 ? '▲' : '▼'}</span>
+          </button>
+          {guideOpen.t1 ? (
+            <div className="piano-guide-body">
+              <p>음악의 높낮이와 흐름을 <strong>선으로</strong> 표현하는 방법이에요.</p>
+              <div className="piano-guide-grid">
+                <div className="piano-guide-chip">🔼 음이 높아지면 위로</div>
+                <div className="piano-guide-chip">🔽 음이 낮아지면 아래로</div>
+                <div className="piano-guide-chip">⚡ 빠르면 짧게</div>
+                <div className="piano-guide-chip">〰️ 느리면 길게</div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="palette-bar" style={{ marginBottom: 10 }}>
+          {['#4a7fc1', '#6b9fd4', '#34d399'].map((c, i) => (
+            <button
+              key={c}
+              id={`pb-hyt1-${i + 1}`}
+              className={`pal-color-btn ${t1Brush.color === c && !t1Brush.erase ? 'active' : ''}`}
+              style={{ background: c }}
+              onClick={() => setT1Brush((b) => ({ ...b, color: c, erase: false }))}
+            />
+          ))}
+          <button id="hy-t1-er" className={`pal-tool ${t1Brush.erase ? 'active' : ''}`} onClick={() => setT1Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
+          <button className="pal-tool" onClick={() => clearCanvas(t1Ref, 't1')}>전체지우기</button>
+        </div>
+        <div className="canvas-wrap" style={{ marginBottom: 16 }}><canvas id="hy-t1-cv" ref={t1Ref} width="640" height="120" /></div>
 
-        <div className="audio-bar voice-audio-bar" style={{ borderLeft: '3px solid #c4922a' }}>
-          <audio id="hy-th2" ref={t2AudioRef} src={AUDIO_SRC['hy-th2']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th2' ? '' : p))} />
+        <div className="sec">제2주제</div>
+        <audio id="hy-th2" ref={t2AudioRef} src={AUDIO_SRC['hy-th2']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th2' ? '' : p))} />
+        <div className="audio-bar voice-audio-bar">
           <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#c4922a,#d4aa4a)' }} onClick={() => toggleAudio('hy-th2')}>
             {playing === 'hy-th2' ? '❚❚' : '▶'}
           </button>
           <div>
-            <div className="aud-title-sm">제2주제</div>
-            <div className="aud-sub" style={{ color: '#d4aa4a' }}>부드럽고 순차적인 선율</div>
+            <div className="aud-title-sm">제2주제만 듣기</div>
+            <div className="aud-sub">부드럽고 순차적인 선율</div>
           </div>
         </div>
-
-        <div className="small-note" style={{ marginBottom: 10 }}>
-          🔼 음이 높아지면 위로 · 🔽 낮아지면 아래로
-          <br />
-          ⚡ 빠르면 짧게 · 〰️ 느리면 길게
+        <div className="piano-guide">
+          <button type="button" className="piano-guide-head" onClick={() => setGuideOpen((v) => ({ ...v, t2: !v.t2 }))} aria-expanded={guideOpen.t2}>
+            <span>💡 가락선 악보 그리는 법</span>
+            <span aria-hidden="true">{guideOpen.t2 ? '▲' : '▼'}</span>
+          </button>
+          {guideOpen.t2 ? (
+            <div className="piano-guide-body">
+              <p>제1주제와 같은 방식으로 제2주제의 흐름을 선으로 그려보세요.</p>
+              <div className="piano-guide-grid">
+                <div className="piano-guide-chip">🔼 음이 높아지면 위로</div>
+                <div className="piano-guide-chip">🔽 음이 낮아지면 아래로</div>
+                <div className="piano-guide-chip">⚡ 빠르면 짧게</div>
+                <div className="piano-guide-chip">〰️ 느리면 길게</div>
+              </div>
+            </div>
+          ) : null}
         </div>
-
-        <div className="review-card" style={{ marginBottom: 12 }}>
-          <div className="review-section-title" style={{ color: '#6b9fd4' }}>제1주제 가락선</div>
-          <div className="palette-bar" style={{ marginBottom: 10 }}>
-            {['#4a7fc1', '#6b9fd4', '#34d399'].map((c, i) => (
-              <button
-                key={c}
-                id={`pb-hyt1-${i + 1}`}
-                className={`pal-color-btn ${t1Brush.color === c && !t1Brush.erase ? 'active' : ''}`}
-                style={{ background: c }}
-                onClick={() => setT1Brush((b) => ({ ...b, color: c, erase: false }))}
-              />
-            ))}
-            <button id="hy-t1-er" className={`pal-tool ${t1Brush.erase ? 'active' : ''}`} onClick={() => setT1Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-            <button className="pal-tool" onClick={() => clearCanvas(t1Ref, 't1')}>전체지우기</button>
-          </div>
-          <div className="canvas-wrap"><canvas id="hy-t1-cv" ref={t1Ref} width="640" height="120" /></div>
+        <div className="palette-bar" style={{ marginBottom: 10 }}>
+          {['#c4922a', '#d4aa4a', '#a78bfa'].map((c, i) => (
+            <button
+              key={c}
+              id={`pb-hyt2-${i + 1}`}
+              className={`pal-color-btn ${t2Brush.color === c && !t2Brush.erase ? 'active' : ''}`}
+              style={{ background: c }}
+              onClick={() => setT2Brush((b) => ({ ...b, color: c, erase: false }))}
+            />
+          ))}
+          <button id="hy-t2-er" className={`pal-tool ${t2Brush.erase ? 'active' : ''}`} onClick={() => setT2Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
+          <button className="pal-tool" onClick={() => clearCanvas(t2Ref, 't2')}>전체지우기</button>
         </div>
-
-        <div className="review-card" style={{ marginBottom: 12 }}>
-          <div className="review-section-title" style={{ color: '#d4aa4a' }}>제2주제 가락선</div>
-          <div className="palette-bar" style={{ marginBottom: 10 }}>
-            {['#c4922a', '#d4aa4a', '#a78bfa'].map((c, i) => (
-              <button
-                key={c}
-                id={`pb-hyt2-${i + 1}`}
-                className={`pal-color-btn ${t2Brush.color === c && !t2Brush.erase ? 'active' : ''}`}
-                style={{ background: c }}
-                onClick={() => setT2Brush((b) => ({ ...b, color: c, erase: false }))}
-              />
-            ))}
-            <button id="hy-t2-er" className={`pal-tool ${t2Brush.erase ? 'active' : ''}`} onClick={() => setT2Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-            <button className="pal-tool" onClick={() => clearCanvas(t2Ref, 't2')}>전체지우기</button>
-          </div>
-          <div className="canvas-wrap"><canvas id="hy-t2-cv" ref={t2Ref} width="640" height="120" /></div>
-        </div>
+        <div className="canvas-wrap" style={{ marginBottom: 12 }}><canvas id="hy-t2-cv" ref={t2Ref} width="640" height="120" /></div>
 
         <button
           id="hy-ans-cv-btn"
@@ -391,18 +415,18 @@ function HyTheme({ go }) {
 
         <div className="sec">파트 3 — 건반 그림 + 도 수 맞추기</div>
         <div className="keyboard-wrap">
-          <div className="keyboard-label">KEYBOARD MAP</div>
+          <div className="keyboard-label">피아노 건반으로 보는 두 주제의 조성</div>
           <div className="keyboard">
             {[
               { note: 'C', black: true },
-              { note: 'D', black: true, mark: 'm2', label: 'D 제2', bClass: 'b2' },
+              { note: 'D', black: true },
               { note: 'E' },
               { note: 'F', black: true },
               { note: 'G', black: true, mark: 'm1', label: 'G 제1', bClass: 'b1' },
               { note: 'A', black: true },
               { note: 'B' },
-              { note: 'C' },
-              { note: 'D' }
+              { note: 'C', black: true },
+              { note: 'D', black: true, mark: 'm2', label: 'D 제2', bClass: 'b2' }
             ].map((k, idx) => (
               <div key={`${k.note}-${idx}`} className={`key-w ${k.mark || ''}`}>
                 {k.black ? <span className="key-b" /> : null}
@@ -410,7 +434,11 @@ function HyTheme({ go }) {
               </div>
             ))}
           </div>
-          <div className="keyboard-note">제1주제: G장조(사장조) · 제2주제: D장조(라장조)</div>
+          <div className="keyboard-note">
+            제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제: <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
+            <br />
+            G에서 D까지 몇 도 차이일까요?
+          </div>
         </div>
 
         <div id="hy-deg-opts" className="degree-opts-h">
@@ -443,18 +471,11 @@ function HyTheme({ go }) {
           </div>
         </div>
 
-        <div className="review-card" style={{ marginTop: 14 }}>
-          <div className="review-section-title">고전주의 소나타 형식의 특징</div>
-          <div className="review-item" style={{ marginBottom: 0 }}>
-            두 주제의 대비가 형식미를 만든다
-            <br />
-            제1주제와 제2주제는 5도 차이의 조성을 사용해요.
-            <br />
-            두 주제의 가락·리듬꼴·조성이 달라지면서 대비를 이루고
-            <br />
-            이것이 고전주의 음악의 형식미를 만들어냅니다.
-          </div>
-        </div>
+        <ArtSongTakeaway
+          eyebrow="고전주의 소나타 형식의 특징"
+          title="두 주제의 대비가 형식미를 만든다"
+          description="고전주의 소나타 형식에서 제1주제와 제2주제는 5도 차이의 조성을 사용해요. 같은 장조이지만 조성이 바뀌고 가락과 리듬꼴이 달라지면서 두 주제가 서로 대비를 이루고, 이것이 고전주의 음악의 형식미를 만들어냅니다."
+        />
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
