@@ -57,7 +57,7 @@ function AnalyticalOverview({ go }) {
     : (isErlkonig ? correctStoryErlkonig : correctStoryHallelujah);
   const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
   const overviewTitle = isHaydn ? '종달새 개요 파악' : (isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악');
-  const overviewVideoSrc = isHaydn ? 'https://www.youtube.com/embed/BGX6u2NJxuM' : 'https://www.youtube.com/embed/hIQ37oUDNYg';
+  const overviewVideoSrc = isHaydn ? 'https://www.youtube.com/embed/BGX6u2NJxuM?start=0&end=28' : 'https://www.youtube.com/embed/hIQ37oUDNYg';
   const overviewVideoTitle = isHaydn ? '종달새 개요 영상' : (isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상');
   const q1Title = isHaydn
     ? 'Q1. 이 음악을 연주하는 악기들은 무엇일까요?'
