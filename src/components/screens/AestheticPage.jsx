@@ -27,10 +27,18 @@ const q2Hints = [
 function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type, toggleAi, aiOpen,
-    selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion
+    selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
+    selectedSong, handelLyricMeaning, handelOperaDiff
   } = useAppStore();
+  const isHandel = selectedSong === 'handel';
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+  const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
+  const handelAnswerQ2 = [
+    '가사내용: 오페라(사랑·영웅 이야기) / 오라토리오(종교적 내용)',
+    '무대·연기: 오페라(의상·연기 있음) / 오라토리오(의상·연기 없음)',
+    '공연장소: 오페라(오페라 극장) / 오라토리오(교회·콘서트홀)'
+  ];
   const [q1Hint, setQ1Hint] = useState(q1Hints[0]);
   const [q2Hint, setQ2Hint] = useState(q2Hints[0]);
   const showRandomQ1Hint = () => {
@@ -75,31 +83,49 @@ function AestheticPage({ go }) {
 
             <div className="journey-block">
               <div className="review-section-title">② 분석적 감상 (내 답변 + 정답)</div>
-              <div className="review-item">Q1 등장인물 비교</div>
+              <div className="review-item">{isHandel ? 'Q1 가사 내용 비교' : 'Q1 등장인물 비교'}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">내 답변</div>
-                  <div className="chip-row">
-                    {analyticalCharacters.filter(Boolean).length
-                      ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>)
-                      : <span className="review-empty">없음</span>}
-                  </div>
+                  {isHandel ? (
+                    <div className="fb show info">{handelLyricMeaning || '없음'}</div>
+                  ) : (
+                    <div className="chip-row">
+                      {analyticalCharacters.filter(Boolean).length
+                        ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>)
+                        : <span className="review-empty">없음</span>}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="small-note">정답</div>
-                  <div className="chip-row">
-                    {analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
-                  </div>
+                  {isHandel ? (
+                    <div className="fb show gold">{handelAnswerQ1}</div>
+                  ) : (
+                    <div className="chip-row">
+                      {analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="review-item">Q2 줄거리 비교</div>
+              <div className="review-item">{isHandel ? 'Q2 오페라와의 차이 비교' : 'Q2 줄거리 비교'}</div>
               <div className="cmp-mini-grid">
-                <div><div className="small-note">내 답변</div><div className="fb show info">{analyticalStory || '없음'}</div></div>
-                <div><div className="small-note">정답</div><div className="fb show gold">{analyticalAnswerStory}</div></div>
+                <div>
+                  <div className="small-note">내 답변</div>
+                  <div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div>
+                </div>
+                <div>
+                  <div className="small-note">정답</div>
+                  {isHandel ? (
+                    <div className="fb show gold">{handelAnswerQ2.join('\n')}</div>
+                  ) : (
+                    <div className="fb show gold">{analyticalAnswerStory}</div>
+                  )}
+                </div>
               </div>
 
-              <div className="review-item">분석 활동 정답 자료(원형)</div>
+              <div className="review-item">{isHandel ? '분석 활동 정답 자료(원형)' : '분석 활동 정답 자료(원형)'}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">오른손 모범 악보</div>
@@ -124,14 +150,14 @@ function AestheticPage({ go }) {
         <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
         <div className="sec">Q2. 분석 요소와 연결</div>
-        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">등장인물의 음색</option><option value="반주">피아노 반주</option><option value="맥락">사회·역사적 맥락</option></select>
+        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option></select>
         {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
         <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 생각 질문 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
 
         <div className="sec">Q3. 오늘날 삶과 연결</div>
-        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder="200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" />
+        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?"} />
         <div className="btn-row"><button className="btn-s" onClick={() => go('historyCards')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('aesthetic', true); go('finalCard'); }}>최종 감상문 만들기 →</button></div>
       </div>
     </div>

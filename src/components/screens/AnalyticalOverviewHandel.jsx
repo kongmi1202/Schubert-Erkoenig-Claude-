@@ -67,9 +67,10 @@ function AnalyticalOverviewHandel({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-
-  const [q1Text, setQ1Text] = useState('');
-  const [q2Text, setQ2Text] = useState('');
+  const q1Text = useAppStore((s) => s.handelLyricMeaning);
+  const q2Text = useAppStore((s) => s.handelOperaDiff);
+  const setQ1Text = useAppStore((s) => s.setHandelLyricMeaning);
+  const setQ2Text = useAppStore((s) => s.setHandelOperaDiff);
   const [q1Open, setQ1Open] = useState(false);
   const [q2Open, setQ2Open] = useState(false);
   const [q1Example, setQ1Example] = useState('');
