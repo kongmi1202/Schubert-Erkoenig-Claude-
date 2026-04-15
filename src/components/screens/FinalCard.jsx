@@ -27,6 +27,8 @@ function FinalCard({ go }) {
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
   const handelAnswerQ2 = '오페라와 달리 오라토리오는 무대 연기·의상 없이 합창과 관현악으로 종교적 내용을 전달해요.';
+  const haydnAnswerQ1 = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
+  const haydnAnswerQ2 = '종달새';
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -167,6 +169,8 @@ function FinalCard({ go }) {
               <div className="small-note">Q1 내 답변</div>
               {isHandel ? (
                 <div className="fb show info">{handelLyricMeaning || '없음'}</div>
+              ) : isHaydn ? (
+                <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               ) : (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               )}
@@ -175,6 +179,8 @@ function FinalCard({ go }) {
               <div className="small-note">Q1 정답</div>
               {isHandel ? (
                 <div className="fb show gold">{handelAnswerQ1}</div>
+              ) : isHaydn ? (
+                <div className="chip-row">{haydnAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               ) : (
                 <div className="chip-row">{analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               )}
@@ -182,7 +188,7 @@ function FinalCard({ go }) {
           </div>
           <div className="cmp-mini-grid">
             <div><div className="small-note">Q2 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
-            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : analyticalAnswerStory}</div></div>
+            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : analyticalAnswerStory)}</div></div>
           </div>
 
           <div className="summary-div"></div>
