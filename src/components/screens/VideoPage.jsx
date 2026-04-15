@@ -1,9 +1,42 @@
 import { useAppStore } from '../../store/useAppStore';
 
+const SONG_CONFIG = {
+  mawang: {
+    videoUrl: 'https://www.youtube.com/embed/BXeE7rIAiTM',
+    videoTitle: "슈베르트의 '마왕'을 감상해보세요",
+    firstPage: 'sensoryPage',
+    subtabs: [],
+    cardAnalysis: '음색 대비, 인물별 선율과 리듬, 이야기 전개',
+    cardSongTitle: "✦ 나의 마왕 감상문 · Erlkonig, Schubert 1815"
+  },
+  handel: {
+    videoUrl: 'https://www.youtube.com/embed/XBSBBXFmHSE',
+    videoTitle: "헨델의 '할렐루야'를 감상해보세요",
+    firstPage: 'sensoryPage',
+    subtabs: [],
+    cardAnalysis: '합창의 화성, 반복되는 할렐루야 동기, 장엄한 종교적 분위기',
+    cardSongTitle: "✦ 나의 할렐루야 감상문 · Messiah, Handel 1741"
+  },
+  haydn: {
+    videoUrl: 'https://www.youtube.com/embed/U3HcpFRbcEk',
+    videoTitle: "하이든 '종달새' 1악장을 감상해보세요",
+    firstPage: 'hy-overview',
+    subtabs: [
+      { id: 'hy-overview', label: '개요 파악', page: 'hy-overview' },
+      { id: 'hy-timbre', label: '현악 4중주', page: 'hy-timbre' },
+      { id: 'hy-theme', label: '주제 비교', page: 'hy-theme' },
+      { id: 'hy-history', label: '역사 맥락', page: 'hy-history' }
+    ],
+    cardAnalysis: '현악 4중주 음색, 두 주제 가락·리듬꼴·음계 비교, 소나타 형식',
+    cardSongTitle: '✦ 나의 종달새 감상문 · String Quartet No.67, Haydn 1790'
+  }
+};
+
 function VideoPage({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
+  const selectedConfig = SONG_CONFIG[selectedSong] || SONG_CONFIG.mawang;
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah' && selectedSong !== 'haydn';
   const lyricsErlkonig = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
 [👨아버지] 아들아, 무엇 때문에 떠느냐?
 [👦아들] 아빠, 마왕이 안 보여요? 검은 옷에다 관을 썼는데.
@@ -27,9 +60,9 @@ function VideoPage({ go }) {
 또 주가 길이 다스리시리. (영원히)
 
 할렐루야!`;
-  const pageTitle = isErlkonig ? "슈베르트의 '마왕'을 감상해보세요" : "헨델의 '할렐루야'를 감상해보세요";
-  const iframeSrc = isErlkonig ? 'https://www.youtube.com/embed/BXeE7rIAiTM' : 'https://www.youtube.com/embed/XBSBBXFmHSE';
-  const lyrics = isErlkonig ? lyricsErlkonig : lyricsHallelujah;
+  const pageTitle = selectedConfig.videoTitle;
+  const iframeSrc = selectedConfig.videoUrl;
+  const lyrics = selectedSong === 'haydn' ? '' : (isErlkonig ? lyricsErlkonig : lyricsHallelujah);
 
   return (
     <div className="screen active">
@@ -40,9 +73,11 @@ function VideoPage({ go }) {
             <iframe src={iframeSrc} allowFullScreen />
           </div>
           <div className="lyrics-panel">
-            <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>가사</div>
+            <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
+              {selectedSong === 'haydn' ? '안내' : '가사'}
+            </div>
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
-              {lyrics}
+              {selectedSong === 'haydn' ? '선율과 악기 음색의 변화를 중심으로 감상해보세요.' : lyrics}
             </pre>
           </div>
         </div>
