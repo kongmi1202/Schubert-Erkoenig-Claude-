@@ -3,7 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 function VideoPage({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'hallelujah';
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const lyricsErlkonig = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
 [👨아버지] 아들아, 무엇 때문에 떠느냐?
 [👦아들] 아빠, 마왕이 안 보여요? 검은 옷에다 관을 썼는데.
@@ -17,12 +17,18 @@ function VideoPage({ go }) {
 [👑마왕] 니가 좋아, 이 끌리는 예쁜 모습. 니가 싫어해도 데려가야지.
 [👦아들] 아버지, 아버지, 나를 덮쳐요. 마왕이 나를 끌고 가요.
 [🎙️해설자] 아버지 급히 마을 달려가 그의 품 안에 신음하는 아기 / 그가 집에 다 왔을 때, 품 속의 아기는 죽었네.`;
-  const lyricsHallelujah = `Hallelujah, hallelujah.
-할렐루야 후렴이 반복되며 점층적으로 쌓여요.
-성부가 겹치고 화성이 전개되면서 장엄한 분위기가 만들어집니다.
-합창과 오케스트라가 함께 울리며 웅장한 종결로 향합니다.`;
+  const lyricsHallelujah = `할렐루야!
+전능의 주가 다스리신다, 할렐루야!
+
+이 세상 나라들 영원히 주 그리스도의 다스리는 나라가 되고, 또 주가 길이 다스리시리, 영원히.
+
+왕의 왕, 또 주의 주, (영원히), 할렐루야.
+또 주의 주 다스리리. (또 주가 다스리리.)
+또 주가 길이 다스리시리. (영원히)
+
+할렐루야!`;
   const pageTitle = isErlkonig ? "슈베르트의 '마왕'을 감상해보세요" : "헨델의 '할렐루야'를 감상해보세요";
-  const iframeSrc = isErlkonig ? 'https://www.youtube.com/embed/BXeE7rIAiTM' : 'https://www.youtube.com/embed/usfiAsWR4qU';
+  const iframeSrc = isErlkonig ? 'https://www.youtube.com/embed/BXeE7rIAiTM' : 'https://www.youtube.com/embed/XBSBBXFmHSE';
   const lyrics = isErlkonig ? lyricsErlkonig : lyricsHallelujah;
 
   return (

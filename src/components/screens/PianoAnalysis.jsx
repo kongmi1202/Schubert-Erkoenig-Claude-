@@ -72,7 +72,7 @@ function setupDraw(canvas, getBrush) {
 
 function PianoAnalysis({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'hallelujah';
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const rhRef = useRef(null);
   const lhRef = useRef(null);

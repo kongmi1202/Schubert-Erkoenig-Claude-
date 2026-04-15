@@ -32,7 +32,7 @@ const hallelujahPromptHints = [
 
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'hallelujah';
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);

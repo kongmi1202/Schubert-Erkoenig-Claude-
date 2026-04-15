@@ -141,7 +141,7 @@ function SegmentYoutubePlayer({ videoId, start, end, title, replaySignal }) {
 
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'hallelujah';
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
