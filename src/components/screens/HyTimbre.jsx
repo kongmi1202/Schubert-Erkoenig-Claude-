@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 
 const AUDIO_SRC = {
   'hy-instr1': '/audio/haydn-instr1.mp3',
@@ -190,18 +191,11 @@ function HyTimbre({ go }) {
           );
         })}
 
-        <div className="review-card" style={{ marginBottom: 16 }}>
-          <div className="review-section-title">현악 4중주의 특징</div>
-          <div className="review-item" style={{ marginBottom: 0 }}>
-            4개의 현악기가 하나의 앙상블을 이룬다
-            <br />
-            제1바이올린(주선율), 제2바이올린(화음),
-            <br />
-            비올라(중성부), 첼로(베이스)가 각각 다른 역할을 맡아
-            <br />
-            풍부한 앙상블을 만들어냅니다.
-          </div>
-        </div>
+        <ArtSongTakeaway
+          eyebrow="현악 4중주의 특징"
+          title="4개의 현악기가 하나의 앙상블을 이룬다"
+          description="제1바이올린(주선율), 제2바이올린(화음), 비올라(중성부), 첼로(베이스)가 각각 다른 역할을 맡아요. 4개의 악기가 음색·음역을 달리하며 풍부한 앙상블을 만들어냅니다."
+        />
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>
