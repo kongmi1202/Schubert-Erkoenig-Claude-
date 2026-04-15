@@ -13,6 +13,7 @@ import AnalyticalOverviewHandel from './components/screens/AnalyticalOverviewHan
 import TonePaintingHandel from './components/screens/TonePaintingHandel';
 import MelodyCanvasHandel from './components/screens/MelodyCanvasHandel';
 import HistoryCardsHandel from './components/screens/HistoryCardsHandel';
+import HyTimbre from './components/screens/HyTimbre';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
@@ -62,6 +63,9 @@ function App() {
       if (currentScreen === 'voiceDesign') return TonePaintingHandel;
       if (currentScreen === 'pianoAnalysis') return MelodyCanvasHandel;
       if (currentScreen === 'historyCards') return HistoryCardsHandel;
+    }
+    if (selectedSong === 'haydn') {
+      if (currentScreen === 'voiceDesign') return HyTimbre;
     }
     return screens[currentScreen];
   }, [currentScreen, selectedSong]);
