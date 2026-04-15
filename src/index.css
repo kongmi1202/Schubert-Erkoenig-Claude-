@@ -446,6 +446,62 @@ canvas{display:block;width:100%;touch-action:none}
 .final-actions{justify-content:center;gap:14px}
 .btn-send{background:linear-gradient(135deg,var(--crimson),var(--gold))}
 
+/* HAYDN EXTRAS */
+.tone-opts-h{display:flex;gap:8px;margin-bottom:12px;}
+.tone-opt-h{flex:1;padding:9px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;text-align:center;
+  font-size:12px;font-weight:300;color:var(--text-dim);transition:all .2s;}
+.tone-opt-h:hover{border-color:rgba(74,127,193,.4);}
+.tone-opt-h.sel{border-color:#4a7fc1;background:rgba(74,127,193,.12);color:#6b9fd4;}
+.tone-opt-h.ok{border-color:var(--green);background:var(--green-pale);color:#a0e0b8;}
+.tone-opt-h.ng{border-color:var(--crimson);background:var(--crimson-pale);color:#e0a0a0;}
+
+.degree-opts-h{display:flex;gap:10px;margin-bottom:14px;}
+.degree-opt-h{flex:1;padding:12px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;text-align:center;
+  font-size:14px;font-weight:300;color:var(--text-dim);transition:all .2s;}
+.degree-opt-h:hover{border-color:#4a7fc1;}
+.degree-opt-h.sel{border-color:#4a7fc1;background:rgba(74,127,193,.12);color:#6b9fd4;}
+.degree-opt-h.ok{border-color:var(--green);background:var(--green-pale);color:#a0e0b8;}
+.degree-opt-h.ng{border-color:var(--crimson);background:var(--crimson-pale);color:#e0a0a0;}
+
+.keyboard-wrap{background:var(--bg3);border:1px solid var(--border);
+  padding:18px;margin-bottom:14px;}
+.keyboard-label{font-size:10px;letter-spacing:.2em;color:#4a7fc1;
+  font-weight:300;margin-bottom:12px;}
+.keyboard{display:flex;align-items:flex-end;gap:2px;height:68px;margin-bottom:12px;}
+.key-w{flex:1;height:68px;background:#e8e8e8;border:1px solid #ccc;
+  border-radius:0 0 3px 3px;position:relative;cursor:default;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;}
+.key-w.m1{background:#dbeafe;border-color:#4a7fc1;}
+.key-w.m2{background:#fef3c7;border-color:#c4922a;}
+.key-label{font-size:8px;font-weight:600;color:#333;}
+.key-label.b1{color:#4a7fc1;font-size:9px;}
+.key-label.b2{color:#c4922a;font-size:9px;}
+.key-b{width:60%;height:42px;background:#2a2a2a;border-radius:0 0 2px 2px;
+  position:absolute;top:0;z-index:1;}
+.keyboard-note{font-size:11px;color:var(--text-dim);font-weight:300;
+  line-height:1.7;text-align:center;}
+
+.feel-grid-h{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.feel-card-h{padding:14px;border:1px solid var(--border);background:var(--surface);}
+.feel-card-h.fc1{border-top:2px solid #4a7fc1;}
+.feel-card-h.fc2{border-top:2px solid #c4922a;}
+.feel-title-h{font-size:11px;font-weight:400;margin-bottom:8px;}
+.feel-card-h.fc1 .feel-title-h{color:#6b9fd4;}
+.feel-card-h.fc2 .feel-title-h{color:#d4aa4a;}
+
+.instr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.instr-btn{padding:16px 10px;border:1px solid var(--border);
+  background:var(--surface);cursor:pointer;text-align:center;transition:all .2s;}
+.instr-btn:hover{border-color:rgba(139,92,246,.35);}
+.instr-btn.sel{border-color:var(--purple);background:var(--purple-pale);}
+.instr-btn.ok{border-color:var(--green);background:var(--green-pale);}
+.instr-btn.ng{border-color:var(--crimson);background:var(--crimson-pale);}
+.instr-icon{font-size:28px;margin-bottom:6px;}
+.instr-name{font-size:12px;font-weight:400;}
+.instr-desc{font-size:10px;color:var(--text-dim);font-weight:300;margin-top:3px;}
+
 @media (max-width: 900px){.video-lyrics-layout{grid-template-columns:1fr}.lyrics-panel{max-height:none}}
 @media (max-width: 700px){.cv-compare{grid-template-columns:1fr}}
 @media (max-width: 480px) { .palette{grid-template-columns:repeat(6,1fr)} .flip-grid,.review-grid,.cc-grid,.scene-grid,.artifact-grid,.cmp-mini-grid,.song-select-grid{grid-template-columns:1fr} .sci-grid{grid-template-columns:repeat(2,1fr)} .song-select-title{font-size:34px} .song-select-composer{font-size:18px} .song-select-tags{font-size:16px} }
