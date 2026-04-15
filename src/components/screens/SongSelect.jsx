@@ -14,6 +14,13 @@ const SONGS = [
     title: '할렐루야',
     composer: 'HANDEL · 1741',
     tags: ['바로크', '오라토리오', '화성·다성음악']
+  },
+  {
+    id: 'haydn',
+    icon: '🎻',
+    title: '종달새',
+    composer: 'HAYDN · 1790',
+    tags: ['고전주의', '현악 4중주', '소나타 형식']
   }
 ];
 
