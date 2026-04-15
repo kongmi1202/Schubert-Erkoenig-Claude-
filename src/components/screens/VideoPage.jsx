@@ -18,7 +18,7 @@ const SONG_CONFIG = {
     cardSongTitle: "✦ 나의 할렐루야 감상문 · Messiah, Handel 1741"
   },
   haydn: {
-    videoUrl: 'https://www.youtube.com/embed/U3HcpFRbcEk',
+    videoUrl: 'https://www.youtube.com/embed/kqnjVNKhWnc',
     videoTitle: "하이든 '종달새' 1악장을 감상해보세요",
     firstPage: 'hy-overview',
     subtabs: [
