@@ -196,12 +196,7 @@ function MelodyCanvasHandel({ go }) {
         <div className="s-desc">화성음악·다성음악의 움직임을 선으로 표현해보세요.</div>
       </div>
       <div className="body voice-body">
-        <div className="fb show info" style={{ marginBottom: 14 }}>
-          화성음악: 여러 성부가 함께 움직임 → 선들이 같이 올라가고 내려가요<br />
-          다성음악: 각 성부가 독립적으로 움직임 → 선들이 서로 엇갈려요
-        </div>
-
-        <div className="sec">화성음악 구간</div>
+        <div className="sec">A 구간</div>
         <audio ref={harmonyAudioRef} src={AUDIO_SRC.harmony} preload="auto" onEnded={() => setHarmonyPlaying(false)} />
         <div className="audio-bar voice-audio-bar">
           <button type="button" className="aud-btn" onClick={() => setHarmonyPlaying((v) => !v)}>
@@ -270,7 +265,7 @@ function MelodyCanvasHandel({ go }) {
           </div>
         </div>
 
-        <div className="sec">다성음악 구간</div>
+        <div className="sec">B 구간</div>
         <audio ref={polyAudioRef} src={AUDIO_SRC.poly} preload="auto" onEnded={() => setPolyPlaying(false)} />
         <div className="audio-bar voice-audio-bar">
           <button type="button" className="aud-btn" onClick={() => setPolyPlaying((v) => !v)}>
