@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
@@ -67,6 +67,9 @@ function AnalyticalOverview({ go }) {
     : (isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기');
   const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : `등장인물`;
   const q2Placeholder = isHaydn ? '떠오르는 동물을 써보세요...' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
+  const haydnPlayerHostRef = useRef(null);
+  const haydnPlayerRef = useRef(null);
+  const haydnWatchRef = useRef(null);
 
   // 사용자 입력을 전부 채웠을 때만 "정답 확인하기" 아이콘이 표시되도록 합니다.
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
@@ -93,6 +96,81 @@ function AnalyticalOverview({ go }) {
   useEffect(() => {
     if (!isAllFilled) setAnswerCheckOpen(false);
   }, [isAllFilled]);
+
+  useEffect(() => {
+    if (!isHaydn) return undefined;
+    let cancelled = false;
+    const stopWatcher = () => {
+      if (haydnWatchRef.current) {
+        window.clearInterval(haydnWatchRef.current);
+        haydnWatchRef.current = null;
+      }
+    };
+    const startWatcher = () => {
+      stopWatcher();
+      haydnWatchRef.current = window.setInterval(() => {
+        const player = haydnPlayerRef.current;
+        if (!player || typeof player.getCurrentTime !== 'function') return;
+        const current = player.getCurrentTime();
+        if (current >= 28) {
+          player.pauseVideo();
+          player.seekTo(0, true);
+        }
+      }, 200);
+    };
+    const createPlayer = () => {
+      if (cancelled || !haydnPlayerHostRef.current || haydnPlayerRef.current) return;
+      if (!window.YT || !window.YT.Player) return;
+      haydnPlayerRef.current = new window.YT.Player(haydnPlayerHostRef.current, {
+        videoId: 'BGX6u2NJxuM',
+        playerVars: {
+          start: 0,
+          end: 28,
+          rel: 0,
+          playsinline: 1,
+          modestbranding: 1
+        },
+        events: {
+          onReady: (event) => {
+            const iframe = event.target.getIframe();
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+          },
+          onStateChange: (event) => {
+            const state = window.YT?.PlayerState;
+            if (state && event.data === state.PLAYING) startWatcher();
+            else stopWatcher();
+          }
+        }
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevReady === 'function') prevReady();
+        createPlayer();
+      };
+      if (!document.getElementById('youtube-iframe-api')) {
+        const script = document.createElement('script');
+        script.id = 'youtube-iframe-api';
+        script.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      stopWatcher();
+      if (haydnPlayerRef.current && typeof haydnPlayerRef.current.destroy === 'function') {
+        haydnPlayerRef.current.destroy();
+      }
+      haydnPlayerRef.current = null;
+    };
+  }, [isHaydn]);
+
   const showRandomStoryHint = () => {
     const next = promptHints[Math.floor(Math.random() * promptHints.length)];
     setStoryHint(next);
@@ -170,7 +248,11 @@ function AnalyticalOverview({ go }) {
 
         <div className="sec">{isHaydn ? '종달새 개요 영상' : (isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상')}</div>
         <div className="video-wrap">
-          <iframe src={overviewVideoSrc} title={overviewVideoTitle} allowFullScreen />
+          {isHaydn ? (
+            <div ref={haydnPlayerHostRef} style={{ width: '100%', height: '100%' }} />
+          ) : (
+            <iframe src={overviewVideoSrc} title={overviewVideoTitle} allowFullScreen />
+          )}
         </div>
 
         <div className="sec">{q1Title}</div>
