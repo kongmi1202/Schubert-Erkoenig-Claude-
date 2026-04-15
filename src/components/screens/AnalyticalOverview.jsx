@@ -154,7 +154,7 @@ function AnalyticalOverview({ go }) {
 
         <div className="sec">{isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'}</div>
         <div className="video-wrap">
-          <iframe src={isErlkonig ? 'https://www.youtube.com/embed/tgfmLln8zjg' : 'https://www.youtube.com/embed/usfiAsWR4qU'} title={isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'} allowFullScreen />
+          <iframe src="https://www.youtube.com/embed/hIQ37oUDNYg" title={isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'} allowFullScreen />
         </div>
 
         <div className="sec">{isErlkonig ? 'Q1. 등장인물 4명을 적어보세요' : 'Q1. 핵심 음악 요소 4가지를 적어보세요'}</div>

@@ -119,7 +119,7 @@ function AnalyticalOverviewHandel({ go }) {
 
         <div className="sec">할렐루야 해설 영상</div>
         <div className="video-wrap">
-          <iframe src="https://www.youtube.com/embed/usfiAsWR4qU" title="할렐루야 해설 영상" allowFullScreen />
+          <iframe src="https://www.youtube.com/embed/hIQ37oUDNYg" title="할렐루야 해설 영상" allowFullScreen />
         </div>
 
         <div className="sec">Q1. 이 음악의 가사는 어떤 내용인가요?</div>
