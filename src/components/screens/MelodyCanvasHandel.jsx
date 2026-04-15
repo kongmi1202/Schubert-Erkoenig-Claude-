@@ -340,6 +340,18 @@ function MelodyCanvasHandel({ go }) {
           />
         ) : null}
 
+        {allDone ? (
+          <div className="review-card" style={{ marginTop: 12 }}>
+            <div className="review-section-title">가락선으로 정리하는 핵심 개념</div>
+            <div className="fb show info" style={{ marginBottom: 10 }}>
+              화성음악: 여러 성부가 함께 움직여 선들이 비슷한 방향으로 진행돼요.
+            </div>
+            <div className="fb show info" style={{ marginBottom: 0 }}>
+              다성음악: 각 성부가 독립적으로 움직여 선들이 서로 엇갈리며 진행돼요.
+            </div>
+          </div>
+        ) : null}
+
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
           <button
