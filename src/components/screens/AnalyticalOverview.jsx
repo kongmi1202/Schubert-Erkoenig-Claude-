@@ -32,7 +32,8 @@ const hallelujahPromptHints = [
 
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
-  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
+  const isHaydn = selectedSong === 'haydn';
+  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah' && !isHaydn;
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
@@ -48,9 +49,24 @@ function AnalyticalOverview({ go }) {
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
   const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
-  const correctCharacters = isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah;
-  const correctStory = isErlkonig ? correctStoryErlkonig : correctStoryHallelujah;
+  const correctCharacters = isHaydn
+    ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
+    : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
+  const correctStory = isHaydn
+    ? '종달새'
+    : (isErlkonig ? correctStoryErlkonig : correctStoryHallelujah);
   const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
+  const overviewTitle = isHaydn ? '종달새 개요 파악' : (isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악');
+  const overviewVideoSrc = isHaydn ? 'https://www.youtube.com/embed/BGX6u2NJxuM' : 'https://www.youtube.com/embed/hIQ37oUDNYg';
+  const overviewVideoTitle = isHaydn ? '종달새 개요 영상' : (isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상');
+  const q1Title = isHaydn
+    ? 'Q1. 이 음악을 연주하는 악기들은 무엇일까요?'
+    : (isErlkonig ? 'Q1. 등장인물 4명을 적어보세요' : 'Q1. 핵심 음악 요소 4가지를 적어보세요');
+  const q2Title = isHaydn
+    ? 'Q2. 이 음악은 어떤 동물을 떠올리게 하나요?'
+    : (isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기');
+  const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : `등장인물`;
+  const q2Placeholder = isHaydn ? '떠오르는 동물을 써보세요...' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
 
   // 사용자 입력을 전부 채웠을 때만 "정답 확인하기" 아이콘이 표시되도록 합니다.
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
@@ -87,7 +103,7 @@ function AnalyticalOverview({ go }) {
     <div className="screen active">
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-A · 분석적 감상</div>
-        <div className="s-title">{isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악'}</div>
+        <div className="s-title">{overviewTitle}</div>
       </div>
       <div className="body">
         <div className="sec">1단계 감각적 감상 결과</div>
@@ -152,12 +168,12 @@ function AnalyticalOverview({ go }) {
           </div>
         </div>
 
-        <div className="sec">{isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'}</div>
+        <div className="sec">{isHaydn ? '종달새 개요 영상' : (isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상')}</div>
         <div className="video-wrap">
-          <iframe src="https://www.youtube.com/embed/hIQ37oUDNYg" title={isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상'} allowFullScreen />
+          <iframe src={overviewVideoSrc} title={overviewVideoTitle} allowFullScreen />
         </div>
 
-        <div className="sec">{isErlkonig ? 'Q1. 등장인물 4명을 적어보세요' : 'Q1. 핵심 음악 요소 4가지를 적어보세요'}</div>
+        <div className="sec">{q1Title}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
           {characters.map((character, idx) => (
             <input
@@ -166,17 +182,17 @@ function AnalyticalOverview({ go }) {
               style={{ minHeight: 'auto', resize: 'none' }}
               value={character}
               onChange={(e) => setAnalyticalCharacter(idx, e.target.value)}
-              placeholder={`등장인물 ${idx + 1}`}
+              placeholder={isHaydn ? `악기 ${idx + 1}` : `${q1Placeholder} ${idx + 1}`}
             />
           ))}
         </div>
 
-        <div className="sec">{isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기'}</div>
+        <div className="sec">{q2Title}</div>
         <textarea
           className="txt"
           value={story}
           onChange={(e) => setAnalyticalStory(e.target.value)}
-          placeholder={isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...'}
+          placeholder={q2Placeholder}
         />
         <button className="ai-btn" onClick={showRandomStoryHint}>✨ 생각 질문 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
@@ -196,7 +212,7 @@ function AnalyticalOverview({ go }) {
 
         <div className={`answer-compare-slide ${answerCheckOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
-            <div className="sec">{isErlkonig ? 'Q1. 등장인물 비교' : 'Q1. 핵심 요소 비교'}</div>
+            <div className="sec">{isHaydn ? 'Q1. 악기 비교' : (isErlkonig ? 'Q1. 등장인물 비교' : 'Q1. 핵심 요소 비교')}</div>
             <div className="review-card">
               <div className="review-grid">
                 <div>
@@ -210,7 +226,7 @@ function AnalyticalOverview({ go }) {
               </div>
             </div>
 
-            <div className="sec">{isErlkonig ? 'Q2. 줄거리 비교' : 'Q2. 전개/분위기 비교'}</div>
+            <div className="sec">{isHaydn ? 'Q2. 떠오르는 동물 비교' : (isErlkonig ? 'Q2. 줄거리 비교' : 'Q2. 전개/분위기 비교')}</div>
             <div className="review-card">
               <div className="review-section-title">내 답변</div>
               <div className="review-item" style={{ marginBottom: 14 }}>{story.trim() || '입력 없음'}</div>
