@@ -29,6 +29,19 @@ const SONG_CONFIG = {
     ],
     cardAnalysis: '현악 4중주 음색, 두 주제 가락·리듬꼴·음계 비교, 소나타 형식',
     cardSongTitle: '✦ 나의 종달새 감상문 · String Quartet No.67, Haydn 1790'
+  },
+  schoenberg: {
+    videoUrl: 'https://www.youtube.com/embed/GbBWdbJNdYA',
+    videoTitle: "쇤베르크 '달에 취하여'를 감상해보세요",
+    firstPage: 'sb-overview',
+    subtabs: [
+      { id: 'sb-overview', label: '개요 파악', page: 'sb-overview' },
+      { id: 'sb-sprech', label: '슈프레흐슈팀메', page: 'sb-sprech' },
+      { id: 'sb-atonal', label: '무조성', page: 'sb-atonal' },
+      { id: 'sb-history', label: '역사 맥락', page: 'sb-history' }
+    ],
+    cardAnalysis: '슈프레흐슈팀메, 무조성, 표현주의 예술과의 연결',
+    cardSongTitle: "✦ 나의 달에 취하여 감상문 · Mondestrunken, Schoenberg 1912"
   }
 };
 
