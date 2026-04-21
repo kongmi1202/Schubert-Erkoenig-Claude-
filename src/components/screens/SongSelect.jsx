@@ -21,6 +21,13 @@ const SONGS = [
     title: '종달새',
     composer: 'HAYDN · 1790',
     tags: ['고전주의', '현악 4중주', '소나타 형식']
+  },
+  {
+    id: 'pierrot',
+    icon: '🌙',
+    title: '달에 홀린 피에로',
+    composer: 'SCHOENBERG · 1912',
+    tags: ['표현주의', '무조 음악', '슈프레히슈티메']
   }
 ];
 
