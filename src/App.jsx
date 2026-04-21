@@ -20,6 +20,8 @@ import SbOverview from './components/screens/SbOverview';
 import SbSprech from './components/screens/SbSprech';
 import SbAtonal from './components/screens/SbAtonal';
 import SbHistory from './components/screens/SbHistory';
+import VvOverview from './components/screens/VvOverview';
+import VvSonnet from './components/screens/VvSonnet';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
@@ -80,6 +82,10 @@ function App() {
       if (currentScreen === 'voiceDesign') return SbSprech;
       if (currentScreen === 'pianoAnalysis') return SbAtonal;
       if (currentScreen === 'historyCards') return SbHistory;
+    }
+    if (selectedSong === 'vivaldi') {
+      if (currentScreen === 'analyticalOverview') return VvOverview;
+      if (currentScreen === 'voiceDesign') return VvSonnet;
     }
     return screens[currentScreen];
   }, [currentScreen, selectedSong]);

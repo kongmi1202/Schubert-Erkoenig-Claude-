@@ -588,6 +588,163 @@ canvas{display:block;width:100%;touch-action:none}
   color: var(--text);
 }
 
+/* 비발디 사계 */
+/* 소네트 레이아웃 */
+.sonnet-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin-bottom: 20px;
+}
+@media(min-width: 640px) {
+  .sonnet-wrap { grid-template-columns: 1fr 1fr; gap: 20px; }
+}
+.sonnet-block {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 2.2;
+  font-weight: 300;
+}
+.sonnet-block.it {
+  font-style: italic;
+  color: var(--text-dim);
+  border-bottom: none;
+}
+@media(min-width: 640px) {
+  .sonnet-block.it { border-bottom: 1px solid var(--border); }
+}
+.sonnet-block.kr { color: var(--text); }
+.sonnet-title {
+  font-size: 10px;
+  letter-spacing: .3em;
+  color: var(--green);
+  font-weight: 300;
+  margin-bottom: 10px;
+}
+
+/* 소네트 구절 카드 */
+.sonnet-item {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.sonnet-quote {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--gold-light);
+  margin-bottom: 4px;
+  line-height: 1.7;
+}
+.sonnet-quote-kr {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-weight: 300;
+  margin-bottom: 14px;
+}
+.sonnet-q {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+/* 바이올린 협주곡 역할 카드 */
+.concerto-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.concerto-role {
+  padding: 20px 14px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+}
+.concerto-role.solo {
+  border-color: rgba(184,150,62,.4);
+}
+.concerto-role.tutti {
+  border-color: rgba(74,127,193,.4);
+}
+.concerto-role.selected-solo {
+  border-color: var(--gold);
+  background: var(--gold-pale);
+  transform: scale(1.03);
+}
+.concerto-role.selected-tutti {
+  border-color: #4a7fc1;
+  background: rgba(74,127,193,.12);
+  transform: scale(1.03);
+}
+.concerto-role.correct {
+  border-color: var(--green);
+  background: var(--green-pale);
+}
+.concerto-role.incorrect {
+  border-color: var(--crimson);
+  background: var(--crimson-pale);
+  opacity: .6;
+}
+.concerto-role-icon { font-size: 36px; margin-bottom: 10px; }
+.concerto-role-name {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.concerto-role.solo .concerto-role-name { color: var(--gold-light); }
+.concerto-role.tutti .concerto-role-name { color: #6b9fd4; }
+.concerto-role-desc {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-weight: 300;
+}
+
+/* 구간 진행 표시 */
+.segment-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  justify-content: center;
+}
+.seg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border2);
+  transition: background .3s;
+}
+.seg-dot.active { background: var(--green); }
+.seg-dot.current { background: var(--gold); }
+
+/* 정답률 표시 */
+.score-result {
+  text-align: center;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+.score-num {
+  font-family: 'IM Fell English', serif;
+  font-size: 40px;
+  color: var(--purple-light);
+  margin-bottom: 6px;
+}
+.score-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 300;
+  letter-spacing: .1em;
+}
+
 /* 표현주의 이미지 비교 */
 .art-compare {
   display: grid;
