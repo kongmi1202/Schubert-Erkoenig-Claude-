@@ -28,6 +28,15 @@ const SONGS = [
     title: '달에 홀린 피에로',
     composer: 'SCHOENBERG · 1912',
     tags: ['표현주의', '무조성', '슈프레흐슈팀메']
+  },
+  {
+    id: 'vivaldi',
+    icon: '⛈️',
+    title: '사계',
+    subtitle: '여름 3악장',
+    composer: 'VIVALDI · 1725',
+    tags: ['바로크', '바이올린 협주곡', '표제음악'],
+    borderColor: 'rgba(39,174,96,.3)'
   }
 ];
 
@@ -55,9 +64,11 @@ function SongSelect({ go }) {
               type="button"
               className={`song-select-card ${selectedSong === song.id ? 'active' : ''}`}
               onClick={() => onSelect(song.id)}
+              style={song.borderColor ? { borderColor: song.borderColor } : undefined}
             >
               <div className="song-select-icon">{song.icon}</div>
               <div className="song-select-title">{song.title}</div>
+              {song.subtitle ? <div className="song-select-subtitle">{song.subtitle}</div> : null}
               <div className="song-select-composer">{song.composer}</div>
               <div className="song-select-tags">
                 {song.tags.map((t) => (

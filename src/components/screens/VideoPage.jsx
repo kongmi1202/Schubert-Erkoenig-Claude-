@@ -42,6 +42,19 @@ const SONG_CONFIG = {
     ],
     cardAnalysis: '슈프레흐슈팀메, 무조성, 표현주의 예술과의 연결',
     cardSongTitle: "✦ 나의 달에 취하여 감상문 · Mondestrunken, Schoenberg 1912"
+  },
+  vivaldi: {
+    videoUrl: 'https://www.youtube.com/embed/wVAq3CzHf9E',
+    videoTitle: "비발디 '사계' 중 여름 3악장을 감상해보세요",
+    firstPage: 'vv-overview',
+    subtabs: [
+      { id: 'vv-overview', label: '개요 파악', page: 'vv-overview' },
+      { id: 'vv-sonnet', label: '소네트', page: 'vv-sonnet' },
+      { id: 'vv-concerto', label: '바이올린 협주곡', page: 'vv-concerto' },
+      { id: 'vv-history', label: '역사 맥락', page: 'vv-history' }
+    ],
+    cardAnalysis: '소네트와 음악 연결, 바이올린 협주곡 독주·총주 구분',
+    cardSongTitle: "✦ 나의 여름 감상문 · Summer Op.8 No.2, Vivaldi 1725"
   }
 };
 
@@ -101,10 +114,13 @@ Das Haupt und taumelnd saugt und schlürft er
 고개를 든 채 비틀거리며 빨아들이고 들이켠다
 Den Wein, den man mit Augen trinkt.
 눈으로 마시는 포도주를.`;
+  const sonnetVivaldi = '아, 그의 두려움은 그럴 만하구나. 하늘은 천둥을 울리고 우박을 내려 익은 곡식을 모두 쓸어버리네.';
   const pageTitle = selectedConfig.videoTitle;
   const iframeSrc = selectedConfig.videoUrl;
   const lyrics = selectedSong === 'haydn'
     ? ''
+    : selectedSong === 'vivaldi'
+      ? sonnetVivaldi
     : selectedSong === 'schoenberg'
       ? lyricsSchoenberg
       : (isErlkonig ? lyricsErlkonig : lyricsHallelujah);
@@ -119,7 +135,7 @@ Den Wein, den man mit Augen trinkt.
           </div>
           <div className="lyrics-panel">
             <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
-              {selectedSong === 'haydn' ? '안내' : '가사'}
+              {selectedSong === 'haydn' ? '안내' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
             </div>
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
               {selectedSong === 'haydn' ? '선율과 악기 음색의 변화를 중심으로 감상해보세요.' : lyrics}

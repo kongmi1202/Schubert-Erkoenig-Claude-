@@ -87,6 +87,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .song-select-card:hover,.song-select-card.active{border-color:var(--purple);box-shadow:0 0 0 2px rgba(139,92,246,.2) inset}
 .song-select-icon{font-size:56px;line-height:1;margin-bottom:18px}
 .song-select-title{font-size:42px;font-family:'Noto Serif KR',serif;color:#f2ecff;margin-bottom:10px}
+.song-select-subtitle{font-size:20px;color:var(--text-dim);margin-bottom:8px}
 .song-select-composer{font-size:24px;letter-spacing:.12em;color:var(--gold-light);margin-bottom:16px}
 .song-select-tags{display:flex;flex-direction:column;gap:8px;color:var(--text-dim);font-size:20px}
 .act-panel{border:1px solid var(--border);background:var(--bg3);padding:16px;margin-bottom:14px}
