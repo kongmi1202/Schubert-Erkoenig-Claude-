@@ -21,17 +21,20 @@ function FinalCard({ go }) {
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
   const isSchoenberg = selectedSong === 'schoenberg';
-  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : '마왕'));
-  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : 'Der Erlkönig, Schubert 1815'));
+  const isVivaldi = selectedSong === 'vivaldi';
+  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : (isVivaldi ? '여름 3악장' : '마왕')));
+  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : (isVivaldi ? 'Summer, Vivaldi 1725' : 'Der Erlkönig, Schubert 1815')));
   const songLabel = selectedSong === 'handel'
     ? '할렐루야 (헨델)'
     : (selectedSong === 'mawang'
       ? '마왕 (슈베르트)'
       : (selectedSong === 'haydn'
         ? '종달새 (하이든)'
+        : (selectedSong === 'vivaldi'
+          ? '여름 (비발디)'
         : (selectedSong === 'schoenberg'
           ? '달에 취하여 (쇤베르크)'
-          : '—')));
+          : '—'))));
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -40,6 +43,8 @@ function FinalCard({ go }) {
   const haydnAnswerQ2 = '종달새';
   const schoenbergAnswerQ1 = ['소프라노(또는 메조소프라노)', '플루트', '클라리넷', '바이올린', '첼로', '피아노'];
   const schoenbergAnswerQ2 = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
+  const vivaldiAnswerQ1 = ['여름 폭풍우 장면', '지친 목동과 양떼', '갑작스러운 번개와 천둥', '우박으로 이삭이 쓸려감'];
+  const vivaldiAnswerQ2 = '격렬하고 긴박한 폭풍우의 분위기예요. 빠른 템포와 강한 셈여림으로 폭풍우의 긴박함과 공포가 생생하게 전달돼요.';
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -184,6 +189,8 @@ function FinalCard({ go }) {
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               ) : isSchoenberg ? (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
+              ) : isVivaldi ? (
+                <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               ) : (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               )}
@@ -196,6 +203,8 @@ function FinalCard({ go }) {
                 <div className="chip-row">{haydnAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               ) : isSchoenberg ? (
                 <div className="chip-row">{schoenbergAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
+              ) : isVivaldi ? (
+                <div className="chip-row">{vivaldiAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               ) : (
                 <div className="chip-row">{analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               )}
@@ -203,7 +212,7 @@ function FinalCard({ go }) {
           </div>
           <div className="cmp-mini-grid">
             <div><div className="small-note">Q2 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
-            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : analyticalAnswerStory))}</div></div>
+            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : (isVivaldi ? vivaldiAnswerQ2 : analyticalAnswerStory)))}</div></div>
           </div>
 
           <div className="summary-div"></div>
