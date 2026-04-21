@@ -32,8 +32,11 @@ function AestheticPage({ go }) {
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
+  const isSchoenberg = selectedSong === 'schoenberg';
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
+  const schoenbergAnswerQ1 = ['소프라노(또는 메조소프라노)', '플루트', '클라리넷', '바이올린', '첼로', '피아노'];
+  const schoenbergAnswerQ2 = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
   const haydnAnswerQ1 = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
   const haydnAnswerQ2 = '종달새';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -99,13 +102,19 @@ function AestheticPage({ go }) {
 
             <div className="journey-block">
               <div className="review-section-title">② 분석적 감상 (내 답변 + 정답)</div>
-              <div className="review-item">{isHandel ? 'Q1 가사 내용 비교' : (isHaydn ? 'Q1 악기 구성 비교' : 'Q1 등장인물 비교')}</div>
+              <div className="review-item">{isHandel ? 'Q1 가사 내용 비교' : (isHaydn ? 'Q1 악기 구성 비교' : (isSchoenberg ? 'Q1 편성 비교' : 'Q1 등장인물 비교'))}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">내 답변</div>
                   {isHandel ? (
                     <div className="fb show info">{handelLyricMeaning || '없음'}</div>
                   ) : isHaydn ? (
+                    <div className="chip-row">
+                      {analyticalCharacters.filter(Boolean).length
+                        ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>)
+                        : <span className="review-empty">없음</span>}
+                    </div>
+                  ) : isSchoenberg ? (
                     <div className="chip-row">
                       {analyticalCharacters.filter(Boolean).length
                         ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>)
@@ -127,6 +136,10 @@ function AestheticPage({ go }) {
                     <div className="chip-row">
                       {haydnAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
                     </div>
+                  ) : isSchoenberg ? (
+                    <div className="chip-row">
+                      {schoenbergAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
+                    </div>
                   ) : (
                     <div className="chip-row">
                       {analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
@@ -135,7 +148,7 @@ function AestheticPage({ go }) {
                 </div>
               </div>
 
-              <div className="review-item">{isHandel ? 'Q2 오페라와의 차이 비교' : (isHaydn ? 'Q2 떠오르는 동물 비교' : 'Q2 줄거리 비교')}</div>
+              <div className="review-item">{isHandel ? 'Q2 오페라와의 차이 비교' : (isHaydn ? 'Q2 떠오르는 동물 비교' : (isSchoenberg ? 'Q2 분위기 비교' : 'Q2 줄거리 비교'))}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">내 답변</div>
@@ -147,6 +160,8 @@ function AestheticPage({ go }) {
                     <div className="fb show gold">{handelAnswerQ2.join('\n')}</div>
                   ) : isHaydn ? (
                     <div className="fb show gold">{haydnAnswerQ2}</div>
+                  ) : isSchoenberg ? (
+                    <div className="fb show gold">{schoenbergAnswerQ2}</div>
                   ) : (
                     <div className="fb show gold">{analyticalAnswerStory}</div>
                   )}
@@ -185,7 +200,7 @@ function AestheticPage({ go }) {
         <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
 
         <div className="sec">Q3. 오늘날 삶과 연결</div>
-        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isHaydn ? "고전주의 음악인 '종달새'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?")} />
+        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isHaydn ? "고전주의 음악인 '종달새'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isSchoenberg ? "표현주의 음악인 '달에 홀린 피에로'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?"))} />
         <div className="btn-row"><button className="btn-s" onClick={() => go('historyCards')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('aesthetic', true); go('finalCard'); }}>최종 감상문 만들기 →</button></div>
       </div>
     </div>

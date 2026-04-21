@@ -20,8 +20,9 @@ function FinalCard({ go }) {
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
-  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : '마왕');
-  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : 'Der Erlkönig, Schubert 1815');
+  const isSchoenberg = selectedSong === 'schoenberg';
+  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : '마왕'));
+  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : 'Der Erlkönig, Schubert 1815'));
   const songLabel = selectedSong === 'handel'
     ? '할렐루야 (헨델)'
     : (selectedSong === 'mawang'
@@ -37,6 +38,8 @@ function FinalCard({ go }) {
   const handelAnswerQ2 = '오페라와 달리 오라토리오는 무대 연기·의상 없이 합창과 관현악으로 종교적 내용을 전달해요.';
   const haydnAnswerQ1 = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
   const haydnAnswerQ2 = '종달새';
+  const schoenbergAnswerQ1 = ['소프라노(또는 메조소프라노)', '플루트', '클라리넷', '바이올린', '첼로', '피아노'];
+  const schoenbergAnswerQ2 = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -179,6 +182,8 @@ function FinalCard({ go }) {
                 <div className="fb show info">{handelLyricMeaning || '없음'}</div>
               ) : isHaydn ? (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
+              ) : isSchoenberg ? (
+                <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               ) : (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               )}
@@ -189,6 +194,8 @@ function FinalCard({ go }) {
                 <div className="fb show gold">{handelAnswerQ1}</div>
               ) : isHaydn ? (
                 <div className="chip-row">{haydnAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
+              ) : isSchoenberg ? (
+                <div className="chip-row">{schoenbergAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               ) : (
                 <div className="chip-row">{analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               )}
@@ -196,7 +203,7 @@ function FinalCard({ go }) {
           </div>
           <div className="cmp-mini-grid">
             <div><div className="small-note">Q2 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
-            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : analyticalAnswerStory)}</div></div>
+            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : analyticalAnswerStory))}</div></div>
           </div>
 
           <div className="summary-div"></div>
