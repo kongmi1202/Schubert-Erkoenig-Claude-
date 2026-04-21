@@ -505,6 +505,120 @@ canvas{display:block;width:100%;touch-action:none}
 .instr-name{font-size:12px;font-weight:500;color:#f2ecff;}
 .instr-desc{font-size:10px;color:#c8bde0;font-weight:400;margin-top:3px;}
 
+/* 달에 홀린 피에로 */
+/* 가사 레이아웃 */
+.lyric-wrap {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin-bottom: 20px;
+}
+@media(min-width: 640px) {
+  .lyric-wrap {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+.lyric-block {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 2.2;
+  font-weight: 300;
+}
+.lyric-block.de {
+  font-style: italic;
+  color: var(--text-dim);
+  border-bottom: none;
+}
+@media(min-width: 640px) {
+  .lyric-block.de { border-bottom: 1px solid var(--border); }
+}
+.lyric-block.kr { color: var(--text); }
+.lyric-title {
+  font-size: 10px;
+  letter-spacing: .3em;
+  color: var(--purple);
+  font-weight: 300;
+  margin-bottom: 10px;
+}
+
+/* 비교 듣기 카드 */
+.compare-listen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cl-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.cl-card.tonal  { border-left: 3px solid var(--green); }
+.cl-card.atonal { border-left: 3px solid var(--crimson); }
+.cl-label {
+  font-size: 10px;
+  letter-spacing: .2em;
+  font-weight: 300;
+  margin-bottom: 10px;
+}
+.cl-card.tonal  .cl-label { color: #90e0b0; }
+.cl-card.atonal .cl-label { color: #e09090; }
+
+/* 표현주의 이미지 비교 */
+.art-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.art-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+.art-img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  display: block;
+  background: var(--bg3);
+}
+.art-img-ph {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: var(--bg3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 300;
+}
+.art-info {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.art-name {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.art-desc {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-weight: 300;
+}
+
+@media(max-width: 480px) {
+  .compare-listen { grid-template-columns: 1fr; }
+  .art-compare    { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 900px){.video-lyrics-layout{grid-template-columns:1fr}.lyrics-panel{max-height:none}}
 @media (max-width: 700px){.cv-compare{grid-template-columns:1fr}.song-select-grid{grid-template-columns:1fr 1fr}}
 @media (max-width: 480px) { .palette{grid-template-columns:repeat(6,1fr)} .flip-grid,.review-grid,.cc-grid,.scene-grid,.artifact-grid,.cmp-mini-grid{grid-template-columns:1fr} .sci-grid{grid-template-columns:repeat(2,1fr)} .song-select-title{font-size:34px} .song-select-composer{font-size:18px} .song-select-tags{font-size:16px} }
