@@ -22,7 +22,15 @@ function FinalCard({ go }) {
   const isHaydn = selectedSong === 'haydn';
   const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : '마왕');
   const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : 'Der Erlkönig, Schubert 1815');
-  const songLabel = selectedSong === 'handel' ? '할렐루야 (헨델)' : (selectedSong === 'mawang' ? '마왕 (슈베르트)' : (selectedSong === 'haydn' ? '종달새 (하이든)' : '—'));
+  const songLabel = selectedSong === 'handel'
+    ? '할렐루야 (헨델)'
+    : (selectedSong === 'mawang'
+      ? '마왕 (슈베르트)'
+      : (selectedSong === 'haydn'
+        ? '종달새 (하이든)'
+        : (selectedSong === 'schoenberg'
+          ? '달에 취하여 (쇤베르크)'
+          : '—')));
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
