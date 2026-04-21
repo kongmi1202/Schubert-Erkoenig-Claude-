@@ -67,17 +67,13 @@ function VvOverview({ go }) {
         <div className="sec">소네트</div>
         <div className="sonnet-item">
           <div className="sonnet-quote">
-            번개와 천둥이 치니
+            아, 그러나 그의 두려움은 얼마나 정당한가!
             <br />
-            지친 몸은 쉬지도 못하고,
+            하늘은 천둥 치고 번개 번뜩이며,
             <br />
-            파리와 등에 떼가 사납게 덤벼든다!
+            쏟아지는 우박은 자라나는 곡식의 이삭과
             <br />
-            아, 그의 두려움이 너무도 사실이었으니
-            <br />
-            하늘이 천둥치고 번개가 번쩍이며
-            <br />
-            우박이 익은 이삭을 모두 쓸어버린다.
+            기세등등하게 피어있던 꽃들을 꺾어버린다.
           </div>
         </div>
 

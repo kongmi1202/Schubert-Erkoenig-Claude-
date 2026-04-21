@@ -35,30 +35,12 @@ const SEGMENTS = [
     btnId: 'ans-vv-c2-btn',
     bodyId: 'ans-vv-c2-body',
     feedback: '우박이 떨어지는 모습을 짧고 강한 음의 반복으로 묘사했어요. 음표 하나하나가 우박 알갱이 같아요.'
-  },
-  {
-    id: 'vv-c3',
-    audioId: 'vv-s3',
-    quote: 'E piange il Pastorel, perché sospesa',
-    quoteKr: '목동은 두려워 울고 있으니',
-    question: '목동의 두려움과 불안을 음악으로 어떻게 표현했나요?',
-    choices: [
-      '음이 불안하게 떨리며 긴장감을 만든다',
-      '음이 밝고 경쾌하게 흘러간다',
-      '음이 규칙적으로 반복된다',
-      '음이 높고 맑게 울린다'
-    ],
-    answer: '음이 불안하게 떨리며 긴장감을 만든다',
-    btnId: 'ans-vv-c3-btn',
-    bodyId: 'ans-vv-c3-body',
-    feedback: '트레몰로(음을 빠르게 반복하는 기법)로 목동의 떨림과 불안함을 표현했어요.'
   }
 ];
 
 const AUDIO_SRC = {
   'vv-s1': '/audio/vv-s1.mp3',
-  'vv-s2': '/audio/vv-s2.mp3',
-  'vv-s3': '/audio/vv-s3.mp3'
+  'vv-s2': '/audio/vv-s2.mp3'
 };
 
 function VvSonnet({ go }) {
@@ -69,8 +51,7 @@ function VvSonnet({ go }) {
   const [playingId, setPlayingId] = useState('');
   const audioRefs = useRef({
     'vv-s1': null,
-    'vv-s2': null,
-    'vv-s3': null
+    'vv-s2': null
   });
 
   const stopOthers = (exceptId) => {
