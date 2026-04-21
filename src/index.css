@@ -566,6 +566,26 @@ canvas{display:block;width:100%;touch-action:none}
 }
 .cl-card.tonal  .cl-label { color: #90e0b0; }
 .cl-card.atonal .cl-label { color: #e09090; }
+.choice-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.choice-item {
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.choice-item.selected {
+  border-color: var(--purple);
+  background: var(--purple-pale);
+  color: var(--text);
+}
 
 /* 표현주의 이미지 비교 */
 .art-compare {
