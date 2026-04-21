@@ -16,6 +16,7 @@ import HistoryCardsHandel from './components/screens/HistoryCardsHandel';
 import HyTimbre from './components/screens/HyTimbre';
 import HyTheme from './components/screens/HyTheme';
 import HistoryCardsHaydn from './components/screens/HistoryCardsHaydn';
+import SbOverview from './components/screens/SbOverview';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
@@ -70,6 +71,9 @@ function App() {
       if (currentScreen === 'voiceDesign') return HyTimbre;
       if (currentScreen === 'pianoAnalysis') return HyTheme;
       if (currentScreen === 'historyCards') return HistoryCardsHaydn;
+    }
+    if (selectedSong === 'schoenberg') {
+      if (currentScreen === 'analyticalOverview') return SbOverview;
     }
     return screens[currentScreen];
   }, [currentScreen, selectedSong]);

@@ -31,7 +31,7 @@ const SONG_CONFIG = {
     cardSongTitle: '✦ 나의 종달새 감상문 · String Quartet No.67, Haydn 1790'
   },
   schoenberg: {
-    videoUrl: 'https://www.youtube.com/embed/GbBWdbJNdYA',
+    videoUrl: 'https://www.youtube.com/embed/-FUySRVF75k',
     videoTitle: "쇤베르크 '달에 취하여'를 감상해보세요",
     firstPage: 'sb-overview',
     subtabs: [
@@ -73,9 +73,41 @@ function VideoPage({ go }) {
 또 주가 길이 다스리시리. (영원히)
 
 할렐루야!`;
+  const lyricsSchoenberg = `Den Wein, den man mit Augen trinkt,
+눈으로 마시는 포도주를
+Gießt Nachts der Mond in Wogen nieder,
+달이 밤마다 물결처럼 쏟아붓고
+Und eine Springflut überschwemmt
+홍수가 범람하여
+Den stillen Horizont.
+고요한 지평선을 뒤덮는다.
+
+Gelüste, schauerlich und süß,
+오싹하고도 달콤한 욕망들이
+Schwimmt ohne Zahl im Fluten nieder!
+셀 수 없이 물결 속으로 흘러내린다!
+Den Wein, den man mit Augen trinkt,
+눈으로 마시는 포도주를
+Gießt Nachts der Mond in Wogen nieder.
+달이 밤마다 물결처럼 쏟아붓는다.
+
+Der Dichter, den die Andacht treibt,
+경건한 마음에 이끌리는 시인은
+Berauscht sich an dem heilgen Tranke,
+신성한 음료에 취해,
+Gen Himmel wendet er verzückt
+황홀경에 빠져 하늘을 향해
+Das Haupt und taumelnd saugt und schlürft er
+고개를 든 채 비틀거리며 빨아들이고 들이켠다
+Den Wein, den man mit Augen trinkt.
+눈으로 마시는 포도주를.`;
   const pageTitle = selectedConfig.videoTitle;
   const iframeSrc = selectedConfig.videoUrl;
-  const lyrics = selectedSong === 'haydn' ? '' : (isErlkonig ? lyricsErlkonig : lyricsHallelujah);
+  const lyrics = selectedSong === 'haydn'
+    ? ''
+    : selectedSong === 'schoenberg'
+      ? lyricsSchoenberg
+      : (isErlkonig ? lyricsErlkonig : lyricsHallelujah);
 
   return (
     <div className="screen active">

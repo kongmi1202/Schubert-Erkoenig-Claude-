@@ -33,6 +33,13 @@ function BottomWidgetBar({ currentScreen, go }) {
             { screen: 'pianoAnalysis', label: '주제 비교' },
             { screen: 'historyCards', label: '역사 맥락' }
           ]
+      : selectedSong === 'schoenberg'
+        ? [
+            { screen: 'analyticalOverview', label: '개요 파악' },
+            { screen: 'voiceDesign', label: '슈프레흐슈팀메' },
+            { screen: 'pianoAnalysis', label: '무조성' },
+            { screen: 'historyCards', label: '역사 맥락' }
+          ]
       : stage2SubSteps
   ), [selectedSong]);
   const stage2Screens = useMemo(() => stage2Steps.map((s) => s.screen), [stage2Steps]);
