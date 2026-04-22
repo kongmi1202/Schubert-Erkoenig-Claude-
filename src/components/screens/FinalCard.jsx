@@ -22,8 +22,9 @@ function FinalCard({ go }) {
   const isHaydn = selectedSong === 'haydn';
   const isSchoenberg = selectedSong === 'schoenberg';
   const isVivaldi = selectedSong === 'vivaldi';
-  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : (isVivaldi ? '여름 3악장' : '마왕')));
-  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : (isVivaldi ? 'Summer, Vivaldi 1725' : 'Der Erlkönig, Schubert 1815')));
+  const isChopin = selectedSong === 'chopin';
+  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : (isVivaldi ? '여름 3악장' : (isChopin ? '환상 즉흥곡' : '마왕'))));
+  const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : (isVivaldi ? 'Summer, Vivaldi 1725' : (isChopin ? 'Fantaisie-Impromptu Op.66, Chopin 1835' : 'Der Erlkönig, Schubert 1815'))));
   const songLabel = selectedSong === 'handel'
     ? '할렐루야 (헨델)'
     : (selectedSong === 'mawang'
@@ -47,6 +48,8 @@ function FinalCard({ go }) {
   const schoenbergAnswerQ2 = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
   const vivaldiAnswerQ1 = ['여름 폭풍우 장면', '지친 목동과 양떼', '갑작스러운 번개와 천둥', '우박으로 이삭이 쓸려감'];
   const vivaldiAnswerQ2 = '격렬하고 긴박한 폭풍우의 분위기예요. 빠른 템포와 강한 셈여림으로 폭풍우의 긴박함과 공포가 생생하게 전달돼요.';
+  const chopinAnswerQ1 = '피아노 독주예요. 다른 악기 없이 피아노 한 대가 선율과 반주를 모두 표현해요.';
+  const chopinAnswerQ2 = '빠르고 격렬한 A구간과 느리고 서정적인 B구간이 대비되어, 곡의 분위기가 극적으로 바뀌어요.';
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -246,6 +249,8 @@ function FinalCard({ go }) {
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               ) : isVivaldi ? (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
+              ) : isChopin ? (
+                <div className="fb show info">{analyticalCharacters?.[0] || '없음'}</div>
               ) : (
                 <div className="chip-row">{analyticalCharacters.filter(Boolean).length ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>) : <span className="review-empty">없음</span>}</div>
               )}
@@ -260,6 +265,8 @@ function FinalCard({ go }) {
                 <div className="chip-row">{schoenbergAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               ) : isVivaldi ? (
                 <div className="chip-row">{vivaldiAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
+              ) : isChopin ? (
+                <div className="fb show gold">{chopinAnswerQ1}</div>
               ) : (
                 <div className="chip-row">{analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}</div>
               )}
@@ -267,7 +274,7 @@ function FinalCard({ go }) {
           </div>
           <div className="cmp-mini-grid">
             <div><div className="small-note">Q2 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
-            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : (isVivaldi ? vivaldiAnswerQ2 : analyticalAnswerStory)))}</div></div>
+            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : (isVivaldi ? vivaldiAnswerQ2 : (isChopin ? chopinAnswerQ2 : analyticalAnswerStory))))}</div></div>
           </div>
 
           <div className="summary-div"></div>

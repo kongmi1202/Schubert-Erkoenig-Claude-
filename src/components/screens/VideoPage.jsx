@@ -129,6 +129,14 @@ Das Haupt und taumelnd saugt und schlürft er
 Den Wein, den man mit Augen trinkt.
 눈으로 마시는 포도주를.`;
   const sonnetVivaldi = '아, 그의 두려움은 그럴 만하구나. 하늘은 천둥을 울리고 우박을 내려 익은 곡식을 모두 쓸어버리네.';
+  const haydnGuide = `1) 시작 주제: 가장 먼저 들리는 선율이 어떤 악기인지 짐작해보세요.
+2) 음색 구분: 제1바이올린·제2바이올린·비올라·첼로의 역할 차이를 들어보세요.
+3) 분위기 변화: 밝고 가벼운 느낌에서 서정적인 느낌으로 바뀌는 지점을 찾아보세요.
+4) 전체 감상: "종달새"라는 제목과 연결되는 이유를 선율의 움직임으로 설명해보세요.`;
+  const chopinGuide = `1) 시작(빠른 구간): 오른손 선율과 왼손 반주의 속도 차이를 먼저 들어보세요.
+2) 중간(느린 구간): 분위기가 어떻게 부드럽게 바뀌는지 단어로 적어보세요.
+3) 다시 빠른 구간: 처음과 비슷하지만 무엇이 달라졌는지 비교해보세요.
+4) 전체 감상: "격렬함 ↔ 서정성"의 대비가 언제 가장 크게 느껴지는지 찾아보세요.`;
   const pageTitle = selectedConfig.videoTitle;
   const iframeSrc = selectedConfig.videoUrl;
   const lyrics = selectedSong === 'haydn'
@@ -147,16 +155,16 @@ Den Wein, den man mit Augen trinkt.
           <div className="video-wrap" style={{ marginBottom: 0 }}>
             <iframe src={iframeSrc} allowFullScreen />
           </div>
-          {!isChopin ? (
-            <div className="lyrics-panel">
-              <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
-                {selectedSong === 'haydn' ? '안내' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
-              </div>
-              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
-                {selectedSong === 'haydn' ? '선율과 악기 음색의 변화를 중심으로 감상해보세요.' : lyrics}
-              </pre>
+          <div className="lyrics-panel">
+            <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
+              {(selectedSong === 'chopin' || selectedSong === 'haydn') ? '감상 가이드' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
             </div>
-          ) : null}
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
+              {selectedSong === 'chopin'
+                ? chopinGuide
+                : (selectedSong === 'haydn' ? haydnGuide : lyrics)}
+            </pre>
+          </div>
         </div>
         <div className="fb show info">🎵 영상을 감상하며 음악이 주는 느낌을 자유롭게 느껴보세요.</div>
         <div className="btn-row"><button className="btn-s" onClick={() => go('songSelect')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('video', true); go('sensoryPage'); }}>감상 완료, 다음 →</button></div>

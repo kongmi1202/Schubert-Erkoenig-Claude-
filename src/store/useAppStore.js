@@ -50,6 +50,8 @@ export const useAppStore = create((set) => ({
   },
   selectedCharacter: '해설자',
   flippedCards: [],
+  emotionResult: null,
+  emotionSummary: '',
   setStudentField: (field, value) => set((s) => ({ student: { ...s.student, [field]: value } })),
   setSelectedSong: (songId) => set({ selectedSong: songId }),
   toggleKeyword: (kw) => set((s) => ({
@@ -84,5 +86,6 @@ export const useAppStore = create((set) => ({
   flipHistoryCard: (id) => set((s) => ({
     flippedCards: s.flippedCards.includes(id) ? s.flippedCards : [...s.flippedCards, id]
   })),
-  setAnswerCheckOpen: (v) => set({ answerCheckOpen: v })
+  setAnswerCheckOpen: (v) => set({ answerCheckOpen: v }),
+  setEmotionAnalysis: (emotionResult, emotionSummary) => set({ emotionResult, emotionSummary })
 }));

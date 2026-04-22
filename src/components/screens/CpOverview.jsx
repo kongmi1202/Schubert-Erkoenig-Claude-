@@ -5,8 +5,12 @@ function CpOverview({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [q1, setQ1] = useState('');
-  const [q2, setQ2] = useState('');
+  const analyticalCharacters = useAppStore((s) => s.analyticalCharacters);
+  const analyticalStory = useAppStore((s) => s.analyticalStory);
+  const setAnalyticalCharacter = useAppStore((s) => s.setAnalyticalCharacter);
+  const setAnalyticalStory = useAppStore((s) => s.setAnalyticalStory);
+  const q1 = analyticalCharacters?.[0] || '';
+  const q2 = analyticalStory || '';
   const [showQ1Hint, setShowQ1Hint] = useState(false);
   const [showQ2Hint, setShowQ2Hint] = useState(false);
   const [q1Open, setQ1Open] = useState(false);
@@ -56,7 +60,7 @@ function CpOverview({ go }) {
           id="cp-q1"
           className="txt"
           value={q1}
-          onChange={(e) => setQ1(e.target.value)}
+          onChange={(e) => setAnalyticalCharacter(0, e.target.value)}
           placeholder="악기 편성을 적어보세요."
         />
         <button type="button" className="ai-btn" onClick={() => setShowQ1Hint((prev) => !prev)}>✨ 참고 예시 보기</button>
@@ -92,7 +96,7 @@ function CpOverview({ go }) {
           id="cp-q2"
           className="txt"
           value={q2}
-          onChange={(e) => setQ2(e.target.value)}
+          onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder="분위기 변화와 느낌 전환 지점을 적어보세요."
         />
         <button type="button" className="ai-btn" onClick={() => setShowQ2Hint((prev) => !prev)}>✨ 참고 예시 보기</button>

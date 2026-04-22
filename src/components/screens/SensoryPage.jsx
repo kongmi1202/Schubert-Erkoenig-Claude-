@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker, MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAppStore } from '../../store/useAppStore';
+import EmotionAnalysis from '../EmotionAnalysis';
 
 const keywords = ['기쁨', '슬픔', '긴장', '평화', '쓸쓸함', '경쾌', '웅장', '역동적'];
 const colors = [
@@ -62,6 +63,7 @@ function SensoryPage({ go }) {
   const [drawingSaved, setDrawingSaved] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [sensoryHint, setSensoryHint] = useState(sensoryPromptHints[0]);
+  const [emotionTrigger, setEmotionTrigger] = useState(0);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const mathCanvasRef = useRef(null);
@@ -261,12 +263,16 @@ function SensoryPage({ go }) {
         <div className="pal-selected-names">{selectedColors.length ? selectedColors.join(', ') : '선택한 색상 이름이 여기에 표시됩니다.'}</div>
         <div className="sec">느낌·분위기 서술</div>
         <textarea className="txt" value={sensoryDesc} onChange={(e) => setSensoryDesc(e.target.value)} placeholder="자유롭게 써보세요" />
-        <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 참고 예시 보기</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 참고 예시 보기</button>
+          <button className="btn-p" type="button" onClick={() => setEmotionTrigger((v) => v + 1)}>📊 감정 분석하기</button>
+        </div>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.sensory ? 'show' : ''}`}>
           <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {sensoryHint}
         </div>
+        <EmotionAnalysis text={sensoryDesc} triggerKey={emotionTrigger} hideButton />
 
         <div className="sec">음악 말고 다른 방식으로 표현하기 (2개 선택)</div>
         <div className="cc-grid">

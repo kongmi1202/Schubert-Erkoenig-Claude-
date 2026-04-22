@@ -28,18 +28,21 @@ function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type, toggleAi, aiOpen,
     selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
-    selectedSong, handelLyricMeaning, handelOperaDiff
+    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
   const isSchoenberg = selectedSong === 'schoenberg';
   const isVivaldi = selectedSong === 'vivaldi';
+  const isChopin = selectedSong === 'chopin';
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const schoenbergAnswerQ1 = ['소프라노(또는 메조소프라노)', '플루트', '클라리넷', '바이올린', '첼로', '피아노'];
   const schoenbergAnswerQ2 = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
   const vivaldiAnswerQ1 = ['여름 폭풍우 장면', '지친 목동과 양떼', '갑작스러운 번개와 천둥', '우박으로 이삭이 쓸려감'];
   const vivaldiAnswerQ2 = '격렬하고 긴박한 폭풍우의 분위기예요. 빠른 템포와 강한 셈여림으로 폭풍우의 긴박함과 공포가 생생하게 전달돼요.';
+  const chopinAnswerQ1 = '피아노 독주예요. 다른 악기 없이 피아노 한 대가 선율과 반주를 모두 표현해요.';
+  const chopinAnswerQ2 = '빠르고 격렬한 A구간과 느리고 서정적인 B구간이 대비되어, 곡의 분위기가 극적으로 바뀌어요.';
   const haydnAnswerQ1 = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
   const haydnAnswerQ2 = '종달새';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -50,6 +53,16 @@ function AestheticPage({ go }) {
   ];
   const [q1Hint, setQ1Hint] = useState(q1Hints[0]);
   const [q2Hint, setQ2Hint] = useState(q2Hints[0]);
+  const emotionRows = emotionResult
+    ? [
+        { key: 'sadness', label: '슬픔', emoji: '😢', value: Number(emotionResult.sadness) || 0 },
+        { key: 'fear', label: '공포', emoji: '😨', value: Number(emotionResult.fear) || 0 },
+        { key: 'anger', label: '분노', emoji: '😠', value: Number(emotionResult.anger) || 0 },
+        { key: 'happiness', label: '기쁨', emoji: '😊', value: Number(emotionResult.happiness) || 0 },
+        { key: 'surprise', label: '놀라움', emoji: '😮', value: Number(emotionResult.surprise) || 0 },
+        { key: 'disgust', label: '혐오', emoji: '😒', value: Number(emotionResult.disgust) || 0 }
+      ].sort((a, b) => b.value - a.value).slice(0, 3)
+    : [];
   const showRandomQ1Hint = () => {
     const next = q1Hints[Math.floor(Math.random() * q1Hints.length)];
     setQ1Hint(next);
@@ -109,7 +122,7 @@ function AestheticPage({ go }) {
 
             <div className="journey-block">
               <div className="review-section-title">② 분석적 감상 (내 답변 + 정답)</div>
-              <div className="review-item">{isHandel ? 'Q1 가사 내용 비교' : (isHaydn ? 'Q1 악기 구성 비교' : (isSchoenberg ? 'Q1 편성 비교' : (isVivaldi ? 'Q1 장면 묘사 비교' : 'Q1 등장인물 비교')))}</div>
+              <div className="review-item">{isHandel ? 'Q1 가사 내용 비교' : (isHaydn ? 'Q1 악기 구성 비교' : (isSchoenberg ? 'Q1 편성 비교' : (isVivaldi ? 'Q1 장면 묘사 비교' : (isChopin ? 'Q1 악기 편성 비교' : 'Q1 등장인물 비교'))))}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">내 답변</div>
@@ -133,6 +146,8 @@ function AestheticPage({ go }) {
                         ? analyticalCharacters.filter(Boolean).map((c) => <span key={c} className="review-chip">{c}</span>)
                         : <span className="review-empty">없음</span>}
                     </div>
+                  ) : isChopin ? (
+                    <div className="fb show info">{analyticalCharacters?.[0] || '없음'}</div>
                   ) : (
                     <div className="chip-row">
                       {analyticalCharacters.filter(Boolean).length
@@ -157,6 +172,8 @@ function AestheticPage({ go }) {
                     <div className="chip-row">
                       {vivaldiAnswerQ1.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
                     </div>
+                  ) : isChopin ? (
+                    <div className="fb show gold">{chopinAnswerQ1}</div>
                   ) : (
                     <div className="chip-row">
                       {analyticalAnswerCharacters.map((c) => <span key={c} className="review-chip answer">{c}</span>)}
@@ -165,7 +182,7 @@ function AestheticPage({ go }) {
                 </div>
               </div>
 
-              <div className="review-item">{isHandel ? 'Q2 오페라와의 차이 비교' : (isHaydn ? 'Q2 떠오르는 동물 비교' : (isSchoenberg ? 'Q2 분위기 비교' : (isVivaldi ? 'Q2 분위기 비교' : 'Q2 줄거리 비교')))}</div>
+              <div className="review-item">{isHandel ? 'Q2 오페라와의 차이 비교' : (isHaydn ? 'Q2 떠오르는 동물 비교' : (isSchoenberg ? 'Q2 분위기 비교' : (isVivaldi ? 'Q2 분위기 비교' : (isChopin ? 'Q2 분위기 변화 비교' : 'Q2 줄거리 비교'))))}</div>
               <div className="cmp-mini-grid">
                 <div>
                   <div className="small-note">내 답변</div>
@@ -181,6 +198,8 @@ function AestheticPage({ go }) {
                     <div className="fb show gold">{schoenbergAnswerQ2}</div>
                   ) : isVivaldi ? (
                     <div className="fb show gold">{vivaldiAnswerQ2}</div>
+                  ) : isChopin ? (
+                    <div className="fb show gold">{chopinAnswerQ2}</div>
                   ) : (
                     <div className="fb show gold">{analyticalAnswerStory}</div>
                   )}
@@ -200,6 +219,19 @@ function AestheticPage({ go }) {
               </div>
             </div>
           </div>
+          {emotionResult ? (
+            <div style={{ marginTop: 12 }}>
+              <div className="review-section-title">감정 분석 결과</div>
+              <div className="chip-row" style={{ marginBottom: 8 }}>
+                {emotionRows.map((item) => (
+                  <span key={item.key} className="review-chip">
+                    {item.emoji} {item.label} {item.value}%
+                  </span>
+                ))}
+              </div>
+              <div className="fb show info">💬 {emotionSummary || '요약 없음'}</div>
+            </div>
+          ) : null}
         </div>
 
         <div className="sec">Q1. 분석 후 느낌의 변화</div>
@@ -219,7 +251,7 @@ function AestheticPage({ go }) {
         <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
 
         <div className="sec">Q3. 오늘날 삶과 연결</div>
-        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isHaydn ? "고전주의 음악인 '종달새'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isSchoenberg ? "표현주의 음악인 '달에 홀린 피에로'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isVivaldi ? "바로크 음악인 '사계 여름 3악장'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?")))} />
+        <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isHaydn ? "고전주의 음악인 '종달새'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isSchoenberg ? "표현주의 음악인 '달에 홀린 피에로'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isVivaldi ? "바로크 음악인 '사계 여름 3악장'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isChopin ? "낭만주의 피아노곡인 '환상 즉흥곡'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?"))))} />
         <div className="btn-row"><button className="btn-s" onClick={() => go('historyCards')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('aesthetic', true); go('finalCard'); }}>최종 감상문 만들기 →</button></div>
       </div>
     </div>
