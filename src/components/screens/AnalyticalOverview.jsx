@@ -33,8 +33,10 @@ const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ')
 
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
+  const isMawang = selectedSong === 'mawang';
+  const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
-  const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah' && !isHaydn;
+  const isErlkonig = isMawang;
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
@@ -60,7 +62,9 @@ function AnalyticalOverview({ go }) {
     : (isErlkonig ? correctStoryErlkonig : correctStoryHallelujah);
   const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
   const overviewTitle = isHaydn ? '종달새 개요 파악' : (isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악');
-  const overviewVideoSrc = isHaydn ? 'https://www.youtube.com/embed/BGX6u2NJxuM?start=0&end=28' : 'https://www.youtube.com/embed/hIQ37oUDNYg';
+  const overviewVideoSrc = isHaydn
+    ? 'https://www.youtube.com/embed/BGX6u2NJxuM?start=0&end=28'
+    : (isHandel ? 'https://www.youtube.com/embed/hIQ37oUDNYg' : 'https://www.youtube.com/embed/tgfmLln8zjg');
   const overviewVideoTitle = isHaydn ? '종달새 개요 영상' : (isErlkonig ? '마왕 해설 영상' : '할렐루야 해설 영상');
   const q1Title = isHaydn
     ? 'Q1. 이 음악을 연주하는 악기들은 무엇일까요?'
