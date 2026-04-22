@@ -23,7 +23,7 @@ function BottomWidgetBar({ currentScreen, go }) {
       ? [
           { screen: 'analyticalOverview', label: '개요 파악' },
           { screen: 'voiceDesign', label: '음화법' },
-          { screen: 'pianoAnalysis', label: '가락선' },
+          { screen: 'pianoAnalysis', label: '화성·다성음악' },
           { screen: 'historyCards', label: '역사 맥락' }
         ]
       : selectedSong === 'haydn'
@@ -38,6 +38,20 @@ function BottomWidgetBar({ currentScreen, go }) {
             { screen: 'analyticalOverview', label: '개요 파악' },
             { screen: 'voiceDesign', label: '슈프레흐슈팀메' },
             { screen: 'pianoAnalysis', label: '무조성' },
+            { screen: 'historyCards', label: '역사 맥락' }
+          ]
+      : selectedSong === 'vivaldi'
+        ? [
+            { screen: 'analyticalOverview', label: '개요 파악' },
+            { screen: 'voiceDesign', label: '표제 음악' },
+            { screen: 'pianoAnalysis', label: '협주곡' },
+            { screen: 'historyCards', label: '역사 맥락' }
+          ]
+      : selectedSong === 'chopin'
+        ? [
+            { screen: 'analyticalOverview', label: '개요 파악' },
+            { screen: 'voiceDesign', label: '형식' },
+            { screen: 'pianoAnalysis', label: '리듬' },
             { screen: 'historyCards', label: '역사 맥락' }
           ]
       : stage2SubSteps
