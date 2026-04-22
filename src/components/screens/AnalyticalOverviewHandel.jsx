@@ -12,16 +12,16 @@ const HANDEL_COMPARE_ROWS = [
   { key: '공연장소', opera: '오페라 극장', oratorio: '교회·콘서트홀' }
 ];
 const HANDEL_Q1_HINTS = [
-  '예시) 이 곡은 성경 내용을 바탕으로 하고, "할렐루야"를 반복해 신의 위대함을 찬양해요.',
-  '예시) 가사는 하나님과 왕의 권능을 높이며, 합창으로 경건하고 장엄한 분위기를 만들어요.',
-  '예시) 성경 메시지를 중심으로 감사와 찬양을 반복해 예배 같은 느낌을 전해줘요.',
-  '예시) "할렐루야" 후렴이 계속 이어지면서 신앙적 기쁨과 경외감을 강조해요.'
+  '가사에 반복되는 핵심 단어를 먼저 찾아보고, 그 단어가 어떤 대상을 높이는지 적어보세요.',
+  '이 곡이 사랑 이야기인지, 종교적 찬양인지 먼저 분류한 뒤 근거 단어를 1~2개 붙여보세요.',
+  '합창이 커지는 부분에서 전달되는 메시지가 무엇인지 한 문장으로 정리해보세요.',
+  '답안은 "무엇을 노래하는가 + 왜 그렇게 들리는가" 두 문장 구조로 써보세요.'
 ];
 const HANDEL_Q2_HINTS = [
-  '예시) 오페라는 무대 연기와 의상이 있지만, 오라토리오는 연기 없이 합창과 관현악 중심으로 들려줘요.',
-  '예시) 오페라는 극장에서 이야기를 연기하고, 오라토리오는 공연장에서 종교적 내용을 노래로 전해요.',
-  '예시) 오페라는 인물 연기가 핵심이고, 오라토리오는 합창으로 메시지를 전달하는 점이 달라요.',
-  '예시) 오페라는 장면 연출이 강조되고, 오라토리오는 무대 장치보다 음악과 가사 전달에 집중해요.'
+  '비교 기준을 먼저 정해보세요: 무대 연기 유무, 가사 주제, 공연 형태 중 2가지만 골라도 충분해요.',
+  '오페라/오라토리오를 각각 한 단어로 요약하고, 왜 그렇게 요약했는지 근거를 붙여보세요.',
+  '눈으로 보는 요소(연기·의상)와 귀로 듣는 요소(합창·관현악)를 나눠 비교하면 정리가 쉬워요.',
+  '답안은 "오페라는 ___, 오라토리오는 ___"처럼 대응 구조로 쓰면 명확해져요.'
 ];
 
 function pickRandom(items, prevValue) {
@@ -121,7 +121,7 @@ function AnalyticalOverviewHandel({ go }) {
         <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
         {showQ1Example ? (
           <div className="ai-bubble show">
-            <div className="ai-bubble-label">예시 문장 (참고용)</div>
+            <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
             {q1Example}
           </div>
         ) : null}
@@ -162,7 +162,7 @@ function AnalyticalOverviewHandel({ go }) {
         <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
         {showQ2Example ? (
           <div className="ai-bubble show">
-            <div className="ai-bubble-label">예시 문장 (참고용)</div>
+            <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
             {q2Example}
           </div>
         ) : null}

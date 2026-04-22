@@ -74,6 +74,7 @@ const SONG_CONFIG = {
 function VideoPage({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const selectedSong = useAppStore((s) => s.selectedSong);
+  const isChopin = selectedSong === 'chopin';
   const selectedConfig = SONG_CONFIG[selectedSong] || SONG_CONFIG.mawang;
   const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah' && selectedSong !== 'haydn';
   const lyricsErlkonig = `[🎙️해설자] 누가 늦은 밤 말을 달려 그들은 아버지와 아들 / 아버지 아이를 품에 안고, 안고 달리네, 따뜻하게.
@@ -146,14 +147,16 @@ Den Wein, den man mit Augen trinkt.
           <div className="video-wrap" style={{ marginBottom: 0 }}>
             <iframe src={iframeSrc} allowFullScreen />
           </div>
-          <div className="lyrics-panel">
-            <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
-              {selectedSong === 'haydn' ? '안내' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
+          {!isChopin ? (
+            <div className="lyrics-panel">
+              <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
+                {selectedSong === 'haydn' ? '안내' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
+              </div>
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
+                {selectedSong === 'haydn' ? '선율과 악기 음색의 변화를 중심으로 감상해보세요.' : lyrics}
+              </pre>
             </div>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
-              {selectedSong === 'haydn' ? '선율과 악기 음색의 변화를 중심으로 감상해보세요.' : lyrics}
-            </pre>
-          </div>
+          ) : null}
         </div>
         <div className="fb show info">🎵 영상을 감상하며 음악이 주는 느낌을 자유롭게 느껴보세요.</div>
         <div className="btn-row"><button className="btn-s" onClick={() => go('songSelect')}>← 이전</button><button className="btn-p" onClick={() => { setStageCompletion('video', true); go('sensoryPage'); }}>감상 완료, 다음 →</button></div>

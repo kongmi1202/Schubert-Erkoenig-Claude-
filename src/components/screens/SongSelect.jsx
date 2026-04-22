@@ -37,6 +37,14 @@ const SONGS = [
     composer: 'VIVALDI · 1725',
     tags: ['바로크', '바이올린 협주곡', '표제음악'],
     borderColor: 'rgba(39,174,96,.3)'
+  },
+  {
+    id: 'chopin',
+    icon: '🎹',
+    title: '환상 즉흥곡',
+    composer: 'CHOPIN · 1835',
+    tags: ['낭만주의', '피아노 독주', 'ABA 형식'],
+    borderColor: 'rgba(139,92,246,.3)'
   }
 ];
 
