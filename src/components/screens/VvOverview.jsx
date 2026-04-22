@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 
 const helperHints = [
   '소네트에 나온 장면(번개, 천둥, 우박)을 먼저 키워드로 적고 문장으로 연결해보세요.',
@@ -19,8 +21,12 @@ function VvOverview({ go }) {
   const [q2Open, setQ2Open] = useState(false);
   const [q1Hint, setQ1Hint] = useState(helperHints[0]);
   const [q2Hint, setQ2Hint] = useState(helperHints[1]);
+  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
+  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
 
   const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
+  const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1.trim(), q2: q2.trim() }), [q1, q2]);
+  const canOpenAnswer = canProceed && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
 
   const showHint = (forQ1) => {
     const next = helperHints[Math.floor(Math.random() * helperHints.length)];
@@ -31,6 +37,20 @@ function VvOverview({ go }) {
       setQ2Hint(next);
       setShowQ2Hint(true);
     }
+  };
+  const requestFeedback = () =>
+    generateAnalyticalCompareFeedback({
+      userCharacterSlots: [],
+      userCharactersText: q1,
+      correctCharacters: ['여름 폭풍우 장면', '지친 목동과 양떼', '갑작스러운 번개와 천둥', '우박으로 이삭이 쓸려감'],
+      userStory: q2,
+      correctStory: '격렬하고 긴박한 폭풍우의 분위기예요. 빠른 템포와 강한 셈여림으로 폭풍우의 긴박함과 공포가 생생하게 전달돼요.'
+    });
+  const onFeedbackRequested = () => {
+    setHasRequestedFeedback(true);
+    setFeedbackSnapshot(currentSnapshot);
+    setQ1Open(false);
+    setQ2Open(false);
   };
 
   return (
@@ -84,18 +104,21 @@ function VvOverview({ go }) {
           value={q1}
           onChange={(e) => setQ1(e.target.value)}
         />
-        <button type="button" className="ai-btn" onClick={() => showHint(true)}>✨ AI 도우미</button>
+        <button type="button" className="ai-btn" onClick={() => showHint(true)}>✨ 참고 예시 보기</button>
         <div className={`ai-bubble ${showQ1Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">생각 힌트</div>
+          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {q1Hint}
         </div>
+        <CompareAiFeedbackBlock requestFn={requestFeedback} onRequested={onFeedbackRequested} />
         <button
           type="button"
           className="answer-check-toggle"
           onClick={() => setQ1Open((prev) => !prev)}
           aria-expanded={q1Open}
+          disabled={!canOpenAnswer}
+          style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
         </button>
         <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
@@ -119,9 +142,9 @@ function VvOverview({ go }) {
           value={q2}
           onChange={(e) => setQ2(e.target.value)}
         />
-        <button type="button" className="ai-btn" onClick={() => showHint(false)}>✨ AI 도우미</button>
+        <button type="button" className="ai-btn" onClick={() => showHint(false)}>✨ 참고 예시 보기</button>
         <div className={`ai-bubble ${showQ2Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">생각 힌트</div>
+          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {q2Hint}
         </div>
         <button
@@ -129,8 +152,10 @@ function VvOverview({ go }) {
           className="answer-check-toggle"
           onClick={() => setQ2Open((prev) => !prev)}
           aria-expanded={q2Open}
+          disabled={!canOpenAnswer}
+          style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
         </button>
         <div className={`answer-compare-slide ${q2Open ? 'open' : ''}`}>

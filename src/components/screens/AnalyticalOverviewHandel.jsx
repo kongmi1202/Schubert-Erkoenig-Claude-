@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 
 const HANDEL_ANSWER_Q1 =
   '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -46,10 +48,14 @@ function AnalyticalOverviewHandel({ go }) {
   const [q2Example, setQ2Example] = useState(HANDEL_Q2_HINTS[0]);
   const [showQ1Example, setShowQ1Example] = useState(false);
   const [showQ2Example, setShowQ2Example] = useState(false);
+  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
+  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
 
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
   const canProceed = canOpenQ1Answer && canOpenQ2Answer;
+  const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1Text.trim(), q2: q2Text.trim() }), [q1Text, q2Text]);
+  const canOpenAnswer = canProceed && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
 
   const onQ1Example = () => {
     setQ1Example((prev) => pickRandom(HANDEL_Q1_HINTS, prev));
@@ -59,6 +65,20 @@ function AnalyticalOverviewHandel({ go }) {
   const onQ2Example = () => {
     setQ2Example((prev) => pickRandom(HANDEL_Q2_HINTS, prev));
     setShowQ2Example(true);
+  };
+  const requestFeedback = () =>
+    generateAnalyticalCompareFeedback({
+      userCharacterSlots: [],
+      userCharactersText: q1Text,
+      correctCharacters: ['성경(요한계시록)', '할렐루야 반복', '신의 위대함 찬양'],
+      userStory: q2Text,
+      correctStory: HANDEL_COMPARE_ROWS.map((row) => `${row.key}: ${row.opera} / ${row.oratorio}`).join(', ')
+    });
+  const onFeedbackRequested = () => {
+    setHasRequestedFeedback(true);
+    setFeedbackSnapshot(currentSnapshot);
+    setQ1Open(false);
+    setQ2Open(false);
   };
 
   return (
@@ -105,10 +125,18 @@ function AnalyticalOverviewHandel({ go }) {
             {q1Example}
           </div>
         ) : null}
+        <CompareAiFeedbackBlock requestFn={requestFeedback} onRequested={onFeedbackRequested} />
 
         {canOpenQ1Answer ? (
-          <button type="button" className="answer-check-toggle" onClick={() => setQ1Open((v) => !v)} aria-expanded={q1Open}>
-            <span className="answer-check-toggle-label">정답 확인하기</span>
+          <button
+            type="button"
+            className="answer-check-toggle"
+            onClick={() => setQ1Open((v) => !v)}
+            aria-expanded={q1Open}
+            disabled={!canOpenAnswer}
+            style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          >
+            <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
           </button>
         ) : null}
@@ -140,8 +168,15 @@ function AnalyticalOverviewHandel({ go }) {
         ) : null}
 
         {canOpenQ2Answer ? (
-          <button type="button" className="answer-check-toggle" onClick={() => setQ2Open((v) => !v)} aria-expanded={q2Open}>
-            <span className="answer-check-toggle-label">정답 확인하기</span>
+          <button
+            type="button"
+            className="answer-check-toggle"
+            onClick={() => setQ2Open((v) => !v)}
+            aria-expanded={q2Open}
+            disabled={!canOpenAnswer}
+            style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          >
+            <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
           </button>
         ) : null}

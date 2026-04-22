@@ -154,6 +154,8 @@ function VoiceDesign({ go }) {
   });
   const [showCompare, setShowCompare] = useState(false);
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
+  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
+  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
@@ -201,6 +203,20 @@ function VoiceDesign({ go }) {
     () => generateVoiceDesignCompareFeedback([selectedCharacter], voiceDesign, answerKey),
     [selectedCharacter, voiceDesign]
   );
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        selectedCharacter,
+        row: voiceDesign[selectedCharacter]
+      }),
+    [selectedCharacter, voiceDesign]
+  );
+  const canOpenAnswerCheck = canShowAnswerCheck && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
+  const onFeedbackRequested = useCallback(() => {
+    setHasRequestedFeedback(true);
+    setFeedbackSnapshot(currentSnapshot);
+    setShowCompare(false);
+  }, [currentSnapshot]);
 
   const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
 
@@ -286,13 +302,16 @@ function VoiceDesign({ go }) {
 
         {canShowAnswerCheck ? (
           <>
+            <CompareAiFeedbackBlock requestFn={requestVoiceFeedback} onRequested={onFeedbackRequested} />
             <button
               type="button"
               className="answer-check-toggle"
               onClick={() => setShowCompare((v) => !v)}
               aria-expanded={showCompare}
+              disabled={!canOpenAnswerCheck}
+              style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             >
-              <span className="answer-check-toggle-label">정답 확인하기 · {selectedCharacter}</span>
+              <span className="answer-check-toggle-label">{canOpenAnswerCheck ? `정답 확인하기 · ${selectedCharacter}` : '피드백 반영 후 정답 확인하기'}</span>
               <span className="answer-check-toggle-chevron" aria-hidden="true">
                 {showCompare ? '▲' : '▼'}
               </span>
@@ -335,7 +354,6 @@ function VoiceDesign({ go }) {
                 </table>
                 <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
             <div className="fb show info">💬 위 정답은 {isErlkonig ? '시와 음악 해설' : '곡의 성부/화성 해설'}에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
-                <CompareAiFeedbackBlock requestFn={requestVoiceFeedback} />
               </div>
             </div>
           </>

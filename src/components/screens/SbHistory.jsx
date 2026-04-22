@@ -101,7 +101,7 @@ function SbHistory({ go }) {
           onChange={(e) => setArtCommon(e.target.value)}
           placeholder="세 작품의 공통된 느낌이나 표현 방식을 써보세요..."
         />
-        <button type="button" className="ai-btn" onClick={() => setShowHint((prev) => !prev)}>✨ AI 도우미</button>
+        <button type="button" className="ai-btn" onClick={() => setShowHint((prev) => !prev)}>✨ 참고 예시 보기</button>
         <div className={`ai-bubble ${showHint ? 'show' : ''}`}>
           <div className="ai-bubble-label">예시</div>
           세 작품 모두 불안하고 혼란스러운
