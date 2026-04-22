@@ -261,10 +261,10 @@ function SensoryPage({ go }) {
         <div className="pal-selected-names">{selectedColors.length ? selectedColors.join(', ') : '선택한 색상 이름이 여기에 표시됩니다.'}</div>
         <div className="sec">느낌·분위기 서술</div>
         <textarea className="txt" value={sensoryDesc} onChange={(e) => setSensoryDesc(e.target.value)} placeholder="자유롭게 써보세요" />
-        <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 생각 질문 보기</button>
+        <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.sensory ? 'show' : ''}`}>
-          <div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>
+          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {sensoryHint}
         </div>
 

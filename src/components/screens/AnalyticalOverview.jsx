@@ -29,6 +29,7 @@ const hallelujahPromptHints = [
   '혼자 부르는 느낌에서 합창으로 커지는 순간을 한 문장으로 써봐.',
   '같은 "할렐루야"가 왜 다르게 들리는지 화성/성부 관점으로 적어봐.'
 ];
+const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
 
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
@@ -49,6 +50,8 @@ function AnalyticalOverview({ go }) {
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
   const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
+  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
+  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
   const correctCharacters = isHaydn
     ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
     : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
@@ -80,6 +83,16 @@ function AnalyticalOverview({ go }) {
     () => characters.filter((c) => c && c.trim()).join(', '),
     [characters]
   );
+  const currentAnswerSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        characters: characters.map((c) => normalizeText(c)),
+        story: normalizeText(story)
+      }),
+    [characters, story]
+  );
+  const hasEditedAfterFeedback = hasRequestedFeedback && feedbackSnapshot !== currentAnswerSnapshot;
+  const canOpenAnswerCheck = isAllFilled && hasRequestedFeedback && hasEditedAfterFeedback;
 
   const requestAnalyticalFeedback = useCallback(
     () =>
@@ -92,6 +105,11 @@ function AnalyticalOverview({ go }) {
       }),
     [characters, userCharactersText, story]
   );
+  const onFeedbackRequested = useCallback(() => {
+    setHasRequestedFeedback(true);
+    setFeedbackSnapshot(currentAnswerSnapshot);
+    setAnswerCheckOpen(false);
+  }, [currentAnswerSnapshot, setAnswerCheckOpen]);
 
   useEffect(() => {
     if (!isAllFilled) setAnswerCheckOpen(false);
@@ -276,23 +294,41 @@ function AnalyticalOverview({ go }) {
           onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder={q2Placeholder}
         />
-        <button className="ai-btn" onClick={showRandomStoryHint}>✨ 생각 질문 보기</button>
+        <button className="ai-btn" onClick={showRandomStoryHint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.story ? 'show' : ''}`}>
-          <div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>
+          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {storyHint}
         </div>
 
+        <CompareAiFeedbackBlock requestFn={requestAnalyticalFeedback} onRequested={onFeedbackRequested} />
+
         {isAllFilled ? (
-          <button type="button" className="answer-check-toggle" onClick={() => { setAnswerCheckOpen(!answerCheckOpen); setStageCompletion('analytical', true); }} aria-expanded={answerCheckOpen}>
-            <span className="answer-check-toggle-label">정답 확인하기</span>
+          <div className="small-note" style={{ marginTop: 8 }}>
+            {!hasRequestedFeedback
+              ? '먼저 실시간 피드백을 받아보세요.'
+              : (hasEditedAfterFeedback
+                ? '좋아요! 이제 정답을 확인해 보세요.'
+                : '피드백을 반영해 답안을 한 번 수정하면 정답을 확인할 수 있어요.')}
+          </div>
+        ) : null}
+
+        {isAllFilled ? (
+          <button
+            type="button"
+            className="answer-check-toggle"
+            onClick={() => { setAnswerCheckOpen(!answerCheckOpen); setStageCompletion('analytical', true); }}
+            aria-expanded={answerCheckOpen}
+            disabled={!canOpenAnswerCheck}
+          >
+            <span className="answer-check-toggle-label">{canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {answerCheckOpen ? '▲' : '▼'}
             </span>
           </button>
         ) : null}
 
-        <div className={`answer-compare-slide ${answerCheckOpen ? 'open' : ''}`}>
+        <div className={`answer-compare-slide ${canOpenAnswerCheck && answerCheckOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
             <div className="sec">{isHaydn ? 'Q1. 악기 비교' : (isErlkonig ? 'Q1. 등장인물 비교' : 'Q1. 핵심 요소 비교')}</div>
             <div className="review-card">
@@ -315,8 +351,6 @@ function AnalyticalOverview({ go }) {
               <div className="review-section-title">정답</div>
               <div className="review-item">{correctStory}</div>
             </div>
-
-            <CompareAiFeedbackBlock requestFn={requestAnalyticalFeedback} />
           </div>
         </div>
 

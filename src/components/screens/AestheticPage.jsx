@@ -205,16 +205,16 @@ function AestheticPage({ go }) {
           처음엔 <span style={{ color: 'var(--purple-light)', fontStyle: 'italic' }}>[감각적 감상 키워드]</span>고 느꼈는데,<br />
           분석해 보니 <input className="fill-input" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="___________" /> 라고 느꼈다.
         </div>
-        <button className="ai-btn" onClick={showRandomQ1Hint}>✨ 생각 질문 보기</button>
+        <button className="ai-btn" onClick={showRandomQ1Hint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
-        <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
+        <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
         <div className="sec">Q2. 분석 요소와 연결</div>
         <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option><option value="현악음색">현악 4중주 음색 (종달새)</option><option value="주제비교">두 주제 비교 (종달새)</option><option value="슈프레흐슈팀메">슈프레흐슈팀메 (달에 홀린 피에로)</option><option value="무조성">무조성 (달에 홀린 피에로)</option><option value="소네트">소네트와 음악 연결 (여름)</option><option value="바이올린협주곡">바이올린 협주곡 독주·총주 (여름)</option></select>
         {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
-        <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 생각 질문 보기</button>
+        <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
-        <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">생각 질문 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
+        <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>
 
         <div className="sec">Q3. 오늘날 삶과 연결</div>
         <textarea className="txt" value={q3} onChange={(e) => setQ3(e.target.value)} placeholder={isHandel ? "할렐루야가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isHaydn ? "고전주의 음악인 '종달새'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isSchoenberg ? "표현주의 음악인 '달에 홀린 피에로'가 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : (isVivaldi ? "바로크 음악인 '사계 여름 3악장'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?" : "200년 전 음악인 '마왕'이 오늘날 나의 삶에서도 의미 있다고 느껴지는 순간이 있나요?")))} />

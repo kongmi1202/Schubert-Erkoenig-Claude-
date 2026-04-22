@@ -9,58 +9,27 @@ const HANDEL_COMPARE_ROWS = [
   { key: '무대·연기', opera: '의상·연기 있음', oratorio: '의상·연기 없음' },
   { key: '공연장소', opera: '오페라 극장', oratorio: '교회·콘서트홀' }
 ];
+const HANDEL_Q1_HINTS = [
+  '예시) 이 곡은 성경 내용을 바탕으로 하고, "할렐루야"를 반복해 신의 위대함을 찬양해요.',
+  '예시) 가사는 하나님과 왕의 권능을 높이며, 합창으로 경건하고 장엄한 분위기를 만들어요.',
+  '예시) 성경 메시지를 중심으로 감사와 찬양을 반복해 예배 같은 느낌을 전해줘요.',
+  '예시) "할렐루야" 후렴이 계속 이어지면서 신앙적 기쁨과 경외감을 강조해요.'
+];
+const HANDEL_Q2_HINTS = [
+  '예시) 오페라는 무대 연기와 의상이 있지만, 오라토리오는 연기 없이 합창과 관현악 중심으로 들려줘요.',
+  '예시) 오페라는 극장에서 이야기를 연기하고, 오라토리오는 공연장에서 종교적 내용을 노래로 전해요.',
+  '예시) 오페라는 인물 연기가 핵심이고, 오라토리오는 합창으로 메시지를 전달하는 점이 달라요.',
+  '예시) 오페라는 장면 연출이 강조되고, 오라토리오는 무대 장치보다 음악과 가사 전달에 집중해요.'
+];
 
-function extractTextFromResponse(json) {
-  if (json?.output_text) return json.output_text;
-  const texts = [];
-  (json?.output || []).forEach((item) => {
-    (item?.content || []).forEach((c) => {
-      if (typeof c?.text === 'string') texts.push(c.text);
-    });
-  });
-  return texts.join('\n').trim();
-}
-
-async function generateHandelExample(questionLabel, userInput) {
-  const apiKey = typeof import.meta.env.VITE_OPENAI_API_KEY === 'string'
-    ? import.meta.env.VITE_OPENAI_API_KEY.trim()
-    : '';
-  if (!apiKey) {
-    if (questionLabel === 'Q1') {
-      return '예시) 이 곡은 성경 내용을 바탕으로 하며, "할렐루야"를 반복해 신의 위대함을 찬양하는 종교적 메시지를 전달해요.';
-    }
-    return '예시) 오페라는 무대 연기·의상이 있는 극음악이고, 오라토리오는 연기 없이 합창과 관현악으로 종교적 내용을 전해요.';
+function pickRandom(items, prevValue) {
+  if (!items.length) return '';
+  if (items.length === 1) return items[0];
+  let next = items[Math.floor(Math.random() * items.length)];
+  while (next === prevValue) {
+    next = items[Math.floor(Math.random() * items.length)];
   }
-
-  const prompt = `너는 중학생 음악 수업 도우미야.
-질문: ${questionLabel}
-학생의 현재 입력: ${userInput?.trim() || '(없음)'}
-
-요구사항:
-- 학생이 참고할 "예시 답안" 1개만 한국어로 작성.
-- 1~2문장, 50~90자.
-- 너무 어려운 용어는 피하고, 사실만 간단히.
-- 질문에서 벗어나지 말 것.`;
-
-  try {
-    const res = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        input: prompt
-      })
-    });
-    if (!res.ok) throw new Error(`OpenAI API error: ${res.status}`);
-    const json = await res.json();
-    const text = extractTextFromResponse(json);
-    return text || '예시를 만들지 못했어요. 한 번 더 눌러 주세요.';
-  } catch {
-    return '예시 생성이 잠시 불안정해요. 잠시 후 다시 시도해 주세요.';
-  }
+  return next;
 }
 
 function AnalyticalOverviewHandel({ go }) {
@@ -73,27 +42,23 @@ function AnalyticalOverviewHandel({ go }) {
   const setQ2Text = useAppStore((s) => s.setHandelOperaDiff);
   const [q1Open, setQ1Open] = useState(false);
   const [q2Open, setQ2Open] = useState(false);
-  const [q1Example, setQ1Example] = useState('');
-  const [q2Example, setQ2Example] = useState('');
-  const [q1Loading, setQ1Loading] = useState(false);
-  const [q2Loading, setQ2Loading] = useState(false);
+  const [q1Example, setQ1Example] = useState(HANDEL_Q1_HINTS[0]);
+  const [q2Example, setQ2Example] = useState(HANDEL_Q2_HINTS[0]);
+  const [showQ1Example, setShowQ1Example] = useState(false);
+  const [showQ2Example, setShowQ2Example] = useState(false);
 
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
   const canProceed = canOpenQ1Answer && canOpenQ2Answer;
 
-  const onQ1Example = async () => {
-    setQ1Loading(true);
-    const text = await generateHandelExample('Q1', q1Text);
-    setQ1Example(text);
-    setQ1Loading(false);
+  const onQ1Example = () => {
+    setQ1Example((prev) => pickRandom(HANDEL_Q1_HINTS, prev));
+    setShowQ1Example(true);
   };
 
-  const onQ2Example = async () => {
-    setQ2Loading(true);
-    const text = await generateHandelExample('Q2', q2Text);
-    setQ2Example(text);
-    setQ2Loading(false);
+  const onQ2Example = () => {
+    setQ2Example((prev) => pickRandom(HANDEL_Q2_HINTS, prev));
+    setShowQ2Example(true);
   };
 
   return (
@@ -130,12 +95,13 @@ function AnalyticalOverviewHandel({ go }) {
           onChange={(e) => setQ1Text(e.target.value)}
           placeholder="할렐루야의 가사 내용을 써보세요..."
         />
-        <button type="button" className="ai-btn" onClick={onQ1Example} disabled={q1Loading}>
-          {q1Loading ? '예시 생성 중…' : '✨ AI 도우미 예시'}
+        <button type="button" className="ai-btn" onClick={onQ1Example}>
+          ✨ 참고 예시 보기
         </button>
-        {q1Example ? (
+        <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
+        {showQ1Example ? (
           <div className="ai-bubble show">
-            <div className="ai-bubble-label">AI 예시 문장 (참고용)</div>
+            <div className="ai-bubble-label">예시 문장 (참고용)</div>
             {q1Example}
           </div>
         ) : null}
@@ -162,12 +128,13 @@ function AnalyticalOverviewHandel({ go }) {
           onChange={(e) => setQ2Text(e.target.value)}
           placeholder="오페라와의 차이를 써보세요..."
         />
-        <button type="button" className="ai-btn" onClick={onQ2Example} disabled={q2Loading}>
-          {q2Loading ? '예시 생성 중…' : '✨ AI 도우미 예시'}
+        <button type="button" className="ai-btn" onClick={onQ2Example}>
+          ✨ 참고 예시 보기
         </button>
-        {q2Example ? (
+        <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
+        {showQ2Example ? (
           <div className="ai-bubble show">
-            <div className="ai-bubble-label">AI 예시 문장 (참고용)</div>
+            <div className="ai-bubble-label">예시 문장 (참고용)</div>
             {q2Example}
           </div>
         ) : null}
