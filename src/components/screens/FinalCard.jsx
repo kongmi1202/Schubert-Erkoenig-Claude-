@@ -32,9 +32,11 @@ function FinalCard({ go }) {
         ? '종달새 (하이든)'
         : (selectedSong === 'vivaldi'
           ? '여름 (비발디)'
+        : (selectedSong === 'chopin'
+          ? '환상 즉흥곡 (쇼팽)'
         : (selectedSong === 'schoenberg'
           ? '달에 취하여 (쇤베르크)'
-          : '—'))));
+          : '—')))));
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';

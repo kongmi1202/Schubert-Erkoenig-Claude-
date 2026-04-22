@@ -74,6 +74,8 @@ function AestheticPage({ go }) {
     updateById('rv-desc-sb', descText);
     updateById('rv-kw-vv', keywordText);
     updateById('rv-desc-vv', descText);
+    updateById('rv-kw-cp', keywordText);
+    updateById('rv-desc-cp', descText);
   }, [selectedKeywords, sensoryDesc]);
 
   return (
@@ -210,7 +212,7 @@ function AestheticPage({ go }) {
         <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
         <div className="sec">Q2. 분석 요소와 연결</div>
-        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option><option value="현악음색">현악 4중주 음색 (종달새)</option><option value="주제비교">두 주제 비교 (종달새)</option><option value="슈프레흐슈팀메">슈프레흐슈팀메 (달에 홀린 피에로)</option><option value="무조성">무조성 (달에 홀린 피에로)</option><option value="소네트">소네트와 음악 연결 (여름)</option><option value="바이올린협주곡">바이올린 협주곡 독주·총주 (여름)</option></select>
+        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option><option value="현악음색">현악 4중주 음색 (종달새)</option><option value="주제비교">두 주제 비교 (종달새)</option><option value="슈프레흐슈팀메">슈프레흐슈팀메 (달에 홀린 피에로)</option><option value="무조성">무조성 (달에 홀린 피에로)</option><option value="소네트">소네트와 음악 연결 (여름)</option><option value="바이올린협주곡">바이올린 협주곡 독주·총주 (여름)</option><option value="ABA형식">ABA 형식 (환상 즉흥곡)</option><option value="폴리리듬">폴리리듬 (환상 즉흥곡)</option></select>
         {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
         <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>

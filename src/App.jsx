@@ -25,6 +25,9 @@ import VvSonnet from './components/screens/VvSonnet';
 import VvConcerto from './components/screens/VvConcerto';
 import VvHistory from './components/screens/VvHistory';
 import CpOverview from './components/screens/CpOverview';
+import CpForm from './components/screens/CpForm';
+import CpRhythm from './components/screens/CpRhythm';
+import CpHistory from './components/screens/CpHistory';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
@@ -94,6 +97,9 @@ function App() {
     }
     if (selectedSong === 'chopin') {
       if (currentScreen === 'analyticalOverview') return CpOverview;
+      if (currentScreen === 'voiceDesign') return CpForm;
+      if (currentScreen === 'pianoAnalysis') return CpRhythm;
+      if (currentScreen === 'historyCards') return CpHistory;
     }
     return screens[currentScreen];
   }, [currentScreen, selectedSong]);
