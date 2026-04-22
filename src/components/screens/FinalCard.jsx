@@ -158,6 +158,59 @@ function FinalCard({ go }) {
     setEssayText(text);
     setIsGenerating(false);
   };
+  const stageGrades = useMemo(() => {
+    if (evaluation.ungraded) {
+      return {
+        stage1: '미채점',
+        stage2: '미채점',
+        stage3: '미채점'
+      };
+    }
+    const gradeByLabel = Object.fromEntries(evaluation.items.map((item) => [item.label, item.grade]));
+    return {
+      stage1: gradeByLabel['1단계 감각적 감상'] || '미채점',
+      stage2: gradeByLabel['2단계 분석적 감상'] || '미채점',
+      stage3: gradeByLabel['3단계 심미적 감상'] || '미채점'
+    };
+  }, [evaluation]);
+  const gradeBadgeBaseStyle = {
+    marginLeft: 8,
+    padding: '2px 8px',
+    borderRadius: 999,
+    fontSize: 11
+  };
+  const getGradeBadgeStyle = (grade) => {
+    if (grade === '상') {
+      return {
+        ...gradeBadgeBaseStyle,
+        border: '1px solid rgba(34,197,94,0.55)',
+        background: 'rgba(34,197,94,0.16)',
+        color: '#86efac'
+      };
+    }
+    if (grade === '중') {
+      return {
+        ...gradeBadgeBaseStyle,
+        border: '1px solid rgba(251,191,36,0.55)',
+        background: 'rgba(251,191,36,0.16)',
+        color: '#fcd34d'
+      };
+    }
+    if (grade === '하') {
+      return {
+        ...gradeBadgeBaseStyle,
+        border: '1px solid rgba(248,113,113,0.55)',
+        background: 'rgba(248,113,113,0.16)',
+        color: '#fca5a5'
+      };
+    }
+    return {
+      ...gradeBadgeBaseStyle,
+      border: '1px solid var(--border2)',
+      background: 'var(--surface2)',
+      color: 'var(--purple-light)'
+    };
+  };
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">완성 · 최종 감상문</div><div className="s-title">나의 {songTitle} 감상문</div></div>
@@ -167,7 +220,7 @@ function FinalCard({ go }) {
           <div className="summary-row"><div className="summary-key">학생</div><div className="summary-val">{studentLine || '—'}</div></div>
           <div className="summary-row"><div className="summary-key">악곡</div><div className="summary-val">{songLabel}</div></div>
           <div className="summary-div"></div>
-          <div className="summary-ey">① 감각적 감상</div>
+          <div className="summary-ey">① 감각적 감상 <span style={getGradeBadgeStyle(stageGrades.stage1)}>등급 {stageGrades.stage1}</span></div>
           <div className="chip-row">{selectedKeywords.length ? selectedKeywords.map((k) => <span key={k} className="review-chip">{k}</span>) : <span className="review-empty">키워드 없음</span>}</div>
           <div className="swatch-row">{selectedColors.length ? selectedColors.map((c) => <span key={c} className="review-swatch" title={c} style={{ background: colorMap[c] || '#555' }} />) : <span className="review-empty">색상 없음</span>}</div>
           <div className="fb show info">{sensoryDesc || '서술 없음'}</div>
@@ -196,7 +249,7 @@ function FinalCard({ go }) {
               )}
             </div>
             <div>
-              <div className="small-note">Q1 정답</div>
+              <div className="small-note">Q1 정답 <span style={getGradeBadgeStyle(stageGrades.stage2)}>등급 {stageGrades.stage2}</span></div>
               {isHandel ? (
                 <div className="fb show gold">{handelAnswerQ1}</div>
               ) : isHaydn ? (
@@ -216,10 +269,13 @@ function FinalCard({ go }) {
           </div>
 
           <div className="summary-div"></div>
-          <div className="summary-ey">③ 심미적 감상</div>
+          <div className="summary-ey">③ 심미적 감상 <span style={getGradeBadgeStyle(stageGrades.stage3)}>등급 {stageGrades.stage3}</span></div>
           <div className="summary-row"><div className="summary-key">변화</div><div className="summary-val">{q1 ? `분석해 보니 ${q1}라고 느꼈다.` : '—'}</div></div>
           <div className="summary-row"><div className="summary-key">이유</div><div className="summary-val">{q2 || '—'}</div></div>
           <div className="summary-row"><div className="summary-key">삶 연결</div><div className="summary-val">{q3 || '—'}</div></div>
+          <div className="fb show gold" style={{ marginTop: 10 }}>
+            💬 {evaluation.feedback}
+          </div>
         </div>
 
         <div className="sec">학생 완성 글 (1~3단계 종합)</div>
@@ -235,23 +291,6 @@ function FinalCard({ go }) {
             {essayText || '버튼을 누르면 학생 입력을 바탕으로 자연스러운 최종 감상문이 생성됩니다.'}
           </div>
         </div>
-
-        <div className="sec">AI 감상문 평가</div>
-        {evaluation.ungraded ? (
-          <div className="fb show gold">미채점 · {evaluation.feedback}</div>
-        ) : (
-          <>
-            <div className="score-bars">
-              {evaluation.items.map((it) => (
-                <div key={it.label} className="score-bar-item">
-                  <div className="score-bar-label"><span>{it.label}</span><span>{it.grade}</span></div>
-                  <div className="fb show info" style={{ marginTop: 8 }}>{it.comment}</div>
-                </div>
-              ))}
-            </div>
-            <div className="fb show gold">💬 {evaluation.feedback}</div>
-          </>
-        )}
 
         <div className="btn-row final-actions">
           <button className="btn-s" onClick={() => go('aestheticPage')}>← 다시 수정</button>

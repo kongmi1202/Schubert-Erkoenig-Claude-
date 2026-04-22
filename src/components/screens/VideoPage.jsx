@@ -55,6 +55,19 @@ const SONG_CONFIG = {
     ],
     cardAnalysis: '소네트와 음악 연결, 바이올린 협주곡 독주·총주 구분',
     cardSongTitle: "✦ 나의 여름 감상문 · Summer Op.8 No.2, Vivaldi 1725"
+  },
+  chopin: {
+    videoUrl: 'https://www.youtube.com/embed/dHwhfpN--Bk',
+    videoTitle: "쇼팽 '환상 즉흥곡'을 감상해보세요",
+    firstPage: 'cp-overview',
+    subtabs: [
+      { id: 'cp-overview', label: '개요 파악', page: 'cp-overview' },
+      { id: 'cp-form', label: 'ABA 형식', page: 'cp-form' },
+      { id: 'cp-rhythm', label: '폴리리듬', page: 'cp-rhythm' },
+      { id: 'cp-history', label: '역사 맥락', page: 'cp-history' }
+    ],
+    cardAnalysis: 'ABA 형식 구간 분류, 폴리리듬(오른손 4박·왼손 3박)',
+    cardSongTitle: '✦ 나의 환상 즉흥곡 감상문 · Fantasie Impromptu Op.66, Chopin 1835'
   }
 };
 
