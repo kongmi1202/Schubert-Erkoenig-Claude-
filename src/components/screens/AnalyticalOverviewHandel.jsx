@@ -37,6 +37,8 @@ function pickRandom(items, prevValue) {
 function AnalyticalOverviewHandel({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
+  const emotionResult = useAppStore((s) => s.emotionResult);
+  const emotionSummary = useAppStore((s) => s.emotionSummary);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const q1Text = useAppStore((s) => s.handelLyricMeaning);
   const q2Text = useAppStore((s) => s.handelOperaDiff);
@@ -54,6 +56,20 @@ function AnalyticalOverviewHandel({ go }) {
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
   const canProceed = canOpenQ1Answer && canOpenQ2Answer;
+  const emotionRows = useMemo(
+    () =>
+      emotionResult
+        ? [
+            { key: 'sadness', label: '슬픔', emoji: '😢', value: Number(emotionResult.sadness) || 0 },
+            { key: 'fear', label: '공포', emoji: '😨', value: Number(emotionResult.fear) || 0 },
+            { key: 'anger', label: '분노', emoji: '😠', value: Number(emotionResult.anger) || 0 },
+            { key: 'happiness', label: '기쁨', emoji: '😊', value: Number(emotionResult.happiness) || 0 },
+            { key: 'surprise', label: '놀라움', emoji: '😮', value: Number(emotionResult.surprise) || 0 },
+            { key: 'disgust', label: '혐오', emoji: '😒', value: Number(emotionResult.disgust) || 0 }
+          ].sort((a, b) => b.value - a.value)
+        : [],
+    [emotionResult]
+  );
   const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1Text.trim(), q2: q2Text.trim() }), [q1Text, q2Text]);
   const canOpenAnswer = canProceed && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
 
@@ -100,6 +116,15 @@ function AnalyticalOverviewHandel({ go }) {
               <div className="review-section-title">서술</div>
               <div className="review-item">{sensoryDesc || '서술 없음'}</div>
             </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div className="review-section-title">감정 분석 결과</div>
+            <div className="review-item">
+              {emotionRows.length
+                ? emotionRows.map((item) => `${item.emoji} ${item.label} ${item.value}%`).join(' · ')
+                : '분석 없음'}
+            </div>
+            <div className="small-note">{emotionSummary || '요약 없음'}</div>
           </div>
         </div>
 

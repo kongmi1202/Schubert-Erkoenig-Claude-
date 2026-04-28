@@ -40,6 +40,8 @@ function AnalyticalOverview({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
+  const emotionResult = useAppStore((s) => s.emotionResult);
+  const emotionSummary = useAppStore((s) => s.emotionSummary);
   const sensoryArtifacts = useAppStore((s) => s.sensoryArtifacts);
   const aiOpen = useAppStore((s) => s.aiOpen);
   const toggleAi = useAppStore((s) => s.toggleAi);
@@ -86,6 +88,20 @@ function AnalyticalOverview({ go }) {
   const userCharactersText = useMemo(
     () => characters.filter((c) => c && c.trim()).join(', '),
     [characters]
+  );
+  const emotionRows = useMemo(
+    () =>
+      emotionResult
+        ? [
+            { key: 'sadness', label: '슬픔', emoji: '😢', value: Number(emotionResult.sadness) || 0 },
+            { key: 'fear', label: '공포', emoji: '😨', value: Number(emotionResult.fear) || 0 },
+            { key: 'anger', label: '분노', emoji: '😠', value: Number(emotionResult.anger) || 0 },
+            { key: 'happiness', label: '기쁨', emoji: '😊', value: Number(emotionResult.happiness) || 0 },
+            { key: 'surprise', label: '놀라움', emoji: '😮', value: Number(emotionResult.surprise) || 0 },
+            { key: 'disgust', label: '혐오', emoji: '😒', value: Number(emotionResult.disgust) || 0 }
+          ].sort((a, b) => b.value - a.value)
+        : [],
+    [emotionResult]
   );
   const currentAnswerSnapshot = useMemo(
     () =>
@@ -217,6 +233,15 @@ function AnalyticalOverview({ go }) {
               <div className="review-section-title">서술</div>
               <div className="review-item">{sensoryDesc || '서술 없음'}</div>
             </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <div className="review-section-title">감정 분석 결과</div>
+            <div className="review-item">
+              {emotionRows.length
+                ? emotionRows.map((item) => `${item.emoji} ${item.label} ${item.value}%`).join(' · ')
+                : '분석 없음'}
+            </div>
+            <div className="small-note">{emotionSummary || '요약 없음'}</div>
           </div>
         </div>
         <div className="review-card">
