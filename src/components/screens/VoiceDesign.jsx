@@ -58,6 +58,13 @@ const voiceCompareCommentary = {
   마왕:
     '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 길게 이어지는 리듬, 중간 음색이 “부드러운 제안”처럼 들리게 설계된 모범안입니다.'
 };
+const feedbackIndicatesAllCorrect = (text) => {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
+  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
+  return positive.test(t) && !negative.test(t);
+};
 
 let ytApiPromise = null;
 function loadYouTubeIframeApi() {
@@ -145,8 +152,10 @@ function VoiceDesign({ go }) {
   const selectedCharacter = useAppStore((s) => s.selectedCharacter);
   const setSelectedCharacter = useAppStore((s) => s.setSelectedCharacter);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [selectedChars, setSelectedChars] = useState(['해설자', '아버지']);
-  const [voiceDesign, setVoiceDesign] = useState({
+  const voiceDesignState = useAppStore((s) => s.voiceDesignState);
+  const setVoiceDesignState = useAppStore((s) => s.setVoiceDesignState);
+  const [selectedChars, setSelectedChars] = useState(() => voiceDesignState?.selectedChars || ['해설자', '아버지']);
+  const [voiceDesign, setVoiceDesign] = useState(() => voiceDesignState?.voiceDesign || {
     해설자: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
     아버지: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
     아들: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
@@ -156,6 +165,7 @@ function VoiceDesign({ go }) {
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
   const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
   const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
+  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
@@ -203,6 +213,7 @@ function VoiceDesign({ go }) {
     () => generateVoiceDesignCompareFeedback([selectedCharacter], voiceDesign, answerKey),
     [selectedCharacter, voiceDesign]
   );
+  const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
   const currentSnapshot = useMemo(
     () =>
       JSON.stringify({
@@ -211,14 +222,18 @@ function VoiceDesign({ go }) {
       }),
     [selectedCharacter, voiceDesign]
   );
-  const canOpenAnswerCheck = canShowAnswerCheck && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
+  const isAlreadyCorrect = useMemo(() => {
+    if (!canShowAnswerCheck) return false;
+    return designKeys.every((key) => voiceDesign[selectedCharacter]?.[key] === answerKey[selectedCharacter]?.[key]);
+  }, [canShowAnswerCheck, selectedCharacter, voiceDesign]);
+  const canOpenAnswerCheck =
+    canShowAnswerCheck && hasRequestedFeedback && (feedbackSnapshot !== currentSnapshot || isAlreadyCorrect || feedbackAllowsDirectCheck);
   const onFeedbackRequested = useCallback(() => {
     setHasRequestedFeedback(true);
     setFeedbackSnapshot(currentSnapshot);
+    setFeedbackAllowsDirectCheck(false);
     setShowCompare(false);
   }, [currentSnapshot]);
-
-  const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
 
   useEffect(() => {
     if (canCheckAnswer) setStageCompletion('voice', true);
@@ -227,6 +242,10 @@ function VoiceDesign({ go }) {
   useEffect(() => {
     if (!canShowAnswerCheck) setShowCompare(false);
   }, [canShowAnswerCheck]);
+
+  useEffect(() => {
+    setVoiceDesignState({ selectedChars, voiceDesign });
+  }, [selectedChars, voiceDesign, setVoiceDesignState]);
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물을 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.' : '성부를 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.'}<br /><strong>서로 다른 두 대상</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)<br />음악 요소: <strong>음색</strong></div></div>
@@ -302,7 +321,11 @@ function VoiceDesign({ go }) {
 
         {canShowAnswerCheck ? (
           <>
-            <CompareAiFeedbackBlock requestFn={requestVoiceFeedback} onRequested={onFeedbackRequested} />
+            <CompareAiFeedbackBlock
+              requestFn={requestVoiceFeedback}
+              onRequested={onFeedbackRequested}
+              onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
+            />
             <button
               type="button"
               className="answer-check-toggle"
@@ -316,6 +339,11 @@ function VoiceDesign({ go }) {
                 {showCompare ? '▲' : '▼'}
               </span>
             </button>
+            {hasRequestedFeedback && (isAlreadyCorrect || feedbackAllowsDirectCheck) ? (
+              <div className="small-note" style={{ marginTop: 8 }}>
+                좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
+              </div>
+            ) : null}
 
             <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
               <div className="answer-compare-inner voice-compare-panel">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function CompareAiFeedbackBlock({ requestFn, onRequested }) {
+export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResult }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -9,7 +9,9 @@ export default function CompareAiFeedbackBlock({ requestFn, onRequested }) {
     try {
       if (typeof onRequested === 'function') onRequested();
       const t = await requestFn();
-      setText(typeof t === 'string' ? t : '');
+      const nextText = typeof t === 'string' ? t : '';
+      setText(nextText);
+      if (typeof onResult === 'function') onResult(nextText);
     } finally {
       setLoading(false);
     }

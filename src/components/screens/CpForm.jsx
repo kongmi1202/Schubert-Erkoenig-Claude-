@@ -67,9 +67,9 @@ function CpForm({ go }) {
     [formAnswers]
   );
   const canProceed = allSelected && desc.trim().length > 0;
-  const hintText = `A구간은 빠른 템포와 강한 셈여림으로
-긴장감을 주지만 B구간은 느리고
-부드러운 선율로 편안함을 주기 때문이다.`;
+  const hintText = `A구간과 B구간 중 어디가 더 빠르게 들리나요?
+어느 구간이 더 부드럽게 느껴지나요?
+두 구간의 느낌 차이를 한 문장으로 써볼까요?`;
 
   return (
     <div className="screen active" id="cp-form">

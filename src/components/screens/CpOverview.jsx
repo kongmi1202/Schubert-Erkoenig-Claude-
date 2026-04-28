@@ -17,12 +17,12 @@ function CpOverview({ go }) {
   const [q2Open, setQ2Open] = useState(false);
 
   const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
-  const q1Example = `연주 인원이 많은지, 한 악기만 들리는지 먼저 체크해보세요.
-선율·반주가 한 악기 안에서 함께 들리는지도 근거가 됩니다.
-답안은 "무슨 악기 + 어떤 편성" 순서로 써보세요.`;
-  const q2Example = `처음 20초와 중간 구간의 분위기 단어를 각각 2개씩 적어보세요.
-빠르기·세기·선율 밀도가 언제 바뀌는지 표시하면 좋아요.
-느낌이 바뀌는 시점을 한 문장으로 연결해보세요.`;
+  const q1Example = `피아노 한 대 소리인지 먼저 써보세요.
+다른 악기가 들리지 않으면 피아노 독주예요.
+"피아노 독주"라고 짧게 써도 좋아요.`;
+  const q2Example = `처음은 빠르고 세게 들렸는지 써보세요.
+중간은 느리고 부드럽게 바뀌는지 써보세요.
+"앞은 긴장, 중간은 차분"처럼 써보세요.`;
 
   return (
     <div className="screen active" id="cp-overview">

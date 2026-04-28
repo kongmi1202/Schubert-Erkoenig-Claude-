@@ -12,16 +12,16 @@ const HANDEL_COMPARE_ROWS = [
   { key: '공연장소', opera: '오페라 극장', oratorio: '교회·콘서트홀' }
 ];
 const HANDEL_Q1_HINTS = [
-  '가사에 반복되는 핵심 단어를 먼저 찾아보고, 그 단어가 어떤 대상을 높이는지 적어보세요.',
-  '이 곡이 사랑 이야기인지, 종교적 찬양인지 먼저 분류한 뒤 근거 단어를 1~2개 붙여보세요.',
-  '합창이 커지는 부분에서 전달되는 메시지가 무엇인지 한 문장으로 정리해보세요.',
-  '답안은 "무엇을 노래하는가 + 왜 그렇게 들리는가" 두 문장 구조로 써보세요.'
+  '가사에 자주 나오는 단어를 1~2개 써보세요.',
+  '이 노래가 누구를 찬양하는지 써보세요.',
+  '종교 노래처럼 느껴진 이유를 한 줄로 써보세요.',
+  '"무엇을 노래하나요?"에 먼저 답해보세요.'
 ];
 const HANDEL_Q2_HINTS = [
-  '비교 기준을 먼저 정해보세요: 무대 연기 유무, 가사 주제, 공연 형태 중 2가지만 골라도 충분해요.',
-  '오페라/오라토리오를 각각 한 단어로 요약하고, 왜 그렇게 요약했는지 근거를 붙여보세요.',
-  '눈으로 보는 요소(연기·의상)와 귀로 듣는 요소(합창·관현악)를 나눠 비교하면 정리가 쉬워요.',
-  '답안은 "오페라는 ___, 오라토리오는 ___"처럼 대응 구조로 쓰면 명확해져요.'
+  '오페라는 연기가 있고, 오라토리오는 없는지 비교해보세요.',
+  '옷/무대/장소 차이 중 1가지만 골라 써도 좋아요.',
+  '"오페라는 __, 오라토리오는 __" 형식으로 써보세요.',
+  '가사 내용 차이(이야기/종교)도 함께 써보세요.'
 ];
 
 function pickRandom(items, prevValue) {
@@ -33,6 +33,15 @@ function pickRandom(items, prevValue) {
   }
   return next;
 }
+
+const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+const feedbackIndicatesAllCorrect = (text) => {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
+  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
+  return positive.test(t) && !negative.test(t);
+};
 
 function AnalyticalOverviewHandel({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
@@ -52,6 +61,7 @@ function AnalyticalOverviewHandel({ go }) {
   const [showQ2Example, setShowQ2Example] = useState(false);
   const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
   const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
+  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
 
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
@@ -71,7 +81,23 @@ function AnalyticalOverviewHandel({ go }) {
     [emotionResult]
   );
   const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1Text.trim(), q2: q2Text.trim() }), [q1Text, q2Text]);
-  const canOpenAnswer = canProceed && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
+  const isAlreadyCorrect = useMemo(() => {
+    const q1 = normalizeText(q1Text);
+    const q2 = normalizeText(q2Text);
+    if (!q1 || !q2) return false;
+    const q1Ok =
+      (q1.includes('성경') || q1.includes('요한계시록')) &&
+      q1.includes('찬양') &&
+      (q1.includes('할렐루야') || q1.includes('신의 위대함'));
+    const q2Ok =
+      q2.includes('종교') &&
+      q2.includes('연기') &&
+      (q2.includes('없음') || q2.includes('없다')) &&
+      (q2.includes('오페라') || q2.includes('오라토리오'));
+    return q1Ok && q2Ok;
+  }, [q1Text, q2Text]);
+  const canOpenAnswer =
+    canProceed && hasRequestedFeedback && (feedbackSnapshot !== currentSnapshot || isAlreadyCorrect || feedbackAllowsDirectCheck);
 
   const onQ1Example = () => {
     setQ1Example((prev) => pickRandom(HANDEL_Q1_HINTS, prev));
@@ -93,6 +119,7 @@ function AnalyticalOverviewHandel({ go }) {
   const onFeedbackRequested = () => {
     setHasRequestedFeedback(true);
     setFeedbackSnapshot(currentSnapshot);
+    setFeedbackAllowsDirectCheck(false);
     setQ1Open(false);
     setQ2Open(false);
   };
@@ -150,8 +177,6 @@ function AnalyticalOverviewHandel({ go }) {
             {q1Example}
           </div>
         ) : null}
-        <CompareAiFeedbackBlock requestFn={requestFeedback} onRequested={onFeedbackRequested} />
-
         {canOpenQ1Answer ? (
           <button
             type="button"
@@ -164,6 +189,9 @@ function AnalyticalOverviewHandel({ go }) {
             <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
           </button>
+        ) : null}
+        {canProceed && hasRequestedFeedback && (isAlreadyCorrect || feedbackAllowsDirectCheck) ? (
+          <div className="small-note" style={{ marginTop: 8 }}>좋아요! 정답 핵심이 모두 들어가서 바로 확인할 수 있어요.</div>
         ) : null}
         <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
@@ -191,6 +219,11 @@ function AnalyticalOverviewHandel({ go }) {
             {q2Example}
           </div>
         ) : null}
+        <CompareAiFeedbackBlock
+          requestFn={requestFeedback}
+          onRequested={onFeedbackRequested}
+          onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
+        />
 
         {canOpenQ2Answer ? (
           <button

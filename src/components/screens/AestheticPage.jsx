@@ -12,23 +12,79 @@ const colorMap = {
   자주: '#86198f'
 };
 const q1Hints = [
-  '처음 느낌과 지금 느낌이 달라졌다면, 가장 크게 바뀐 단어 1개는 무엇일까?',
-  '분석 전에 놓쳤던 소리 하나를 지금은 어떻게 해석하고 있니?',
-  '처음 판단을 스스로 반박한다면 어떤 문장을 쓸 수 있을까?',
-  '친구가 "왜 그렇게 생각해?"라고 물으면 근거로 어떤 장면을 말할래?'
+  '처음 느낌과 지금 느낌이 어떻게 달라졌는지 한 문장으로 써보세요.',
+  '처음에는 못 들었는데, 지금은 들리는 소리 1가지를 써보세요.',
+  '생각이 바뀐 이유를 "왜냐하면"으로 시작해 써보세요.',
+  '친구에게 설명하듯 쉽게 한 문장으로 써보세요.'
 ];
-const q2Hints = [
-  '선택한 분석 요소가 어느 장면에서 가장 잘 들렸는지 먼저 적어봐.',
-  '그 요소가 없다면 음악 느낌이 어떻게 달라질지 상상해볼래?',
-  '요소-장면-감정 순서로 연결해서 한 문장을 만들어봐.',
-  '네 해석과 다른 해석도 가능하다고 본다면, 그 차이는 어디서 생길까?'
-];
+const q2HintsByType = {
+  default: [
+    '고른 요소가 이 곡의 가치를 높인다고 생각하는지 써보세요.',
+    '왜 그렇게 평가하는지 근거를 한 줄로 써보세요.',
+    '"요소 + 장면 + 내 평가" 순서로 한 문장으로 써보세요.'
+  ],
+  음색: [
+    '목소리(음색)가 이 곡의 감정 표현에 도움이 되었는지 평가해보세요.',
+    '어떤 인물 목소리가 평가 근거가 되는지 써보세요.',
+    '"음색 덕분에 이 곡은 ___ 점이 좋다"처럼 써보세요.'
+  ],
+  반주: [
+    '반주가 이 곡의 긴장감/몰입감을 높였는지 평가해보세요.',
+    '반주가 특히 좋았던 장면을 근거로 써보세요.',
+    '"반주가 ___해서 이 곡의 가치가 높다"처럼 써보세요.'
+  ],
+  맥락: [
+    '시대 배경을 알고 들으니 곡이 더 의미 있다고 느꼈는지 평가해보세요.',
+    '오늘날 내 삶과 연결되는 점을 근거로 써보세요.',
+    '"지금 들어도 가치 있는 이유는 ___"처럼 써보세요.'
+  ],
+  현악음색: [
+    '현악기 음색이 곡의 매력을 높였는지 평가해보세요.',
+    '어떤 악기 소리가 평가 근거가 되는지 써보세요.',
+    '"이 음색 때문에 이 곡이 더 아름답다"처럼 써보세요.'
+  ],
+  주제비교: [
+    '두 주제 대비가 곡 완성도를 높였는지 평가해보세요.',
+    '어느 부분이 더 인상적이었는지 근거를 써보세요.',
+    '"주제 대비가 좋아서 이 곡이 ___하다"처럼 써보세요.'
+  ],
+  슈프레흐슈팀메: [
+    '슈프레흐슈팀메가 곡의 표현력을 높였는지 평가해보세요.',
+    '일반 창법과 다른 점을 근거로 써보세요.',
+    '"이 창법 덕분에 감정이 더 잘 전달된다"처럼 써보세요.'
+  ],
+  무조성: [
+    '무조성이 이 곡의 개성을 높였는지 평가해보세요.',
+    '낯선 느낌이 곡의 분위기에 어떤 효과를 냈는지 써보세요.',
+    '"무조성이라서 이 곡이 더 ___하게 느껴진다"처럼 써보세요.'
+  ],
+  소네트: [
+    '소네트와 음악의 연결이 곡의 전달력을 높였는지 평가해보세요.',
+    '어떤 장면이 가장 생생했는지 근거를 써보세요.',
+    '"시와 음악이 잘 맞아 이 곡이 더 인상적이다"처럼 써보세요.'
+  ],
+  바이올린협주곡: [
+    '독주/총주 대비가 곡의 재미를 높였는지 평가해보세요.',
+    '어느 부분이 더 몰입됐는지 근거를 써보세요.',
+    '"독주와 총주의 대비가 좋아서 이 곡이 더 멋지다"처럼 써보세요.'
+  ],
+  ABA형식: [
+    'ABA 형식이 곡의 완성도를 높였는지 평가해보세요.',
+    'A와 B 대비가 왜 중요한지 근거를 써보세요.',
+    '"형식이 뚜렷해서 곡이 더 기억에 남는다"처럼 써보세요.'
+  ],
+  폴리리듬: [
+    '폴리리듬이 곡의 긴장감과 매력을 높였는지 평가해보세요.',
+    '리듬이 겹치는 부분을 근거로 써보세요.',
+    '"폴리리듬 덕분에 이 곡이 더 특별하다"처럼 써보세요.'
+  ]
+};
 
 function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type, toggleAi, aiOpen,
     selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
-    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary
+    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
@@ -52,7 +108,51 @@ function AestheticPage({ go }) {
     '공연장소: 오페라(오페라 극장) / 오라토리오(교회·콘서트홀)'
   ];
   const [q1Hint, setQ1Hint] = useState(q1Hints[0]);
-  const [q2Hint, setQ2Hint] = useState(q2Hints[0]);
+  const [q2Hint, setQ2Hint] = useState(q2HintsByType.default[0]);
+  const q2Options = isHandel
+    ? [
+        { value: '음색', label: '성부/음화법' },
+        { value: '반주', label: '멜로디/가락선' },
+        { value: '맥락', label: '사회·역사적 맥락' }
+      ]
+    : isHaydn
+      ? [
+          { value: '현악음색', label: '현악 4중주 음색 (종달새)' },
+          { value: '주제비교', label: '두 주제 비교 (종달새)' },
+          { value: '맥락', label: '사회·역사적 맥락' }
+        ]
+      : isSchoenberg
+        ? [
+            { value: '슈프레흐슈팀메', label: '슈프레흐슈팀메 (달에 홀린 피에로)' },
+            { value: '무조성', label: '무조성 (달에 홀린 피에로)' },
+            { value: '맥락', label: '사회·역사적 맥락' }
+          ]
+        : isVivaldi
+          ? [
+              { value: '소네트', label: '소네트와 음악 연결 (여름)' },
+              { value: '바이올린협주곡', label: '바이올린 협주곡 독주·총주 (여름)' },
+              { value: '맥락', label: '사회·역사적 맥락' }
+            ]
+          : isChopin
+            ? [
+                { value: 'ABA형식', label: 'ABA 형식 (환상 즉흥곡)' },
+                { value: '폴리리듬', label: '폴리리듬 (환상 즉흥곡)' },
+                { value: '맥락', label: '사회·역사적 맥락' }
+              ]
+            : [
+                { value: '음색', label: '등장인물의 음색' },
+                { value: '반주', label: '피아노 반주' },
+                { value: '맥락', label: '사회·역사적 맥락' }
+              ];
+  const voiceAnswerKey = {
+    해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
+    아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
+    아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
+    마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
+  };
+  const voiceRows = Object.entries(voiceDesignState?.voiceDesign || {}).filter(([, row]) =>
+    ['음높이', '음계', '리듬꼴', '음색'].some((k) => row?.[k])
+  );
   const emotionRows = emotionResult
     ? [
         { key: 'sadness', label: '슬픔', emoji: '😢', value: Number(emotionResult.sadness) || 0 },
@@ -69,10 +169,15 @@ function AestheticPage({ go }) {
     if (!aiOpen.q1) toggleAi('q1');
   };
   const showRandomQ2Hint = () => {
-    const next = q2Hints[Math.floor(Math.random() * q2Hints.length)];
+    const pool = q2HintsByType[q2Type] || q2HintsByType.default;
+    const next = pool[Math.floor(Math.random() * pool.length)];
     setQ2Hint(next);
     if (!aiOpen.q2) toggleAi('q2');
   };
+  useEffect(() => {
+    const pool = q2HintsByType[q2Type] || q2HintsByType.default;
+    setQ2Hint(pool[0]);
+  }, [q2Type]);
 
   useEffect(() => {
     const updateById = (id, text) => {
@@ -206,6 +311,50 @@ function AestheticPage({ go }) {
                 </div>
               </div>
 
+              <div className="review-item">2-B 음색 설계 (내 답변 + 정답)</div>
+              {voiceRows.length ? (
+                <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+                  {voiceRows.map(([name, row]) => (
+                    <div key={name} className="review-card" style={{ padding: 12 }}>
+                      <div className="small-note" style={{ marginBottom: 6 }}>{name}</div>
+                      <div className="cmp-mini-grid">
+                        <div>
+                          <div className="small-note">내 답변</div>
+                          <div className="review-item">
+                            음높이 {row.음높이 || '—'} · 음계 {row.음계 || '—'} · 리듬꼴 {row.리듬꼴 || '—'} · 음색 {row.음색 || '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="small-note">정답</div>
+                          <div className="review-item">
+                            음높이 {voiceAnswerKey[name]?.음높이 || '—'} · 음계 {voiceAnswerKey[name]?.음계 || '—'} · 리듬꼴 {voiceAnswerKey[name]?.리듬꼴 || '—'} · 음색 {voiceAnswerKey[name]?.음색 || '—'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="review-empty" style={{ marginBottom: 10 }}>입력 없음</div>
+              )}
+
+              <div className="review-item">2-C 피아노 반주 (내 답변 + 정답)</div>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">내 답변</div>
+                  <div className="review-item">
+                    오른손 장면: {pianoAnalysisState?.rhScene || '없음'}<br />
+                    왼손 장면: {pianoAnalysisState?.lhScene || '없음'}
+                  </div>
+                </div>
+                <div>
+                  <div className="small-note">정답(모범 해설)</div>
+                  <div className="review-item">
+                    오른손: 말발굽/질주 같은 긴장감<br />
+                    왼손: 심장 박동/쫓기는 긴박감
+                  </div>
+                </div>
+              </div>
               <div className="review-item">{isHandel ? '분석 활동 정답 자료(원형)' : '분석 활동 정답 자료(원형)'}</div>
               <div className="cmp-mini-grid">
                 <div>
@@ -215,6 +364,20 @@ function AestheticPage({ go }) {
                 <div>
                   <div className="small-note">왼손 모범 악보</div>
                   <img src="/assets/lh-score.png" alt="왼손 모범 악보" className="score-image-inline" />
+                </div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">내 오른손 그림</div>
+                  {pianoAnalysisState?.savedPreview?.rh
+                    ? <img src={pianoAnalysisState.savedPreview.rh} alt="내 오른손 가락선" className="score-image-inline" />
+                    : <div className="review-empty">없음</div>}
+                </div>
+                <div>
+                  <div className="small-note">내 왼손 그림</div>
+                  {pianoAnalysisState?.savedPreview?.lh
+                    ? <img src={pianoAnalysisState.savedPreview.lh} alt="내 왼손 가락선" className="score-image-inline" />
+                    : <div className="review-empty">없음</div>}
                 </div>
               </div>
             </div>
@@ -243,9 +406,21 @@ function AestheticPage({ go }) {
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.q1 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q1Hint}</div>
 
-        <div className="sec">Q2. 분석 요소와 연결</div>
-        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}><option value="">연결할 분석 요소를 선택하세요</option><option value="음색">{isHandel ? '성부/음화법' : '등장인물의 음색'}</option><option value="반주">{isHandel ? '멜로디/가락선' : '피아노 반주'}</option><option value="맥락">사회·역사적 맥락</option><option value="현악음색">현악 4중주 음색 (종달새)</option><option value="주제비교">두 주제 비교 (종달새)</option><option value="슈프레흐슈팀메">슈프레흐슈팀메 (달에 홀린 피에로)</option><option value="무조성">무조성 (달에 홀린 피에로)</option><option value="소네트">소네트와 음악 연결 (여름)</option><option value="바이올린협주곡">바이올린 협주곡 독주·총주 (여름)</option><option value="ABA형식">ABA 형식 (환상 즉흥곡)</option><option value="폴리리듬">폴리리듬 (환상 즉흥곡)</option></select>
-        {q2Type ? <textarea className="txt" value={q2} onChange={(e) => setQ2(e.target.value)} placeholder="이유를 써보세요" /> : null}
+        <div className="sec">Q2. 분석 요소를 근거로 이 곡의 가치를 평가해보세요.</div>
+        <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}>
+          <option value="">연결할 분석 요소를 선택하세요</option>
+          {q2Options.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        {q2Type ? (
+          <textarea
+            className="txt"
+            value={q2}
+            onChange={(e) => setQ2(e.target.value)}
+            placeholder="이 요소가 왜 이 곡을 더 좋게(또는 특별하게) 만드는지 근거를 써보세요."
+          />
+        ) : null}
         <button className="ai-btn" onClick={showRandomQ2Hint}>✨ 참고 예시 보기</button>
         <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
         <div className={`ai-bubble ${aiOpen.q2 ? 'show' : ''}`}><div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>{q2Hint}</div>

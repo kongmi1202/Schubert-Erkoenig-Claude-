@@ -103,18 +103,12 @@ function SbHistory({ go }) {
         />
         <button type="button" className="ai-btn" onClick={() => setShowHint((prev) => !prev)}>✨ 참고 예시 보기</button>
         <div className={`ai-bubble ${showHint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">예시</div>
-          세 작품 모두 불안하고 혼란스러운
+          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
+          세 작품에서 공통으로 느껴지는 감정은 무엇인가요?
           <br />
-          인간의 내면을 표현하고 있어요.
+          그림은 어떤 색/모양으로 감정을 보여주나요?
           <br />
-          뭉크와 쇤베르크가 시각 예술에서
-          <br />
-          형태와 색채로 감정을 표현했듯이
-          <br />
-          쇤베르크는 음악에서 무조성과
-          <br />
-          슈프레흐슈팀메로 그 감정을 표현했어요.
+          음악은 어떤 소리나 창법으로 감정을 들려주나요?
         </div>
 
         <div className="sec">표현주의 핵심 카드</div>

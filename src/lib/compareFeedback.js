@@ -213,3 +213,44 @@ export async function generatePianoCompareFeedback() {
 
   return requestCompareFeedback(prompt, PIANO_FALLBACK_BODY);
 }
+
+function buildTonePaintingFallback({ segmentTitle, selectedIndex }) {
+  if (selectedIndex === null || selectedIndex === undefined) {
+    return `${segmentTitle}에서 먼저 보기 중 하나를 선택한 뒤 AI 피드백을 받아보세요.`;
+  }
+  return `${segmentTitle}에서 다시 들어볼 포인트를 줄게요. 가사의 핵심 단어가 나올 때 음높이/반복/선율 흐름이 어떻게 바뀌는지 체크하고, 네 선택 이유를 한 문장으로 써보세요.`;
+}
+
+export async function generateTonePaintingCompareFeedback({
+  segmentTitle,
+  lyric,
+  question,
+  options,
+  selectedIndex
+}) {
+  const fallback = buildTonePaintingFallback({
+    segmentTitle,
+    selectedIndex
+  });
+  if (selectedIndex === null || selectedIndex === undefined) {
+    return fallback;
+  }
+
+  const studentAnswer = options[selectedIndex] || '선택 없음';
+  const prompt = `너는 초등학생 음악 감상 수업을 돕는 선생님이야.
+아래는 할렐루야 음화법 활동의 한 구간이야. 정답 여부를 판단하지 말고, 학생이 스스로 답을 점검하도록 힌트형 피드백을 3~4문장으로 줘.
+
+규칙:
+- 정답/오답, 모범답, 맞다/틀리다 같은 표현을 절대 쓰지 말 것.
+- 보기 문구를 그대로 정답처럼 반복하지 말 것.
+- "가사 단어-음높이 변화-반복 느낌-선율 지속" 중 2개 이상을 체크 포인트로 제시할 것.
+- 마지막 문장은 반드시 "네가 고른 이유를 한 문장으로 써보자"로 끝낼 것.
+- 너무 길게 쓰지 말고 80~160자 한국어.
+
+구간: ${segmentTitle}
+가사: ${lyric}
+질문: ${question}
+학생 선택(참고용): ${studentAnswer}`;
+
+  return requestCompareFeedback(prompt, fallback);
+}

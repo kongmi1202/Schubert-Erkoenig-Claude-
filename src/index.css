@@ -964,3 +964,58 @@ canvas{display:block;width:100%;touch-action:none}
   border-radius: 2px;
   flex-shrink: 0;
 }
+
+/* Device-optimized responsive presets */
+/* Mobile: up to 767px */
+@media (max-width: 767px) {
+  .stage-header { padding: 42px 16px 22px; }
+  .body { padding: 20px 14px 120px; max-width: 100%; }
+  .video-page-body { max-width: 100%; }
+  .song-select-grid { grid-template-columns: 1fr; gap: 12px; }
+  .song-select-card { padding: 22px 14px; }
+  .song-select-title { font-size: 30px; }
+  .song-select-composer { font-size: 16px; }
+  .song-select-tags { font-size: 14px; gap: 6px; }
+  .review-grid, .cc-grid, .scene-grid, .artifact-grid, .flip-grid, .cmp-mini-grid { grid-template-columns: 1fr; }
+  .video-lyrics-layout { grid-template-columns: 1fr; }
+  .piano-audio-bar .aud-btn { width: 78px; height: 78px; font-size: 24px; }
+  .piano-audio-bar .aud-title-sm { font-size: 16px; }
+  .piano-audio-bar .aud-sub { font-size: 12px; }
+  #bottom-widgetbar { left: 8px; right: 8px; bottom: 8px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .bottom-widget-label { font-size: 10px; }
+  #stage2-subbar { left: 8px; right: 8px; gap: 12px; }
+  .stage2-tab { font-size: 12px; }
+}
+
+/* Tablet: 768px - 1199px */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .body { max-width: 920px; padding: 28px 18px 130px; }
+  .video-page-body { max-width: 980px; }
+  .voice-body { max-width: 940px; }
+  .song-select-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .song-select-card { padding: 24px 16px; }
+  .song-select-title { font-size: 34px; }
+  .song-select-composer { font-size: 18px; }
+  .song-select-tags { font-size: 15px; }
+  .review-grid, .artifact-grid, .cv-compare { grid-template-columns: 1fr 1fr; }
+  .video-lyrics-layout { grid-template-columns: 1.25fr 1fr; gap: 12px; }
+  .lyrics-panel { max-height: 420px; }
+  .piano-audio-bar { padding: 16px 18px; gap: 14px; }
+  .piano-audio-bar .aud-btn { width: 88px; height: 88px; font-size: 28px; }
+  .piano-audio-bar .aud-title-sm { font-size: 17px; }
+  .piano-audio-bar .aud-sub { font-size: 13px; }
+  .char-emoji { font-size: 44px; }
+  .vd-label { font-size: 16px; }
+}
+
+/* PC: 1200px and up */
+@media (min-width: 1200px) {
+  .body { max-width: 1120px; padding: 34px 22px 130px; }
+  .video-page-body { max-width: 1240px; }
+  .voice-body { max-width: 1100px; }
+  .song-select-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .song-select-title { font-size: 42px; }
+  .song-select-composer { font-size: 24px; }
+  .song-select-tags { font-size: 20px; }
+  .video-lyrics-layout { grid-template-columns: 1.6fr 1fr; gap: 16px; }
+}

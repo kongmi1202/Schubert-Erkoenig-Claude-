@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generatePianoCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
 const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
 /** HTML audio volume 최대 1을 넘기는 배율 (Web Audio GainNode) */
 const PIANO_PLAYBACK_GAIN = 2;
-
 function connectPianoBoost(el, ctxRef, wiredRef) {
   if (!el || wiredRef.current) return ctxRef.current;
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -74,22 +71,25 @@ function PianoAnalysis({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const pianoAnalysisState = useAppStore((s) => s.pianoAnalysisState);
+  const setPianoAnalysisState = useAppStore((s) => s.setPianoAnalysisState);
   const rhRef = useRef(null);
   const lhRef = useRef(null);
   const [ready, setReady] = useState(false);
   const [rhBrush, setRhBrush] = useState({ color: '#a78bfa', size: 2, erase: false });
   const [lhBrush, setLhBrush] = useState({ color: '#f87171', size: 2, erase: false });
-  const [saved, setSaved] = useState({ rh: false, lh: false });
-  const [savedPreview, setSavedPreview] = useState({ rh: '', lh: '' });
+  const [savedPreview, setSavedPreview] = useState(() => pianoAnalysisState?.savedPreview || { rh: '', lh: '' });
+  const [saved, setSaved] = useState(() => ({
+    rh: !!(pianoAnalysisState?.savedPreview?.rh),
+    lh: !!(pianoAnalysisState?.savedPreview?.lh)
+  }));
   const [rhPlaying, setRhPlaying] = useState(false);
   const [lhPlaying, setLhPlaying] = useState(false);
-  const [rhScene, setRhScene] = useState('');
-  const [lhScene, setLhScene] = useState('');
+  const [rhScene, setRhScene] = useState(() => pianoAnalysisState?.rhScene || '');
+  const [lhScene, setLhScene] = useState(() => pianoAnalysisState?.lhScene || '');
   const [showCompare, setShowCompare] = useState(false);
   const [rhGuideOpen, setRhGuideOpen] = useState(true);
   const [lhGuideOpen, setLhGuideOpen] = useState(true);
-  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
-  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
   const rhAudioRef = useRef(null);
   const lhAudioRef = useRef(null);
   const pianoCtxRef = useRef(null);
@@ -163,6 +163,10 @@ function PianoAnalysis({ go }) {
     return () => cleanups.forEach((fn) => fn());
   }, [rhBrush, lhBrush]);
 
+  useEffect(() => {
+    setPianoAnalysisState({ savedPreview, rhScene, lhScene });
+  }, [savedPreview, rhScene, lhScene, setPianoAnalysisState]);
+
   const clearCanvas = (canvasRef, key) => {
     const c = canvasRef.current;
     if (!c) return;
@@ -180,20 +184,7 @@ function PianoAnalysis({ go }) {
     setSavedPreview((prev) => ({ ...prev, [key]: dataUrl }));
   };
   const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
-  const currentSnapshot = JSON.stringify({
-    rh: savedPreview.rh,
-    lh: savedPreview.lh,
-    rhScene: String(rhScene || '').trim(),
-    lhScene: String(lhScene || '').trim()
-  });
-  const canOpenAnswer = canCheckAnswer && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
-
-  const requestPianoFeedback = useCallback(() => generatePianoCompareFeedback(), []);
-  const onFeedbackRequested = useCallback(() => {
-    setHasRequestedFeedback(true);
-    setFeedbackSnapshot(currentSnapshot);
-    setShowCompare(false);
-  }, [currentSnapshot]);
+  const canOpenAnswer = canCheckAnswer;
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">{isErlkonig ? '피아노 전주 분석하기' : '할렐루야 반주 흐름 분석하기'}</div><div className="s-desc">{isErlkonig ? '오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.' : '고음/저음 반주의 흐름을 각각 듣고 가락선으로 표현해보세요.'}<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
@@ -409,7 +400,6 @@ function PianoAnalysis({ go }) {
               </div>
             </div>
             <div className="fb show info">{isErlkonig ? '왼손: 강하게 오르내리는 베이스 -> 심장이 두근거리는 긴박감을 표현해요.' : '저음 반주: 반복 베이스와 화성 진행이 바닥을 단단하게 받쳐 장엄함을 만들어요.'}</div>
-            <CompareAiFeedbackBlock requestFn={requestPianoFeedback} onRequested={onFeedbackRequested} />
           </div>
         </div>
 

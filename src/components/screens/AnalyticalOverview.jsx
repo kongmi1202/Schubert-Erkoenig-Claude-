@@ -18,18 +18,37 @@ const colorMap = {
   자주: '#86198f'
 };
 const storyPromptHints = [
-  '줄거리를 "처음-중간-끝"으로 나누지 말고, 가장 긴장된 순간부터 거꾸로 설명해볼래?',
-  '이야기의 핵심 갈등을 한 문장으로 쓰고, 그 이유를 한 문장으로 덧붙여봐.',
-  '등장인물 입장에서 각각 한 줄씩 말풍선을 만든다면 어떤 말이 나올까?',
-  '해설자가 이 장면을 뉴스처럼 전달한다면 어떤 표현을 쓸까?',
-  '결말을 모르는 친구에게 스포일러 없이 분위기만 전달한다면 어떻게 쓸래?'
+  '줄거리를 "처음-중간-끝" 순서로 짧게 써보세요.',
+  '등장인물이 누구이고 무슨 일이 일어났는지 써보세요.',
+  '가장 무서웠던 장면 1가지를 써보세요.',
+  '아버지, 아들, 마왕 중 마음이 가장 느껴진 인물을 써보세요.',
+  '결말에서 무슨 일이 있었는지 한 문장으로 써보세요.'
 ];
 const hallelujahPromptHints = [
-  '후렴이 어떻게 반복되는지(짧게-길게, 단순-풍성) 순서대로 적어볼래?',
-  '혼자 부르는 느낌에서 합창으로 커지는 순간을 한 문장으로 써봐.',
-  '같은 "할렐루야"가 왜 다르게 들리는지 화성/성부 관점으로 적어봐.'
+  '"할렐루야"가 몇 번 반복되는지 느낌대로 써보세요.',
+  '노래가 작게 시작해서 크게 커지는 부분을 써보세요.',
+  '같은 "할렐루야"가 다르게 들린 이유를 한 줄로 써보세요.'
 ];
 const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+const compactText = (value) => normalizeText(value).replace(/\s+/g, '').replace(/[.,!?'"()\-]/g, '');
+const isSameSet = (a, b) => {
+  if (a.length !== b.length) return false;
+  const aset = new Set(a);
+  const bset = new Set(b);
+  if (aset.size !== bset.size) return false;
+  for (const v of aset) {
+    if (!bset.has(v)) return false;
+  }
+  return true;
+};
+const hasAllKeywords = (text, keywords) => keywords.every((kw) => text.includes(kw));
+const feedbackIndicatesAllCorrect = (text) => {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
+  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
+  return positive.test(t) && !negative.test(t);
+};
 
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
@@ -56,6 +75,7 @@ function AnalyticalOverview({ go }) {
   const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
   const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
   const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
+  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
   const correctCharacters = isHaydn
     ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
     : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
@@ -112,7 +132,21 @@ function AnalyticalOverview({ go }) {
     [characters, story]
   );
   const hasEditedAfterFeedback = hasRequestedFeedback && feedbackSnapshot !== currentAnswerSnapshot;
-  const canOpenAnswerCheck = isAllFilled && hasRequestedFeedback && hasEditedAfterFeedback;
+  const isAlreadyCorrect = useMemo(() => {
+    if (!isAllFilled) return false;
+    const userQ1 = characters.map((c) => compactText(c)).filter(Boolean);
+    const answerQ1 = correctCharacters.map((c) => compactText(c));
+    const q1Correct = isSameSet(userQ1, answerQ1);
+    const storyCompact = compactText(story);
+    const q2Correct = isHaydn
+      ? storyCompact.includes('종달새')
+      : (isErlkonig
+        ? hasAllKeywords(storyCompact, ['폭풍', '아버지', '아들', '마왕', '죽'])
+        : hasAllKeywords(storyCompact, ['할렐루야', '반복', '합창', '장조']));
+    return q1Correct && q2Correct;
+  }, [isAllFilled, characters, correctCharacters, story, isHaydn, isErlkonig]);
+  const canOpenAnswerCheck =
+    isAllFilled && hasRequestedFeedback && (hasEditedAfterFeedback || isAlreadyCorrect || feedbackAllowsDirectCheck);
 
   const requestAnalyticalFeedback = useCallback(
     () =>
@@ -128,6 +162,7 @@ function AnalyticalOverview({ go }) {
   const onFeedbackRequested = useCallback(() => {
     setHasRequestedFeedback(true);
     setFeedbackSnapshot(currentAnswerSnapshot);
+    setFeedbackAllowsDirectCheck(false);
     setAnswerCheckOpen(false);
   }, [currentAnswerSnapshot, setAnswerCheckOpen]);
 
@@ -330,15 +365,21 @@ function AnalyticalOverview({ go }) {
           {storyHint}
         </div>
 
-        <CompareAiFeedbackBlock requestFn={requestAnalyticalFeedback} onRequested={onFeedbackRequested} />
+        <CompareAiFeedbackBlock
+          requestFn={requestAnalyticalFeedback}
+          onRequested={onFeedbackRequested}
+          onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
+        />
 
         {isAllFilled ? (
           <div className="small-note" style={{ marginTop: 8 }}>
             {!hasRequestedFeedback
               ? '먼저 실시간 피드백을 받아보세요.'
-              : (hasEditedAfterFeedback
+              : ((isAlreadyCorrect || feedbackAllowsDirectCheck)
+                ? '좋아요! 정답과 모두 일치해서 바로 확인할 수 있어요.'
+                : (hasEditedAfterFeedback
                 ? '좋아요! 이제 정답을 확인해 보세요.'
-                : '피드백을 반영해 답안을 한 번 수정하면 정답을 확인할 수 있어요.')}
+                : '피드백을 반영해 답안을 한 번 수정하면 정답을 확인할 수 있어요.'))}
           </div>
         ) : null}
 

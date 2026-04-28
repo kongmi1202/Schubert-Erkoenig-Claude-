@@ -70,10 +70,9 @@ function CpRhythm({ go }) {
     [resultByGroup]
   );
   const canProceed = allChecked && polyDesc.trim().length > 0;
-  const hintText = `두 리듬이 동시에 들릴 때
-박자가 한 방향으로만 가지 않고
-엇갈리며 밀고 당기는 느낌이 나는지
-중심으로 설명해보세요.`;
+  const hintText = `오른손과 왼손 리듬이 같게 들리나요, 다르게 들리나요?
+두 리듬이 겹칠 때 편한 느낌인가요, 긴장되는 느낌인가요?
+왜 그렇게 느꼈는지 한 줄로 써볼까요?`;
 
   return (
     <div className="screen active" id="cp-rhythm">

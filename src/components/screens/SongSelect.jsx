@@ -2,11 +2,13 @@ import { useAppStore } from '../../store/useAppStore';
 
 const SONGS = [
   {
-    id: 'mawang',
-    icon: '🎭',
-    title: '마왕',
-    composer: 'SCHUBERT · 1815',
-    tags: ['낭만주의', '예술가곡', '4명의 등장인물']
+    id: 'vivaldi',
+    icon: '⛈️',
+    title: '사계',
+    subtitle: '여름 3악장',
+    composer: 'VIVALDI · 1725',
+    tags: ['바로크', '바이올린 협주곡', '표제음악'],
+    borderColor: 'rgba(39,174,96,.3)'
   },
   {
     id: 'handel',
@@ -23,20 +25,11 @@ const SONGS = [
     tags: ['고전주의', '현악 4중주', '소나타 형식']
   },
   {
-    id: 'schoenberg',
-    icon: '🌙',
-    title: '달에 홀린 피에로',
-    composer: 'SCHOENBERG · 1912',
-    tags: ['표현주의', '무조성', '슈프레흐슈팀메']
-  },
-  {
-    id: 'vivaldi',
-    icon: '⛈️',
-    title: '사계',
-    subtitle: '여름 3악장',
-    composer: 'VIVALDI · 1725',
-    tags: ['바로크', '바이올린 협주곡', '표제음악'],
-    borderColor: 'rgba(39,174,96,.3)'
+    id: 'mawang',
+    icon: '🎭',
+    title: '마왕',
+    composer: 'SCHUBERT · 1815',
+    tags: ['낭만주의', '예술가곡', '4명의 등장인물']
   },
   {
     id: 'chopin',
@@ -45,6 +38,13 @@ const SONGS = [
     composer: 'CHOPIN · 1835',
     tags: ['낭만주의', '피아노 독주', 'ABA 형식'],
     borderColor: 'rgba(139,92,246,.3)'
+  },
+  {
+    id: 'schoenberg',
+    icon: '🌙',
+    title: '달에 홀린 피에로',
+    composer: 'SCHOENBERG · 1912',
+    tags: ['표현주의', '무조성', '슈프레흐슈팀메']
   }
 ];
 

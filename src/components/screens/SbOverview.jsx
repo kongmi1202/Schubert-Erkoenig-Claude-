@@ -6,10 +6,20 @@ import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
 const q2Answer = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
 const helperHints = [
-  '악기 이름과 목소리 형태를 먼저 나열한 뒤, 편성 특징을 한 문장으로 정리해보세요.',
-  '분위기를 적을 때는 감정 단어 2~3개와 이유(음색, 리듬, 선율)를 함께 써보세요.',
-  '달빛, 도취, 불안 같은 핵심 이미지를 넣어 표현주의적 느낌을 설명해보세요.'
+  '들리는 악기 이름을 생각나는 만큼 써보세요.',
+  '목소리가 노래처럼 들리는지 말처럼 들리는지 써보세요.',
+  '음악 분위기를 단어 2개로 써보세요. (예: 불안, 신비)'
 ];
+const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+const compactText = (value) => normalizeText(value).replace(/\s+/g, '').replace(/[.,!?'"()\-]/g, '');
+const hasAllKeywords = (text, keywords) => keywords.every((kw) => text.includes(kw));
+const feedbackIndicatesAllCorrect = (text) => {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
+  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
+  return positive.test(t) && !negative.test(t);
+};
 
 function SbOverview({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
@@ -25,10 +35,20 @@ function SbOverview({ go }) {
   const [q2Hint, setQ2Hint] = useState(helperHints[1]);
   const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
   const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
+  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
 
   const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
   const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1.trim(), q2: q2.trim() }), [q1, q2]);
-  const canOpenAnswer = canProceed && hasRequestedFeedback && feedbackSnapshot !== currentSnapshot;
+  const isAlreadyCorrect = useMemo(() => {
+    if (!canProceed) return false;
+    const q1Text = compactText(q1);
+    const q2Text = compactText(q2);
+    const q1Ok = hasAllKeywords(q1Text, ['소프라노', '플루트', '클라리넷', '바이올린', '첼로', '피아노']);
+    const q2Ok = hasAllKeywords(q2Text, ['불안', '몽환', '신비']);
+    return q1Ok && q2Ok;
+  }, [canProceed, q1, q2]);
+  const canOpenAnswer =
+    canProceed && hasRequestedFeedback && (feedbackSnapshot !== currentSnapshot || isAlreadyCorrect || feedbackAllowsDirectCheck);
 
   const showHint = (forQ1) => {
     const next = helperHints[Math.floor(Math.random() * helperHints.length)];
@@ -51,6 +71,7 @@ function SbOverview({ go }) {
   const onFeedbackRequested = () => {
     setHasRequestedFeedback(true);
     setFeedbackSnapshot(currentSnapshot);
+    setFeedbackAllowsDirectCheck(false);
     setQ1Open(false);
     setQ2Open(false);
   };
@@ -98,7 +119,6 @@ function SbOverview({ go }) {
           <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {q1Hint}
         </div>
-        <CompareAiFeedbackBlock requestFn={requestFeedback} onRequested={onFeedbackRequested} />
         <button
           type="button"
           className="answer-check-toggle"
@@ -128,6 +148,14 @@ function SbOverview({ go }) {
           <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
           {q2Hint}
         </div>
+        <CompareAiFeedbackBlock
+          requestFn={requestFeedback}
+          onRequested={onFeedbackRequested}
+          onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
+        />
+        {hasRequestedFeedback && (isAlreadyCorrect || feedbackAllowsDirectCheck) ? (
+          <div className="small-note" style={{ marginTop: 8 }}>좋아요! 현재 답안은 바로 정답 확인이 가능해요.</div>
+        ) : null}
         <button
           type="button"
           className="answer-check-toggle"
