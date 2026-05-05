@@ -80,7 +80,7 @@ function AnalyticalOverview({ go }) {
     ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
     : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
   const correctStory = isHaydn
-    ? '종달새'
+    ? '종달새. 제1바이올린의 높고 가벼운 선율이 새의 지저귐처럼 들리기 때문이다.'
     : (isErlkonig ? correctStoryErlkonig : correctStoryHallelujah);
   const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
   const overviewTitle = isHaydn ? '종달새 개요 파악' : (isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악');
@@ -92,10 +92,10 @@ function AnalyticalOverview({ go }) {
     ? 'Q1. 이 음악을 연주하는 악기들은 무엇일까요?'
     : (isErlkonig ? 'Q1. 등장인물 4명을 적어보세요' : 'Q1. 핵심 음악 요소 4가지를 적어보세요');
   const q2Title = isHaydn
-    ? 'Q2. 이 음악은 어떤 동물을 떠올리게 하나요?'
+    ? 'Q2. 이 음악은 어떤 동물을 떠올리게 하나요? 그 이유는 무엇인가요?'
     : (isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기');
   const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : `등장인물`;
-  const q2Placeholder = isHaydn ? '떠오르는 동물을 써보세요...' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
+  const q2Placeholder = isHaydn ? '예: 종달새. 제1바이올린의 높은 선율이 새 지저귐처럼 들려서...' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
   const haydnPlayerHostRef = useRef(null);
   const haydnPlayerRef = useRef(null);
   const haydnWatchRef = useRef(null);
@@ -139,7 +139,11 @@ function AnalyticalOverview({ go }) {
     const q1Correct = isSameSet(userQ1, answerQ1);
     const storyCompact = compactText(story);
     const q2Correct = isHaydn
-      ? storyCompact.includes('종달새')
+      ? (
+        (storyCompact.includes('종달새') || storyCompact.includes('새')) &&
+        (storyCompact.includes('바이올린') || storyCompact.includes('가락') || storyCompact.includes('선율')) &&
+        (storyCompact.includes('울음') || storyCompact.includes('지저귀') || storyCompact.includes('연상'))
+      )
       : (isErlkonig
         ? hasAllKeywords(storyCompact, ['폭풍', '아버지', '아들', '마왕', '죽'])
         : hasAllKeywords(storyCompact, ['할렐루야', '반복', '합창', '장조']));
@@ -155,9 +159,13 @@ function AnalyticalOverview({ go }) {
         userCharactersText,
         correctCharacters,
         userStory: story,
-        correctStory
+        correctStory,
+        q2Label: isHaydn ? '떠오르는 동물과 그 이유' : '줄거리 요약',
+        q2PromptGuide: isHaydn
+          ? '학생이 "종달새"라고 썼는지와 함께, 이유에 "바이올린 가락(선율)이 종달새 울음을 연상시킨다"는 근거가 드러나는지 비교한다.'
+          : '학생이 쓴 줄거리 요약이 모범 줄거리와 어떻게 맞는지 비교한다.'
       }),
-    [characters, userCharactersText, story]
+    [characters, userCharactersText, story, correctStory, isHaydn]
   );
   const onFeedbackRequested = useCallback(() => {
     setHasRequestedFeedback(true);
@@ -358,12 +366,16 @@ function AnalyticalOverview({ go }) {
           onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder={q2Placeholder}
         />
-        <button className="ai-btn" onClick={showRandomStoryHint}>✨ 참고 예시 보기</button>
-        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
-        <div className={`ai-bubble ${aiOpen.story ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {storyHint}
-        </div>
+        {!isHaydn ? (
+          <>
+            <button className="ai-btn" onClick={showRandomStoryHint}>✨ 참고 예시 보기</button>
+            <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
+            <div className={`ai-bubble ${aiOpen.story ? 'show' : ''}`}>
+              <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
+              {storyHint}
+            </div>
+          </>
+        ) : null}
 
         <CompareAiFeedbackBlock
           requestFn={requestAnalyticalFeedback}

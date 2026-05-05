@@ -317,6 +317,8 @@ canvas{display:block;width:100%;touch-action:none}
 .aud-btn{width:60px;height:60px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--crimson),var(--purple));color:#fff;font-size:20px;cursor:pointer}
 .aud-title{font-size:32px;font-weight:600}
 .voice-audio-main .aud-title-sm{font-size:15px;line-height:1.45}
+.hy-audio-bar{justify-content:flex-start;gap:12px}
+.hy-audio-bar .aud-btn{flex-shrink:0}
 .vd-item{margin-bottom:18px}
 .vd-label{font-size:18px;color:var(--gold-light);margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .q-mini{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);font-size:12px;color:var(--text-faint)}
@@ -531,7 +533,7 @@ canvas{display:block;width:100%;touch-action:none}
 .feel-card-h.fc1 .feel-title-h{color:#6b9fd4;}
 .feel-card-h.fc2 .feel-title-h{color:#d4aa4a;}
 
-.instr-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.instr-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px;}
 .instr-btn{padding:16px 10px;border:1px solid var(--border);
   background:var(--surface);cursor:pointer;text-align:center;transition:all .2s;}
 .instr-btn:hover{border-color:rgba(139,92,246,.35);}

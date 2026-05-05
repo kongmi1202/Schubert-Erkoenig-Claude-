@@ -3,16 +3,15 @@ import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 
 const AUDIO_SRC = {
-  'hy-instr1': '/audio/haydn-instr1.mp3',
-  'hy-instr2': '/audio/haydn-instr2.mp3',
-  'hy-instr3': '/audio/haydn-instr3.mp3'
+  'hy-instr1': '/audio/haydn-violin.mp3',
+  'hy-instr2': '/audio/haydn-viola.mp3',
+  'hy-instr3': '/audio/haydn-cello.mp3'
 };
 
 const INSTRUMENTS = [
-  { id: 'violin1', icon: '🎻', name: '제1바이올린', desc: '가장 높은 음역', sizeClass: 'size-v1' },
-  { id: 'violin2', icon: '🎻', name: '제2바이올린', desc: '중간 높은 음역', sizeClass: 'size-v2' },
+  { id: 'violin', icon: '🎻', name: '바이올린', desc: '높은 음역', sizeClass: 'size-v1' },
   { id: 'viola', icon: '🎻', name: '비올라', desc: '중간 음역', sizeClass: 'size-va' },
-  { id: 'cello', icon: '🎻', name: '첼로', desc: '가장 낮은 음역', sizeClass: 'size-vc' }
+  { id: 'cello', icon: '🎻', name: '첼로', desc: '낮은 음역', sizeClass: 'size-vc' }
 ];
 
 const SEGMENTS = [
@@ -20,8 +19,8 @@ const SEGMENTS = [
     idx: 1,
     audioId: 'hy-instr1',
     gridId: 'ig-1',
-    answer: '제1바이올린',
-    feedback: '제1바이올린이에요! 가장 높은 음역으로 주선율을 담당해요.',
+    answer: '바이올린',
+    feedback: '바이올린이에요! 높은 음역으로 선율을 이끌어요.',
     btnId: 'hy-check-1',
     bodyId: 'hy-ans-1'
   },
@@ -29,8 +28,8 @@ const SEGMENTS = [
     idx: 2,
     audioId: 'hy-instr2',
     gridId: 'ig-2',
-    answer: '첼로',
-    feedback: '첼로예요! 가장 낮은 음역으로 베이스를 담당해요.',
+    answer: '비올라',
+    feedback: '비올라예요! 중간 음역으로 부선율을 담당해요.',
     btnId: 'hy-check-2',
     bodyId: 'hy-ans-2'
   },
@@ -38,8 +37,8 @@ const SEGMENTS = [
     idx: 3,
     audioId: 'hy-instr3',
     gridId: 'ig-3',
-    answer: '비올라',
-    feedback: '비올라예요! 중간 음역으로 부선율을 담당해요.',
+    answer: '첼로',
+    feedback: '첼로예요! 가장 낮은 음역으로 베이스를 담당해요.',
     btnId: 'hy-check-3',
     bodyId: 'hy-ans-3'
   }
@@ -128,7 +127,7 @@ function HyTimbre({ go }) {
           const answerOpen = openByBodyId[segment.bodyId];
           return (
             <section key={segment.gridId} style={{ marginBottom: 20 }}>
-              <div className="sec">구간 {segment.idx}</div>
+                <div className="sec">구간 {segment.idx}</div>
               <div className="review-card" style={{ marginBottom: 10 }}>
                 <audio
                   id={segment.audioId}

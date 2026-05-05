@@ -1,11 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateHyThemePart2Feedback, generateHyThemePart3Feedback } from '../../lib/compareFeedback';
 
-const AUDIO_SRC = {
-  'hy-th1': '/audio/haydn-theme-1.mp3',
-  'hy-th2': '/audio/haydn-theme-2.mp3'
-};
+const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
+const HY_THEME1_START_SEC = 0;
+const HY_THEME1_END_SEC = 12;
+const HY_THEME2_YT_VIDEO_ID = '_l3bN9LNenk';
+const HY_THEME2_START_SEC = 0;
+const HY_THEME2_END_SEC = 7;
+
+let ytApiPromise = null;
+function loadYouTubeIframeApi() {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (ytApiPromise) return ytApiPromise;
+  ytApiPromise = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === 'function') prev();
+      resolve(window.YT);
+    };
+    document.body.appendChild(script);
+  });
+  return ytApiPromise;
+}
 
 function setupDraw(canvas, getBrush, onDirty) {
   const ctx = canvas.getContext('2d');
@@ -69,8 +91,10 @@ function HyTheme({ go }) {
   const t2Ref = useRef(null);
   const modelT1Ref = useRef(null);
   const modelT2Ref = useRef(null);
-  const t1AudioRef = useRef(null);
-  const t2AudioRef = useRef(null);
+  const t1YtHostRef = useRef(null);
+  const t1YtPlayerRef = useRef(null);
+  const t2YtHostRef = useRef(null);
+  const t2YtPlayerRef = useRef(null);
 
   const [t1Brush, setT1Brush] = useState({ color: '#4a7fc1', size: 3, erase: false });
   const [t2Brush, setT2Brush] = useState({ color: '#c4922a', size: 3, erase: false });
@@ -86,10 +110,14 @@ function HyTheme({ go }) {
   const [toneByGroup, setToneByGroup] = useState(() => hyThemeState?.toneByGroup || { 'hy-tone-t1': '', 'hy-tone-t2': '' });
   const [toneChecked, setToneChecked] = useState(false);
   const [toneOpen, setToneOpen] = useState(false);
+  const [hasRequestedToneFeedback, setHasRequestedToneFeedback] = useState(false);
+  const [toneFeedbackSnapshot, setToneFeedbackSnapshot] = useState('');
 
   const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
   const [degChecked, setDegChecked] = useState(false);
   const [degOpen, setDegOpen] = useState(false);
+  const [hasRequestedDegFeedback, setHasRequestedDegFeedback] = useState(false);
+  const [degFeedbackSnapshot, setDegFeedbackSnapshot] = useState('');
 
   useEffect(() => {
     const cleanups = [];
@@ -119,22 +147,108 @@ function HyTheme({ go }) {
     return () => window.removeEventListener('load', onLoad);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    loadYouTubeIframeApi().then((YT) => {
+      if (!mounted || !t1YtHostRef.current) return;
+      if (t1YtPlayerRef.current?.destroy) {
+        t1YtPlayerRef.current.destroy();
+        t1YtPlayerRef.current = null;
+      }
+      t1YtPlayerRef.current = new YT.Player(t1YtHostRef.current, {
+        width: '1',
+        height: '1',
+        videoId: HY_THEME1_YT_VIDEO_ID,
+        playerVars: {
+          start: HY_THEME1_START_SEC,
+          end: HY_THEME1_END_SEC,
+          controls: 0,
+          rel: 0,
+          playsinline: 1,
+          modestbranding: 1
+        },
+        events: {
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.ENDED) {
+              event.target.seekTo(HY_THEME1_START_SEC, true);
+              event.target.pauseVideo();
+              setPlaying((p) => (p === 'hy-th1' ? '' : p));
+            }
+          }
+        }
+      });
+    });
+    return () => {
+      mounted = false;
+      if (t1YtPlayerRef.current?.destroy) t1YtPlayerRef.current.destroy();
+      t1YtPlayerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    loadYouTubeIframeApi().then((YT) => {
+      if (!mounted || !t2YtHostRef.current) return;
+      if (t2YtPlayerRef.current?.destroy) {
+        t2YtPlayerRef.current.destroy();
+        t2YtPlayerRef.current = null;
+      }
+      t2YtPlayerRef.current = new YT.Player(t2YtHostRef.current, {
+        width: '1',
+        height: '1',
+        videoId: HY_THEME2_YT_VIDEO_ID,
+        playerVars: {
+          start: HY_THEME2_START_SEC,
+          end: HY_THEME2_END_SEC,
+          controls: 0,
+          rel: 0,
+          playsinline: 1,
+          modestbranding: 1
+        },
+        events: {
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.ENDED) {
+              event.target.seekTo(HY_THEME2_START_SEC, true);
+              event.target.pauseVideo();
+              setPlaying((p) => (p === 'hy-th2' ? '' : p));
+            }
+          }
+        }
+      });
+    });
+    return () => {
+      mounted = false;
+      if (t2YtPlayerRef.current?.destroy) t2YtPlayerRef.current.destroy();
+      t2YtPlayerRef.current = null;
+    };
+  }, []);
+
   const toggleAudio = async (id) => {
-    const current = id === 'hy-th1' ? t1AudioRef.current : t2AudioRef.current;
-    const other = id === 'hy-th1' ? t2AudioRef.current : t1AudioRef.current;
-    if (!current) return;
-    if (playing === id) {
-      current.pause();
+    if (id === 'hy-th1') {
+      const ytPlayer = t1YtPlayerRef.current;
+      if (!ytPlayer) return;
+      if (playing === 'hy-th1') {
+        ytPlayer.pauseVideo?.();
+        setPlaying('');
+        return;
+      }
+      t2YtPlayerRef.current?.pauseVideo?.();
+      ytPlayer.seekTo?.(HY_THEME1_START_SEC, true);
+      ytPlayer.playVideo?.();
+      setPlaying('hy-th1');
+      return;
+    }
+    const ytPlayer = t2YtPlayerRef.current;
+    if (!ytPlayer) return;
+    if (playing === 'hy-th2') {
+      ytPlayer.pauseVideo?.();
       setPlaying('');
       return;
     }
-    other?.pause();
-    try {
-      await current.play();
-      setPlaying(id);
-    } catch {
-      setPlaying('');
-    }
+    t1YtPlayerRef.current?.pauseVideo?.();
+    ytPlayer.seekTo?.(HY_THEME2_START_SEC, true);
+    ytPlayer.playVideo?.();
+    setPlaying('hy-th2');
   };
 
   const clearCanvas = (canvasRef, key) => {
@@ -149,6 +263,12 @@ function HyTheme({ go }) {
       setT2Dirty(false);
       setMyPreview((prev) => ({ ...prev, t2: '' }));
     }
+  };
+
+  const saveCanvasPreview = (canvasRef, key) => {
+    const c = canvasRef.current;
+    if (!c) return;
+    setMyPreview((prev) => ({ ...prev, [key]: c.toDataURL('image/png') }));
   };
 
   function drawHyModel(hand) {
@@ -223,6 +343,21 @@ function HyTheme({ go }) {
   );
   const toneCorrect = toneByGroup['hy-tone-t1'] === '장조' && toneByGroup['hy-tone-t2'] === '장조';
   const degCorrect = selectedDeg === '5도';
+  const toneSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        feelT1: feelT1.trim(),
+        feelT2: feelT2.trim(),
+        tone1: toneByGroup['hy-tone-t1'] || '',
+        tone2: toneByGroup['hy-tone-t2'] || ''
+      }),
+    [feelT1, feelT2, toneByGroup]
+  );
+  const toneEditedAfterFeedback = hasRequestedToneFeedback && toneFeedbackSnapshot !== toneSnapshot;
+  const canOpenToneAnswerCheck = canCheckTone && hasRequestedToneFeedback && toneEditedAfterFeedback;
+  const degSnapshot = useMemo(() => JSON.stringify({ selectedDeg: selectedDeg || '' }), [selectedDeg]);
+  const degEditedAfterFeedback = hasRequestedDegFeedback && degFeedbackSnapshot !== degSnapshot;
+  const canOpenDegAnswerCheck = canCheckDeg && hasRequestedDegFeedback && degEditedAfterFeedback;
 
   useEffect(() => {
     setHyThemeState({ myPreview, feelT1, feelT2, toneByGroup, selectedDeg });
@@ -240,8 +375,8 @@ function HyTheme({ go }) {
         <div className="sec">파트 1 — 두 주제 듣고 가락선 그리기</div>
 
         <div className="sec">제1주제</div>
-        <audio id="hy-th1" ref={t1AudioRef} src={AUDIO_SRC['hy-th1']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th1' ? '' : p))} />
-        <div className="audio-bar voice-audio-bar">
+        <div ref={t1YtHostRef} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
+        <div className="audio-bar voice-audio-bar hy-audio-bar">
           <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#4a7fc1,#6b9fd4)' }} onClick={() => toggleAudio('hy-th1')}>
             {playing === 'hy-th1' ? '❚❚' : '▶'}
           </button>
@@ -279,12 +414,13 @@ function HyTheme({ go }) {
           ))}
           <button id="hy-t1-er" className={`pal-tool ${t1Brush.erase ? 'active' : ''}`} onClick={() => setT1Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
           <button className="pal-tool" onClick={() => clearCanvas(t1Ref, 't1')}>전체지우기</button>
+          <button className="btn-p" onClick={() => saveCanvasPreview(t1Ref, 't1')}>저장</button>
         </div>
         <div className="canvas-wrap" style={{ marginBottom: 16 }}><canvas id="hy-t1-cv" ref={t1Ref} width="640" height="120" /></div>
 
         <div className="sec">제2주제</div>
-        <audio id="hy-th2" ref={t2AudioRef} src={AUDIO_SRC['hy-th2']} preload="metadata" onEnded={() => setPlaying((p) => (p === 'hy-th2' ? '' : p))} />
-        <div className="audio-bar voice-audio-bar">
+        <div ref={t2YtHostRef} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
+        <div className="audio-bar voice-audio-bar hy-audio-bar">
           <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#c4922a,#d4aa4a)' }} onClick={() => toggleAudio('hy-th2')}>
             {playing === 'hy-th2' ? '❚❚' : '▶'}
           </button>
@@ -322,6 +458,7 @@ function HyTheme({ go }) {
           ))}
           <button id="hy-t2-er" className={`pal-tool ${t2Brush.erase ? 'active' : ''}`} onClick={() => setT2Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
           <button className="pal-tool" onClick={() => clearCanvas(t2Ref, 't2')}>전체지우기</button>
+          <button className="btn-p" onClick={() => saveCanvasPreview(t2Ref, 't2')}>저장</button>
         </div>
         <div className="canvas-wrap" style={{ marginBottom: 12 }}><canvas id="hy-t2-cv" ref={t2Ref} width="640" height="120" /></div>
 
@@ -395,16 +532,31 @@ function HyTheme({ go }) {
           </div>
         </div>
 
+        <CompareAiFeedbackBlock
+          requestFn={() =>
+            generateHyThemePart2Feedback({
+              feelT1,
+              feelT2,
+              toneT1: toneByGroup['hy-tone-t1'],
+              toneT2: toneByGroup['hy-tone-t2']
+            })
+          }
+          onRequested={() => {
+            setHasRequestedToneFeedback(true);
+            setToneFeedbackSnapshot(toneSnapshot);
+            setToneOpen(false);
+          }}
+        />
         <button
           id="hy-ans-tone-btn"
           type="button"
           className="answer-check-toggle"
           onClick={checkToneH}
-          disabled={!canCheckTone}
-          style={!canCheckTone ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          disabled={!canOpenToneAnswerCheck}
+          style={!canOpenToneAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           aria-expanded={toneOpen}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">피드백 반영 후 정답 확인하기</span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{toneOpen ? '▲' : '▼'}</span>
         </button>
         <div id="hy-ans-tone-body" className={`answer-compare-slide ${toneOpen ? 'open' : ''}`}>
@@ -441,9 +593,19 @@ function HyTheme({ go }) {
             ))}
           </div>
           <div className="keyboard-note">
-            제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제: <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
-            <br />
-            G에서 D까지 몇 도 차이일까요?
+            {toneChecked ? (
+              <>
+                제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제: <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
+                <br />
+                G에서 D까지 몇 도 차이일까요?
+              </>
+            ) : (
+              <>
+                파트 2 활동을 완료하면 두 주제의 조성이 공개됩니다.
+                <br />
+                먼저 느낌 표현과 장단조 선택을 마무리해 주세요.
+              </>
+            )}
           </div>
         </div>
 
@@ -453,16 +615,28 @@ function HyTheme({ go }) {
           ))}
         </div>
 
+        <CompareAiFeedbackBlock
+          requestFn={() =>
+            generateHyThemePart3Feedback({
+              selectedDeg
+            })
+          }
+          onRequested={() => {
+            setHasRequestedDegFeedback(true);
+            setDegFeedbackSnapshot(degSnapshot);
+            setDegOpen(false);
+          }}
+        />
         <button
           id="hy-ans-deg-btn"
           type="button"
           className="answer-check-toggle"
           onClick={checkDegH}
-          disabled={!canCheckDeg}
-          style={!canCheckDeg ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          disabled={!canOpenDegAnswerCheck}
+          style={!canOpenDegAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           aria-expanded={degOpen}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">피드백 반영 후 정답 확인하기</span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{degOpen ? '▲' : '▼'}</span>
         </button>
         <div id="hy-ans-deg-body" className={`answer-compare-slide ${degOpen ? 'open' : ''}`}>
