@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const AUDIO_SRC = {
@@ -15,11 +15,13 @@ const CHOICES = {
 
 function CpRhythm({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [selectedByGroup, setSelectedByGroup] = useState({});
+  const cpRhythmState = useAppStore((s) => s.cpRhythmState);
+  const setCpRhythmState = useAppStore((s) => s.setCpRhythmState);
+  const [selectedByGroup, setSelectedByGroup] = useState(() => cpRhythmState?.selectedByGroup || {});
   const [resultByGroup, setResultByGroup] = useState({});
   const [openByBodyId, setOpenByBodyId] = useState({});
   const [playingId, setPlayingId] = useState('');
-  const [polyDesc, setPolyDesc] = useState('');
+  const [polyDesc, setPolyDesc] = useState(() => cpRhythmState?.polyDesc || '');
   const [showHint, setShowHint] = useState(false);
   const audioRefs = useRef({
     'cp-rh': null,
@@ -73,6 +75,10 @@ function CpRhythm({ go }) {
   const hintText = `오른손과 왼손 리듬이 같게 들리나요, 다르게 들리나요?
 두 리듬이 겹칠 때 편한 느낌인가요, 긴장되는 느낌인가요?
 왜 그렇게 느꼈는지 한 줄로 써볼까요?`;
+
+  useEffect(() => {
+    setCpRhythmState({ selectedByGroup, polyDesc });
+  }, [selectedByGroup, polyDesc, setCpRhythmState]);
 
   return (
     <div className="screen active" id="cp-rhythm">

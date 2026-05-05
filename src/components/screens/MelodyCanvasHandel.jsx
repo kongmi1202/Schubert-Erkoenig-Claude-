@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
+import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import { useAppStore } from '../../store/useAppStore';
 
-const AUDIO_SRC = {
-  harmony: '/audio/handel-harmony.mp3',
-  poly: '/audio/handel-polyphony.mp3'
+/** 할렐루야 감상(VideoPage handel)과 동일 영상 */
+const HANDEL_HALLELUJAH_VIDEO_ID = 'XBSBBXFmHSE';
+const SEGMENT_HALLELUJAH_FULL_CHOIR = { start: 11, end: 30 };
+const SEGMENT_LORD_REIGN_POLY = { start: 99, end: 122 };
+
+const SCORE_SHOT_SRC = {
+  harmony: '/assets/handel-harmony-shot.png',
+  poly: '/assets/handel-poly-shot.png'
+};
+
+const MODEL_LINE_SRC = {
+  harmony: '/assets/handel-model-hallelujah.png',
+  poly: '/assets/handel-model-lord-reign.png'
 };
 
 function setupDraw(canvas, getBrush, onDirty) {
@@ -60,71 +71,23 @@ function setupDraw(canvas, getBrush, onDirty) {
   };
 }
 
-function drawHarmonyModel(canvas) {
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const lines = [
-    { y: 72, color: '#f59e0b', w: 6 },
-    { y: 92, color: '#a78bfa', w: 6 },
-    { y: 112, color: '#60a5fa', w: 6 }
-  ];
-  const pts = [20, 70, 130, 185, 250, 320, 390, 470, 540, 620, 700, 780, 860];
-  lines.forEach((line) => {
-    ctx.beginPath();
-    ctx.strokeStyle = line.color;
-    ctx.lineWidth = line.w;
-    ctx.lineCap = 'round';
-    ctx.moveTo(pts[0], line.y + 10);
-    for (let i = 1; i < pts.length; i += 1) {
-      const upDown = i % 2 === 0 ? -16 : 16;
-      ctx.lineTo(pts[i], line.y + upDown);
-    }
-    ctx.stroke();
-  });
-}
-
-function drawPolyModel(canvas) {
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const specs = [
-    { color: '#f87171', startY: 58, delta: 14 },
-    { color: '#a78bfa', startY: 98, delta: -15 },
-    { color: '#34d399', startY: 132, delta: 11 }
-  ];
-  const xs = [20, 80, 140, 200, 270, 340, 410, 480, 560, 640, 720, 800, 870];
-  specs.forEach((s, idx) => {
-    ctx.beginPath();
-    ctx.strokeStyle = s.color;
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.moveTo(xs[0], s.startY);
-    for (let i = 1; i < xs.length; i += 1) {
-      const zig = ((i + idx) % 2 === 0 ? -1 : 1) * s.delta;
-      ctx.lineTo(xs[i], s.startY + zig);
-    }
-    ctx.stroke();
-  });
-}
-
 function MelodyCanvasHandel({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const melodyCanvasHandelState = useAppStore((s) => s.melodyCanvasHandelState);
+  const setMelodyCanvasHandelState = useAppStore((s) => s.setMelodyCanvasHandelState);
 
   const harmonyRef = useRef(null);
   const polyRef = useRef(null);
-  const modelHarmonyRef = useRef(null);
-  const modelPolyRef = useRef(null);
-  const harmonyAudioRef = useRef(null);
-  const polyAudioRef = useRef(null);
+  const harmonyYtRef = useRef(null);
+  const polyYtRef = useRef(null);
 
   const [harmonyBrush, setHarmonyBrush] = useState({ color: '#a78bfa', size: 2, erase: false });
   const [polyBrush, setPolyBrush] = useState({ color: '#f87171', size: 2, erase: false });
   const [harmonyDirty, setHarmonyDirty] = useState(false);
   const [polyDirty, setPolyDirty] = useState(false);
-  const [harmonyPlaying, setHarmonyPlaying] = useState(false);
-  const [polyPlaying, setPolyPlaying] = useState(false);
   const [guideOpen, setGuideOpen] = useState({ harmony: true, poly: false });
   const [compareOpen, setCompareOpen] = useState({ harmony: false, poly: false });
-  const [savedPreview, setSavedPreview] = useState({ harmony: '', poly: '' });
+  const [savedPreview, setSavedPreview] = useState(() => melodyCanvasHandelState?.savedPreview || { harmony: '', poly: '' });
 
   useEffect(() => {
     const cleanups = [];
@@ -136,39 +99,6 @@ function MelodyCanvasHandel({ go }) {
     }
     return () => cleanups.forEach((fn) => fn());
   }, [harmonyBrush, polyBrush]);
-
-  useEffect(() => {
-    if (modelHarmonyRef.current) drawHarmonyModel(modelHarmonyRef.current);
-    if (modelPolyRef.current) drawPolyModel(modelPolyRef.current);
-  }, []);
-
-  useEffect(() => {
-    const h = harmonyAudioRef.current;
-    const p = polyAudioRef.current;
-    if (!h || !p) return undefined;
-    if (harmonyPlaying) {
-      p.pause();
-      setPolyPlaying(false);
-      h.play().catch(() => setHarmonyPlaying(false));
-    } else {
-      h.pause();
-    }
-    return undefined;
-  }, [harmonyPlaying]);
-
-  useEffect(() => {
-    const h = harmonyAudioRef.current;
-    const p = polyAudioRef.current;
-    if (!h || !p) return undefined;
-    if (polyPlaying) {
-      h.pause();
-      setHarmonyPlaying(false);
-      p.play().catch(() => setPolyPlaying(false));
-    } else {
-      p.pause();
-    }
-    return undefined;
-  }, [polyPlaying]);
 
   const clearCanvas = (canvasRef, key) => {
     const c = canvasRef.current;
@@ -188,6 +118,10 @@ function MelodyCanvasHandel({ go }) {
 
   const allDone = useMemo(() => harmonyDirty && polyDirty, [harmonyDirty, polyDirty]);
 
+  useEffect(() => {
+    setMelodyCanvasHandelState({ savedPreview });
+  }, [savedPreview, setMelodyCanvasHandelState]);
+
   return (
     <div className="screen active">
       <div className="stage-header">
@@ -197,13 +131,28 @@ function MelodyCanvasHandel({ go }) {
       </div>
       <div className="body voice-body">
         <div className="sec">A 구간</div>
-        <audio ref={harmonyAudioRef} src={AUDIO_SRC.harmony} preload="auto" onEnded={() => setHarmonyPlaying(false)} />
         <div className="audio-bar voice-audio-bar">
-          <button type="button" className="aud-btn" onClick={() => setHarmonyPlaying((v) => !v)}>
-            {harmonyPlaying ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">Hallelujah! — 합창 전체가 함께</div>
+          <div className="voice-audio-main">
+            <div className="voice-audio-yt">
+              <SegmentYoutubePlayer
+                videoId={HANDEL_HALLELUJAH_VIDEO_ID}
+                start={SEGMENT_HALLELUJAH_FULL_CHOIR.start}
+                end={SEGMENT_HALLELUJAH_FULL_CHOIR.end}
+                title="할렐루야! 합창 전체 구간 (0:11–0:30)"
+                onPlayerReady={(p) => {
+                  harmonyYtRef.current = p;
+                }}
+                onPlaying={() => {
+                  polyYtRef.current?.pauseVideo?.();
+                }}
+              />
+            </div>
+            <div className="voice-audio-title-wrap">
+              <div className="aud-title-sm">할렐루야! — 합창 전체가 함께</div>
+            </div>
+          </div>
+          <div className="voice-audio-score">
+            <img src={SCORE_SHOT_SRC.harmony} alt="할렐루야 합창 전체 악보" />
           </div>
         </div>
 
@@ -239,40 +188,61 @@ function MelodyCanvasHandel({ go }) {
         </div>
         <div className="canvas-wrap"><canvas ref={harmonyRef} width="900" height="170" /></div>
 
-        <button type="button" className="answer-check-toggle" onClick={() => setCompareOpen((p) => ({ ...p, harmony: !p.harmony }))} aria-expanded={compareOpen.harmony}>
-          <span className="answer-check-toggle-label">정답 비교하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{compareOpen.harmony ? '▲' : '▼'}</span>
-        </button>
-        <div className={`answer-compare-slide ${compareOpen.harmony ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {savedPreview.harmony ? (
+        {savedPreview.harmony ? (
+          <button type="button" className="answer-check-toggle" onClick={() => setCompareOpen((p) => ({ ...p, harmony: !p.harmony }))} aria-expanded={compareOpen.harmony}>
+            <span className="answer-check-toggle-label">정답 비교하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">{compareOpen.harmony ? '▲' : '▼'}</span>
+          </button>
+        ) : null}
+        {savedPreview.harmony ? (
+          <div className={`answer-compare-slide ${compareOpen.harmony ? 'open' : ''}`}>
+            <div className="answer-compare-inner">
+              <div className="cv-compare">
+                <div className="cv-box">
+                  <div className="cv-label">내가 그린 선</div>
+                  <div className="cv-panel">
                     <img src={savedPreview.harmony} alt="화성음악 가락선 저장 이미지" className="cv-drawing-image" />
-                  ) : (
-                    <div className="small-note">저장 버튼을 누르면 여기 표시돼요.</div>
-                  )}
+                  </div>
+                </div>
+                <div className="cv-box">
+                  <div className="cv-label">개념 예시 가락선</div>
+                  <div className="cv-panel">
+                    <img src={MODEL_LINE_SRC.harmony} alt="할렐루야 모범 가락선" className="cv-drawing-image" />
+                  </div>
                 </div>
               </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 가락선</div>
-                <div className="cv-panel"><canvas ref={modelHarmonyRef} width="900" height="170" /></div>
+              <div className="fb show info">
+                1. 내가 그린 가락선 악보에서 베이스→테너→알토→소프라노처럼 성부가 번갈아 움직이는지 확인해 보세요.<br />
+                2. 이렇게 모든 성부가 같은 선율을 번갈아 노래하는 부분을 '다성음악'이라고 해요!<br />
+                3. 내가 그린 가락선 악보가 마음에 들지 않으면 지우고 다시 그려 보세요.
               </div>
             </div>
-            <div className="fb show info">화성음악: 여러 성부가 함께 올라가고 내려가는 두꺼운 선 → 합창이 하나로 움직이는 웅장함을 표현해요</div>
           </div>
-        </div>
+        ) : null}
 
         <div className="sec">B 구간</div>
-        <audio ref={polyAudioRef} src={AUDIO_SRC.poly} preload="auto" onEnded={() => setPolyPlaying(false)} />
         <div className="audio-bar voice-audio-bar">
-          <button type="button" className="aud-btn" onClick={() => setPolyPlaying((v) => !v)}>
-            {polyPlaying ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">For the Lord God — 각 성부가 차례로</div>
+          <div className="voice-audio-main">
+            <div className="voice-audio-yt">
+              <SegmentYoutubePlayer
+                videoId={HANDEL_HALLELUJAH_VIDEO_ID}
+                start={SEGMENT_LORD_REIGN_POLY.start}
+                end={SEGMENT_LORD_REIGN_POLY.end}
+                title="또 주가 길이 다스리시리 성부 구간 (1:39–2:02)"
+                onPlayerReady={(p) => {
+                  polyYtRef.current = p;
+                }}
+                onPlaying={() => {
+                  harmonyYtRef.current?.pauseVideo?.();
+                }}
+              />
+            </div>
+            <div className="voice-audio-title-wrap">
+              <div className="aud-title-sm">또 주가 길이 다스리시리 — 각 성부가 차례로</div>
+            </div>
+          </div>
+          <div className="voice-audio-score">
+            <img src={SCORE_SHOT_SRC.poly} alt="또 주가 길이 다스리시리 성부 진행 악보" />
           </div>
         </div>
 
@@ -306,31 +276,39 @@ function MelodyCanvasHandel({ go }) {
         </div>
         <div className="canvas-wrap"><canvas ref={polyRef} width="900" height="170" /></div>
 
-        <button type="button" className="answer-check-toggle" onClick={() => setCompareOpen((p) => ({ ...p, poly: !p.poly }))} aria-expanded={compareOpen.poly}>
-          <span className="answer-check-toggle-label">정답 비교하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{compareOpen.poly ? '▲' : '▼'}</span>
-        </button>
-        <div className={`answer-compare-slide ${compareOpen.poly ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {savedPreview.poly ? (
+        {savedPreview.poly ? (
+          <button type="button" className="answer-check-toggle" onClick={() => setCompareOpen((p) => ({ ...p, poly: !p.poly }))} aria-expanded={compareOpen.poly}>
+            <span className="answer-check-toggle-label">정답 비교하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">{compareOpen.poly ? '▲' : '▼'}</span>
+          </button>
+        ) : null}
+        {savedPreview.poly ? (
+          <div className={`answer-compare-slide ${compareOpen.poly ? 'open' : ''}`}>
+            <div className="answer-compare-inner">
+              <div className="cv-compare">
+                <div className="cv-box">
+                  <div className="cv-label">내가 그린 선</div>
+                  <div className="cv-panel">
                     <img src={savedPreview.poly} alt="다성음악 가락선 저장 이미지" className="cv-drawing-image" />
-                  ) : (
-                    <div className="small-note">저장 버튼을 누르면 여기 표시돼요.</div>
-                  )}
+                  </div>
+                </div>
+                <div className="cv-box">
+                  <div className="cv-label">개념 예시 가락선</div>
+                  <div className="cv-panel">
+                    <img src={MODEL_LINE_SRC.poly} alt="또 주가 길이 다스리시리 모범 가락선" className="cv-drawing-image" />
+                  </div>
                 </div>
               </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 가락선</div>
-                <div className="cv-panel"><canvas ref={modelPolyRef} width="900" height="170" /></div>
+              <div className="fb show info">핵심 개념(다성음악): 베이스→테너→알토→소프라노처럼 성부가 번갈아 움직이는지(교대 진행)만 확인하면 돼요. 선 모양은 다양해도 괜찮아요.</div>
+              <div className="fb show info">
+                1. 내가 그린 가락선 악보에서 네 성부가 동시에 함께 움직이는 확인해 보세요.<br />
+                2. 베이스(Bass)부터 소프라노(Soprano)까지 가락선이 순서에 맞게 위치해있는지 확인해 보세요.<br />
+                3. 이렇게 모든 성부가 화음을 맞춰 함께 노래하는 부분을 '화성음악'이라고 해요!<br />
+                4. 내가 그린 가락선 악보가 마음에 들지 않으면 지우고 다시 그려 보세요.
               </div>
             </div>
-            <div className="fb show info">다성음악: 여러 선이 서로 다른 방향으로 엇갈리는 모양 → 각 성부가 독립적으로 움직이는 풍부한 화음</div>
           </div>
-        </div>
+        ) : null}
 
         {allDone ? (
           <ArtSongTakeaway

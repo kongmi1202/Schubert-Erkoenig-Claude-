@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const FORM_CARDS = [
@@ -15,10 +15,12 @@ const formCorrect = {
 
 function CpForm({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [formAnswers, setFormAnswers] = useState({});
+  const cpFormState = useAppStore((s) => s.cpFormState);
+  const setCpFormState = useAppStore((s) => s.setCpFormState);
+  const [formAnswers, setFormAnswers] = useState(() => cpFormState?.formAnswers || {});
   const [checked, setChecked] = useState(false);
   const [open, setOpen] = useState(false);
-  const [desc, setDesc] = useState('');
+  const [desc, setDesc] = useState(() => cpFormState?.desc || '');
   const [showHint, setShowHint] = useState(false);
   const [playingId, setPlayingId] = useState('');
   const audioRefs = useRef({
@@ -70,6 +72,10 @@ function CpForm({ go }) {
   const hintText = `A구간과 B구간 중 어디가 더 빠르게 들리나요?
 어느 구간이 더 부드럽게 느껴지나요?
 두 구간의 느낌 차이를 한 문장으로 써볼까요?`;
+
+  useEffect(() => {
+    setCpFormState({ formAnswers, desc });
+  }, [formAnswers, desc, setCpFormState]);
 
   return (
     <div className="screen active" id="cp-form">

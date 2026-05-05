@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const AUDIO_SRC = {
@@ -16,14 +16,20 @@ const CORRECT_CHOICE = '음에 도달한 직후 바로 올라가거나 내려간
 
 function SbSprech({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const sbSprechState = useAppStore((s) => s.sbSprechState);
+  const setSbSprechState = useAppStore((s) => s.setSbSprechState);
   const [playing, setPlaying] = useState('');
-  const [selectedChoice, setSelectedChoice] = useState('');
+  const [selectedChoice, setSelectedChoice] = useState(() => sbSprechState?.selectedChoice || '');
   const [answerOpen, setAnswerOpen] = useState(false);
   const normalRef = useRef(null);
   const sprechRef = useRef(null);
 
   const canCheck = useMemo(() => !!selectedChoice, [selectedChoice]);
   const isCorrect = selectedChoice === CORRECT_CHOICE;
+
+  useEffect(() => {
+    setSbSprechState({ selectedChoice });
+  }, [selectedChoice, setSbSprechState]);
 
   const playAudio = async (kind) => {
     const current = kind === 'normal' ? normalRef.current : sprechRef.current;

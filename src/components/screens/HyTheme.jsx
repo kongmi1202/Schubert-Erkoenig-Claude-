@@ -62,6 +62,8 @@ function setupDraw(canvas, getBrush, onDirty) {
 
 function HyTheme({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const hyThemeState = useAppStore((s) => s.hyThemeState);
+  const setHyThemeState = useAppStore((s) => s.setHyThemeState);
 
   const t1Ref = useRef(null);
   const t2Ref = useRef(null);
@@ -75,17 +77,17 @@ function HyTheme({ go }) {
   const [t1Dirty, setT1Dirty] = useState(false);
   const [t2Dirty, setT2Dirty] = useState(false);
   const [playing, setPlaying] = useState('');
-  const [myPreview, setMyPreview] = useState({ t1: '', t2: '' });
+  const [myPreview, setMyPreview] = useState(() => hyThemeState?.myPreview || { t1: '', t2: '' });
   const [cvOpen, setCvOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState({ t1: true, t2: false });
 
-  const [feelT1, setFeelT1] = useState('');
-  const [feelT2, setFeelT2] = useState('');
-  const [toneByGroup, setToneByGroup] = useState({ 'hy-tone-t1': '', 'hy-tone-t2': '' });
+  const [feelT1, setFeelT1] = useState(() => hyThemeState?.feelT1 || '');
+  const [feelT2, setFeelT2] = useState(() => hyThemeState?.feelT2 || '');
+  const [toneByGroup, setToneByGroup] = useState(() => hyThemeState?.toneByGroup || { 'hy-tone-t1': '', 'hy-tone-t2': '' });
   const [toneChecked, setToneChecked] = useState(false);
   const [toneOpen, setToneOpen] = useState(false);
 
-  const [selectedDeg, setSelectedDeg] = useState('');
+  const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
   const [degChecked, setDegChecked] = useState(false);
   const [degOpen, setDegOpen] = useState(false);
 
@@ -221,6 +223,10 @@ function HyTheme({ go }) {
   );
   const toneCorrect = toneByGroup['hy-tone-t1'] === '장조' && toneByGroup['hy-tone-t2'] === '장조';
   const degCorrect = selectedDeg === '5도';
+
+  useEffect(() => {
+    setHyThemeState({ myPreview, feelT1, feelT2, toneByGroup, selectedDeg });
+  }, [myPreview, feelT1, feelT2, toneByGroup, selectedDeg, setHyThemeState]);
 
   return (
     <div className="screen active">

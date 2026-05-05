@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const AUDIO_SRC = {
@@ -11,8 +11,11 @@ const vvAnswers = { 1: 'solo', 2: 'tutti', 3: 'solo' };
 
 function VvConcerto({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const vvConcertoState = useAppStore((s) => s.vvConcertoState);
+  const setVvConcertoState = useAppStore((s) => s.setVvConcertoState);
   const [vvSegment, setVvSegment] = useState(1);
-  const [vvScore, setVvScore] = useState(0);
+  const [vvScore, setVvScore] = useState(() => vvConcertoState?.score || 0);
+  const [selectedBySegment, setSelectedBySegment] = useState(() => vvConcertoState?.selectedBySegment || {});
   const [vvSelected, setVvSelected] = useState(null);
   const [isChecked, setIsChecked] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
@@ -42,6 +45,7 @@ function VvConcerto({ go }) {
   function selectConcertoRole(role) {
     if (isChecked || isFinished) return;
     setVvSelected(role);
+    setSelectedBySegment((prev) => ({ ...prev, [vvSegment]: role }));
     setSoloState(role === 'solo' ? 'selected-solo' : '');
     setTuttiState(role === 'tutti' ? 'selected-tutti' : '');
   }
@@ -99,6 +103,10 @@ function VvConcerto({ go }) {
       setPlaying(false);
     }
   };
+
+  useEffect(() => {
+    setVvConcertoState({ selectedBySegment, score: vvScore });
+  }, [selectedBySegment, vvScore, setVvConcertoState]);
 
   return (
     <div className="screen active" id="vv-concerto">

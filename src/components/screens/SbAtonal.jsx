@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const AUDIO_SRC = {
@@ -16,10 +16,12 @@ const CORRECT_CHOICE = '불안하고 예측할 수 없다';
 
 function SbAtonal({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const sbAtonalState = useAppStore((s) => s.sbAtonalState);
+  const setSbAtonalState = useAppStore((s) => s.setSbAtonalState);
   const [playing, setPlaying] = useState('');
-  const [feelTonal, setFeelTonal] = useState('');
-  const [feelAtonal, setFeelAtonal] = useState('');
-  const [selectedChoice, setSelectedChoice] = useState('');
+  const [feelTonal, setFeelTonal] = useState(() => sbAtonalState?.feelTonal || '');
+  const [feelAtonal, setFeelAtonal] = useState(() => sbAtonalState?.feelAtonal || '');
+  const [selectedChoice, setSelectedChoice] = useState(() => sbAtonalState?.selectedChoice || '');
   const [answerOpen, setAnswerOpen] = useState(false);
   const tonalRef = useRef(null);
   const atonalRef = useRef(null);
@@ -29,6 +31,10 @@ function SbAtonal({ go }) {
     [selectedChoice, feelTonal, feelAtonal]
   );
   const isCorrect = selectedChoice === CORRECT_CHOICE;
+
+  useEffect(() => {
+    setSbAtonalState({ selectedChoice, feelTonal, feelAtonal });
+  }, [selectedChoice, feelTonal, feelAtonal, setSbAtonalState]);
 
   const playAudio = async (kind) => {
     const current = kind === 'tonal' ? tonalRef.current : atonalRef.current;

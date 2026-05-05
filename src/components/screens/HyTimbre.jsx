@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 
@@ -47,7 +47,9 @@ const SEGMENTS = [
 
 function HyTimbre({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [selectedByGrid, setSelectedByGrid] = useState({});
+  const hyTimbreState = useAppStore((s) => s.hyTimbreState);
+  const setHyTimbreState = useAppStore((s) => s.setHyTimbreState);
+  const [selectedByGrid, setSelectedByGrid] = useState(() => hyTimbreState?.selectedByGrid || {});
   const [resultByGrid, setResultByGrid] = useState({});
   const [openByBodyId, setOpenByBodyId] = useState({});
   const [playingId, setPlayingId] = useState('');
@@ -101,6 +103,10 @@ function HyTimbre({ go }) {
     () => SEGMENTS.every((segment) => typeof selectedByGrid[segment.gridId] === 'string'),
     [selectedByGrid]
   );
+
+  useEffect(() => {
+    setHyTimbreState({ selectedByGrid });
+  }, [selectedByGrid, setHyTimbreState]);
 
   return (
     <div className="screen active">

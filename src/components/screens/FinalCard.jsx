@@ -16,7 +16,9 @@ const colorMap = {
 function FinalCard({ go }) {
   const {
     student, selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
-    selectedSong, analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff, q1, q2, q3
+    selectedSong, analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff, q1, q2, q3,
+    tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
+    vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
@@ -36,8 +38,14 @@ function FinalCard({ go }) {
         : (selectedSong === 'chopin'
           ? '환상 즉흥곡 (쇼팽)'
         : (selectedSong === 'schoenberg'
-          ? '달에 취하여 (쇤베르크)'
+          ? '달에 홀린 피에로 (쇤베르크)'
           : '—')))));
+  const analyticalQ1Label = isHandel
+    ? 'Q1 가사 내용'
+    : (isHaydn ? 'Q1 악기 구성' : (isSchoenberg ? 'Q1 편성' : (isVivaldi ? 'Q1 장면 묘사' : (isChopin ? 'Q1 악기 편성' : 'Q1 등장인물'))));
+  const analyticalQ2Label = isHandel
+    ? 'Q2 오페라와의 차이'
+    : (isHaydn ? 'Q2 떠오르는 동물' : (isSchoenberg ? 'Q2 분위기' : (isVivaldi ? 'Q2 분위기' : (isChopin ? 'Q2 분위기 변화' : 'Q2 줄거리'))));
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const handelAnswerQ1 = '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -50,6 +58,21 @@ function FinalCard({ go }) {
   const vivaldiAnswerQ2 = '격렬하고 긴박한 폭풍우의 분위기예요. 빠른 템포와 강한 셈여림으로 폭풍우의 긴박함과 공포가 생생하게 전달돼요.';
   const chopinAnswerQ1 = '피아노 독주예요. 다른 악기 없이 피아노 한 대가 선율과 반주를 모두 표현해요.';
   const chopinAnswerQ2 = '빠르고 격렬한 A구간과 느리고 서정적인 B구간이 대비되어, 곡의 분위기가 극적으로 바뀌어요.';
+  const handelToneSegments = [
+    { id: 's1', title: '구간 1', answer: '음이 점점 높아진다' },
+    { id: 's2', title: '구간 2', answer: '강조와 확신을 표현한다' },
+    { id: 's3', title: '구간 3', answer: '선율이 끝없이 이어진다' }
+  ];
+  const handelToneOptionsById = {
+    s1: ['음이 점점 높아진다', '음이 갑자기 낮아진다', '리듬이 빨라진다', '선율이 길게 이어진다'],
+    s2: ['지루함을 준다', '강조와 확신을 표현한다', '슬픔을 나타낸다', '음악이 끝나는 느낌을 준다'],
+    s3: ['음악이 갑자기 끝난다', '음이 매우 낮아진다', '선율이 끝없이 이어진다', '리듬이 점점 빨라진다']
+  };
+  const hyTimbreCorrect = { 'ig-1': '제1바이올린', 'ig-2': '첼로', 'ig-3': '비올라' };
+  const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
+  const vvConcertoCorrect = { 1: 'solo', 2: 'tutti', 3: 'solo' };
+  const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
+  const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -240,7 +263,7 @@ function FinalCard({ go }) {
           <div className="summary-ey">② 분석적 감상</div>
           <div className="cmp-mini-grid">
             <div>
-              <div className="small-note">Q1 내 답변</div>
+              <div className="small-note">{analyticalQ1Label} · 내 답변</div>
               {isHandel ? (
                 <div className="fb show info">{handelLyricMeaning || '없음'}</div>
               ) : isHaydn ? (
@@ -256,7 +279,7 @@ function FinalCard({ go }) {
               )}
             </div>
             <div>
-              <div className="small-note">Q1 정답 <span style={getGradeBadgeStyle(stageGrades.stage2)}>등급 {stageGrades.stage2}</span></div>
+              <div className="small-note">{analyticalQ1Label} · 정답 <span style={getGradeBadgeStyle(stageGrades.stage2)}>등급 {stageGrades.stage2}</span></div>
               {isHandel ? (
                 <div className="fb show gold">{handelAnswerQ1}</div>
               ) : isHaydn ? (
@@ -273,9 +296,153 @@ function FinalCard({ go }) {
             </div>
           </div>
           <div className="cmp-mini-grid">
-            <div><div className="small-note">Q2 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
-            <div><div className="small-note">Q2 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : (isVivaldi ? vivaldiAnswerQ2 : (isChopin ? chopinAnswerQ2 : analyticalAnswerStory))))}</div></div>
+            <div><div className="small-note">{analyticalQ2Label} · 내 답변</div><div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div></div>
+            <div><div className="small-note">{analyticalQ2Label} · 정답</div><div className="fb show gold">{isHandel ? handelAnswerQ2 : (isHaydn ? haydnAnswerQ2 : (isSchoenberg ? schoenbergAnswerQ2 : (isVivaldi ? vivaldiAnswerQ2 : (isChopin ? chopinAnswerQ2 : analyticalAnswerStory))))}</div></div>
           </div>
+          {isHandel ? (
+            <>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">2-B 음화법 · 내 답변</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {handelToneSegments.map((seg) => (
+                      <div key={seg.id} className="fb show info" style={{ marginBottom: 0 }}>
+                        {seg.title}: {tonePaintingHandelState?.selected?.[seg.id] === null
+                          ? '없음'
+                          : (handelToneOptionsById[seg.id]?.[tonePaintingHandelState.selected[seg.id]] || '없음')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="small-note">2-B 음화법 · 정답</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {handelToneSegments.map((seg) => (
+                      <div key={seg.id} className="fb show gold" style={{ marginBottom: 0 }}>
+                        {seg.title}: {seg.answer}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">2-C 화성음악 · 내 가락선</div>
+                  {melodyCanvasHandelState?.savedPreview?.harmony
+                    ? <img src={melodyCanvasHandelState.savedPreview.harmony} alt="화성음악 내가 그린 가락선" className="score-image-inline" />
+                    : <div className="review-empty">없음</div>}
+                </div>
+                <div>
+                  <div className="small-note">2-C 화성음악 · 개념 예시</div>
+                  <img src="/assets/handel-model-hallelujah.png" alt="화성음악 개념 예시 가락선" className="score-image-inline" />
+                </div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">2-C 다성음악 · 내 가락선</div>
+                  {melodyCanvasHandelState?.savedPreview?.poly
+                    ? <img src={melodyCanvasHandelState.savedPreview.poly} alt="다성음악 내가 그린 가락선" className="score-image-inline" />
+                    : <div className="review-empty">없음</div>}
+                </div>
+                <div>
+                  <div className="small-note">2-C 다성음악 · 개념 예시</div>
+                  <img src="/assets/handel-model-lord-reign.png" alt="다성음악 개념 예시 가락선" className="score-image-inline" />
+                </div>
+              </div>
+            </>
+          ) : null}
+          {isHaydn ? (
+            <>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간1: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'}</div>
+                <div className="fb show gold">정답: {hyTimbreCorrect['ig-1']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간2: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'}</div>
+                <div className="fb show gold">정답: {hyTimbreCorrect['ig-2']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간3: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'}</div>
+                <div className="fb show gold">정답: {hyTimbreCorrect['ig-3']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 장·단조: {hyThemeState?.toneByGroup?.['hy-tone-t1'] || '없음'} / {hyThemeState?.toneByGroup?.['hy-tone-t2'] || '없음'}</div>
+                <div className="fb show gold">정답: 둘 다 장조</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 도수 선택: {hyThemeState?.selectedDeg || '없음'}</div>
+                <div className="fb show gold">정답: 5도</div>
+              </div>
+            </>
+          ) : null}
+          {isVivaldi ? (
+            <>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간1: {vvSonnetState?.selectedById?.['vv-c1'] || '없음'}</div>
+                <div className="fb show gold">정답: {vvSonnetCorrect['vv-c1']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간2: {vvSonnetState?.selectedById?.['vv-c2'] || '없음'}</div>
+                <div className="fb show gold">정답: {vvSonnetCorrect['vv-c2']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 구간1: {vvConcertoState?.selectedBySegment?.[1] || '없음'}</div>
+                <div className="fb show gold">정답: {vvConcertoCorrect[1]}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 구간2: {vvConcertoState?.selectedBySegment?.[2] || '없음'}</div>
+                <div className="fb show gold">정답: {vvConcertoCorrect[2]}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 구간3: {vvConcertoState?.selectedBySegment?.[3] || '없음'}</div>
+                <div className="fb show gold">정답: {vvConcertoCorrect[3]}</div>
+              </div>
+            </>
+          ) : null}
+          {isChopin ? (
+            <>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간1: {cpFormState?.formAnswers?.['cp-f1'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFormCorrect['cp-f1']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간2: {cpFormState?.formAnswers?.['cp-f2'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFormCorrect['cp-f2']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간3: {cpFormState?.formAnswers?.['cp-f3'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFormCorrect['cp-f3']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 오른손 묶음: {cpRhythmState?.selectedByGroup?.['cp-rh-q'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpRhythmCorrect['cp-rh-q']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 왼손 묶음: {cpRhythmState?.selectedByGroup?.['cp-lh-q'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpRhythmCorrect['cp-lh-q']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 양손 느낌: {cpRhythmState?.selectedByGroup?.['cp-poly-q'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpRhythmCorrect['cp-poly-q']}</div>
+              </div>
+            </>
+          ) : null}
+          {isSchoenberg ? (
+            <>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 선택: {sbSprechState?.selectedChoice || '없음'}</div>
+                <div className="fb show gold">정답: 음에 도달한 직후 바로 올라가거나 내려간다</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 선택: {sbAtonalState?.selectedChoice || '없음'}</div>
+                <div className="fb show gold">정답: 불안하고 예측할 수 없다</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 마왕 느낌: {sbAtonalState?.feelTonal || '없음'}</div>
+                <div className="fb show info">2-C 피에로 느낌: {sbAtonalState?.feelAtonal || '없음'}</div>
+              </div>
+            </>
+          ) : null}
 
           <div className="summary-div"></div>
           <div className="summary-ey">③ 심미적 감상 <span style={getGradeBadgeStyle(stageGrades.stage3)}>등급 {stageGrades.stage3}</span></div>
@@ -292,12 +459,12 @@ function FinalCard({ go }) {
           <div className="summary-row">
             <div className="summary-key">생성</div>
             <button className="btn-p" onClick={onGenerateEssay} disabled={isGenerating}>
-              {isGenerating ? '생성 중...' : 'AI로 완성 글 만들기'}
+              {isGenerating ? '생성 중...' : '최종 감상문 만들기'}
             </button>
           </div>
           <div className="summary-div"></div>
           <div className="fb show info">
-            {essayText || '버튼을 누르면 학생 입력을 바탕으로 자연스러운 최종 감상문이 생성됩니다.'}
+            {essayText || '버튼을 누르면 학생 입력만을 바탕으로 최종 감상문이 생성됩니다.'}
           </div>
         </div>
 

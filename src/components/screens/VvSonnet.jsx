@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -45,7 +45,9 @@ const AUDIO_SRC = {
 
 function VvSonnet({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [selectedById, setSelectedById] = useState({});
+  const vvSonnetState = useAppStore((s) => s.vvSonnetState);
+  const setVvSonnetState = useAppStore((s) => s.setVvSonnetState);
+  const [selectedById, setSelectedById] = useState(() => vvSonnetState?.selectedById || {});
   const [resultById, setResultById] = useState({});
   const [openByBodyId, setOpenByBodyId] = useState({});
   const [playingId, setPlayingId] = useState('');
@@ -96,6 +98,10 @@ function VvSonnet({ go }) {
     () => SEGMENTS.every((segment) => typeof selectedById[segment.id] === 'string' && selectedById[segment.id]),
     [selectedById]
   );
+
+  useEffect(() => {
+    setVvSonnetState({ selectedById });
+  }, [selectedById, setVvSonnetState]);
 
   return (
     <div className="screen active" id="vv-sonnet">

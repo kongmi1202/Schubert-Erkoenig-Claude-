@@ -86,6 +86,57 @@ async function requestCompareFeedback(prompt, fallbackBody) {
   return `${fallbackBody}\n\n${msgApiFailed(429)}`;
 }
 
+async function requestCompareFeedbackMultimodal(userContentParts, fallbackBody) {
+  const apiKey = getViteOpenAiKey();
+  if (!apiKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
+
+  const maxAttempts = 4;
+  let lastStatus = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          input: [{ role: 'user', content: userContentParts }]
+        })
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = extractTextFromResponse(json);
+        const trimmed = text?.trim();
+        if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
+        return trimmed;
+      }
+
+      lastStatus = res.status;
+      const retryable = res.status === 429 || res.status === 503;
+      if (retryable && attempt < maxAttempts - 1) {
+        const fromHeader = retryAfterMs(res);
+        const backoff = fromHeader ?? Math.min(2500 * 2 ** attempt, 20_000);
+        await sleep(backoff);
+        continue;
+      }
+
+      return `${fallbackBody}\n\n${msgApiFailed(res.status)}`;
+    } catch {
+      if (attempt < maxAttempts - 1) {
+        await sleep(Math.min(1500 * (attempt + 1), 8000));
+        continue;
+      }
+      return `${fallbackBody}\n\n${msgApiFailed(lastStatus)}`;
+    }
+  }
+
+  return `${fallbackBody}\n\n${msgApiFailed(429)}`;
+}
+
 function normalizeList(str) {
   return str
     .split(/[,，、]/)
@@ -253,4 +304,154 @@ export async function generateTonePaintingCompareFeedback({
 학생 선택(참고용): ${studentAnswer}`;
 
   return requestCompareFeedback(prompt, fallback);
+}
+
+const MELODY_HANDEL_FALLBACK = {
+  harmony:
+    '화성음악에서는 모양이 똑같은지보다 네 성부가 위아래로 함께 움직이는지(동시 진행)를 확인하면 충분해요. 시작·중간·끝에서 선들이 같은 방향으로 움직이는지만 체크해보세요.',
+  poly:
+    '다성음악에서는 모양 일치보다 베이스부터 소프라노까지 성부가 번갈아 움직이는지(교대 진행)를 확인하면 충분해요. 어느 성부가 먼저 시작하고 다음 성부가 어떻게 이어지는지 순서를 체크해보세요.'
+};
+
+function roughStrokeMetrics(dataUrl) {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      reject(new Error('no document'));
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const w = 120;
+      const h = Math.max(1, Math.round((img.height * w) / img.width));
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext('2d');
+      if (!ctx) {
+        reject(new Error('no canvas'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      const d = ctx.getImageData(0, 0, w, h).data;
+      let dark = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const brightness = (d[i] + d[i + 1] + d[i + 2]) / 3;
+        if (brightness < 248) dark += 1;
+      }
+      resolve({ darkRatio: dark / (w * h) });
+    };
+    img.onerror = () => reject(new Error('image load'));
+    img.src = dataUrl;
+  });
+}
+
+function shrinkDataUrlForApi(dataUrl, maxW) {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      reject(new Error('no document'));
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(1, maxW / img.width);
+      const w = Math.max(1, Math.round(img.width * ratio));
+      const h = Math.max(1, Math.round(img.height * ratio));
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext('2d');
+      if (!ctx) {
+        reject(new Error('no canvas'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', 0.88));
+    };
+    img.onerror = () => reject(new Error('shrink load'));
+    img.src = dataUrl;
+  });
+}
+
+async function fetchImageAsDataUrl(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error('model fetch');
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = () => reject(new Error('read'));
+    fr.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 할렐루야 가락선(화성/다성) 활동: 학생 캔버스 저장본과 모범 이미지를 비교해 맞춤 피드백.
+ * @param {'harmony'|'poly'} section
+ * @param {string} userDrawingDataUrl canvas.toDataURL()
+ */
+export async function generateMelodyCanvasHandelFeedback(section, userDrawingDataUrl) {
+  const fallback = section === 'harmony' ? MELODY_HANDEL_FALLBACK.harmony : MELODY_HANDEL_FALLBACK.poly;
+  if (typeof userDrawingDataUrl !== 'string' || !userDrawingDataUrl.startsWith('data:')) {
+    return `${fallback}\n\n먼저 캔버스에 그린 뒤 저장 버튼을 눌러주세요.`;
+  }
+
+  let metrics;
+  try {
+    metrics = await roughStrokeMetrics(userDrawingDataUrl);
+  } catch {
+    metrics = { darkRatio: 0.05 };
+  }
+  if (metrics.darkRatio < 0.006) {
+    return `${fallback}\n\n지금 그림에는 가락선이 거의 보이지 않아요. 펜으로 선을 조금 더 그려 저장한 뒤 다시 눌러보세요.`;
+  }
+
+  const modelPath =
+    section === 'harmony' ? '/assets/handel-model-hallelujah.png' : '/assets/handel-model-lord-reign.png';
+  let modelDataUrl;
+  try {
+    modelDataUrl = await fetchImageAsDataUrl(modelPath);
+  } catch {
+    return `${fallback}\n\n모범 가락선 이미지를 불러오지 못했어요. 새로고침 후 다시 시도해 보세요.`;
+  }
+
+  let userSmall;
+  let modelSmall;
+  try {
+    [userSmall, modelSmall] = await Promise.all([
+      shrinkDataUrlForApi(userDrawingDataUrl, 720),
+      shrinkDataUrlForApi(modelDataUrl, 720)
+    ]);
+  } catch {
+    return `${fallback}\n\n이미지를 줄이는 중 문제가 생겼어요. 다시 저장한 뒤 시도해 보세요.`;
+  }
+
+  const contextLabel =
+    section === 'harmony'
+      ? '구간: 할렐루야 합창 전체(화성음악). 핵심은 네 성부의 동시 진행(함께 상하 이동) 인식이다.'
+      : '구간: 또 주가 길이 다스리시리(다성음악). 핵심은 베이스→테너→알토→소프라노의 교대 진행 인식이다.';
+
+  const promptText = `너는 초등·중학생 음악 수업을 돕는 선생님이야.
+${contextLabel}
+
+아래에 내가 순서대로 두 장의 그림을 첨부했어.
+- 첫 번째 첨부 이미지: 학생이 캔버스에 손으로 그린 가락선.
+- 두 번째 첨부 이미지: 수업용 모범 가락선 그림.
+
+규칙:
+- "정답이다/틀렸다/맞았다"처럼 단정하지 말고, 학생이 스스로 다시 보며 고칠 수 있게 힌트만 준다.
+- 선의 모양 일치/그림체 평가는 하지 말고, 오직 음악 개념 인식만 본다.
+- 화성음악이면 "여러 성부가 동시에 같은 방향으로 움직이는가"를 중심으로 2가지 이상 점검 포인트를 준다.
+- 다성음악이면 "성부가 번갈아 들어오며 이어지는가"를 중심으로 2가지 이상 점검 포인트를 준다.
+- 마지막 문장은 반드시 "모양이 달라도 개념이 보이면 충분해." 로 끝낸다.
+- 한국어, 170~320자 내외, 친근한 말투.
+
+참고(내부용, 학생에게 말하지 말 것): 학생 그림에서 선으로 추정되는 픽셀 비율 대략 ${(metrics.darkRatio * 100).toFixed(1)}%.`;
+
+  const content = [
+    { type: 'input_text', text: promptText },
+    { type: 'input_image', image_url: userSmall, detail: 'low' },
+    { type: 'input_image', image_url: modelSmall, detail: 'low' }
+  ];
+
+  return requestCompareFeedbackMultimodal(content, fallback);
 }

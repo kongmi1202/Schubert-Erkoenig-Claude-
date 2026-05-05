@@ -146,9 +146,11 @@ function SegmentYoutubePlayer({ videoId, start, end, title, replaySignal }) {
 
 function TonePaintingHandel({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const tonePaintingHandelState = useAppStore((s) => s.tonePaintingHandelState);
+  const setTonePaintingHandelState = useAppStore((s) => s.setTonePaintingHandelState);
   const [activeSegmentId, setActiveSegmentId] = useState('s1');
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
-  const [selected, setSelected] = useState({
+  const [selected, setSelected] = useState(() => tonePaintingHandelState?.selected || {
     s1: null,
     s2: null,
     s3: null
@@ -233,6 +235,10 @@ function TonePaintingHandel({ go }) {
       setLoadingFeedback(false);
     }
   };
+
+  useEffect(() => {
+    setTonePaintingHandelState({ selected });
+  }, [selected, setTonePaintingHandelState]);
 
   return (
     <div className="screen active">

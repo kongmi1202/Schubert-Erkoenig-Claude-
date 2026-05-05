@@ -63,6 +63,45 @@ export const useAppStore = create((set) => ({
     rhScene: '',
     lhScene: ''
   },
+  tonePaintingHandelState: {
+    selected: { s1: null, s2: null, s3: null }
+  },
+  melodyCanvasHandelState: {
+    savedPreview: { harmony: '', poly: '' }
+  },
+  hyTimbreState: {
+    selectedByGrid: {}
+  },
+  hyThemeState: {
+    myPreview: { t1: '', t2: '' },
+    feelT1: '',
+    feelT2: '',
+    toneByGroup: { 'hy-tone-t1': '', 'hy-tone-t2': '' },
+    selectedDeg: ''
+  },
+  vvSonnetState: {
+    selectedById: {}
+  },
+  vvConcertoState: {
+    selectedBySegment: {},
+    score: 0
+  },
+  cpFormState: {
+    formAnswers: {},
+    desc: ''
+  },
+  cpRhythmState: {
+    selectedByGroup: {},
+    polyDesc: ''
+  },
+  sbSprechState: {
+    selectedChoice: ''
+  },
+  sbAtonalState: {
+    selectedChoice: '',
+    feelTonal: '',
+    feelAtonal: ''
+  },
   flippedCards: [],
   emotionResult: null,
   emotionSummary: '',
@@ -99,6 +138,16 @@ export const useAppStore = create((set) => ({
   setSelectedCharacter: (v) => set({ selectedCharacter: v }),
   setVoiceDesignState: (partial) => set((s) => ({ voiceDesignState: { ...s.voiceDesignState, ...partial } })),
   setPianoAnalysisState: (partial) => set((s) => ({ pianoAnalysisState: { ...s.pianoAnalysisState, ...partial } })),
+  setTonePaintingHandelState: (partial) => set((s) => ({ tonePaintingHandelState: { ...s.tonePaintingHandelState, ...partial } })),
+  setMelodyCanvasHandelState: (partial) => set((s) => ({ melodyCanvasHandelState: { ...s.melodyCanvasHandelState, ...partial } })),
+  setHyTimbreState: (partial) => set((s) => ({ hyTimbreState: { ...s.hyTimbreState, ...partial } })),
+  setHyThemeState: (partial) => set((s) => ({ hyThemeState: { ...s.hyThemeState, ...partial } })),
+  setVvSonnetState: (partial) => set((s) => ({ vvSonnetState: { ...s.vvSonnetState, ...partial } })),
+  setVvConcertoState: (partial) => set((s) => ({ vvConcertoState: { ...s.vvConcertoState, ...partial } })),
+  setCpFormState: (partial) => set((s) => ({ cpFormState: { ...s.cpFormState, ...partial } })),
+  setCpRhythmState: (partial) => set((s) => ({ cpRhythmState: { ...s.cpRhythmState, ...partial } })),
+  setSbSprechState: (partial) => set((s) => ({ sbSprechState: { ...s.sbSprechState, ...partial } })),
+  setSbAtonalState: (partial) => set((s) => ({ sbAtonalState: { ...s.sbAtonalState, ...partial } })),
   flipHistoryCard: (id) => set((s) => ({
     flippedCards: s.flippedCards.includes(id) ? s.flippedCards : [...s.flippedCards, id]
   })),

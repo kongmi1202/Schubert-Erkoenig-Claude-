@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
+import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
@@ -65,86 +66,6 @@ const feedbackIndicatesAllCorrect = (text) => {
   const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
   return positive.test(t) && !negative.test(t);
 };
-
-let ytApiPromise = null;
-function loadYouTubeIframeApi() {
-  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
-  if (ytApiPromise) return ytApiPromise;
-  ytApiPromise = new Promise((resolve) => {
-    const script = document.createElement('script');
-    script.src = 'https://www.youtube.com/iframe_api';
-    script.async = true;
-    const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      if (typeof prev === 'function') prev();
-      resolve(window.YT);
-    };
-    document.body.appendChild(script);
-  });
-  return ytApiPromise;
-}
-
-function SegmentYoutubePlayer({ videoId, start, end, title, replaySignal }) {
-  const hostRef = useRef(null);
-  const playerRef = useRef(null);
-  const lastReplayRef = useRef(replaySignal);
-
-  useEffect(() => {
-    let mounted = true;
-    loadYouTubeIframeApi().then((YT) => {
-      if (!mounted || !hostRef.current) return;
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
-        playerRef.current = null;
-      }
-      playerRef.current = new YT.Player(hostRef.current, {
-        width: '100%',
-        height: '100%',
-        videoId,
-        playerVars: {
-          start,
-          end,
-          rel: 0,
-          playsinline: 1,
-          modestbranding: 1,
-          controls: 1
-        },
-        events: {
-          onStateChange: (event) => {
-            // 구간 재생이 끝나면 시작점으로 되감고 멈춤 상태로 둡니다.
-            // 사용자가 가운데 재생 버튼을 누르면 항상 해당 구간부터 다시 시작됩니다.
-            if (event.data === YT.PlayerState.ENDED) {
-              event.target.seekTo(start, true);
-              event.target.pauseVideo();
-            }
-          }
-        }
-      });
-    });
-    return () => {
-      mounted = false;
-      if (playerRef.current?.destroy) playerRef.current.destroy();
-      playerRef.current = null;
-    };
-  }, [videoId, start, end]);
-
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!player) return;
-    if (replaySignal === lastReplayRef.current) return;
-    lastReplayRef.current = replaySignal;
-    if (typeof player.seekTo === 'function') {
-      player.seekTo(start, true);
-      player.playVideo();
-    }
-  }, [replaySignal, start]);
-
-  return (
-    <div className="video-wrap" style={{ marginBottom: 0 }}>
-      <div ref={hostRef} title={title} style={{ position: 'absolute', inset: 0 }} />
-    </div>
-  );
-}
 
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
