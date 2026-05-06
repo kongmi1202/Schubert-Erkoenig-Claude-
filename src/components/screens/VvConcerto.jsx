@@ -191,21 +191,23 @@ function VvConcerto({ go }) {
           </>
         )}
 
-        <div className="feat-card">
-          <div className="feat-num">FEATURE</div>
-          <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>
-          <div className="feat-body">
-            독주자와 그룹이 대화하며 연주한다
-            <br />
-            바이올린 협주곡에서 독주 바이올린과
-            <br />
-            현악 그룹은 번갈아가며 주고받아요.
-            <br />
-            이 형식을 리토르넬로(ritornello)라고 하며
-            <br />
-            바로크 협주곡의 핵심 구조예요.
+        {isFinished ? (
+          <div className="feat-card">
+            <div className="feat-num">FEATURE</div>
+            <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>
+            <div className="feat-body">
+              독주자와 그룹이 대화하며 연주한다
+              <br />
+              바이올린 협주곡에서 독주 바이올린과
+              <br />
+              현악 그룹은 번갈아가며 주고받아요.
+              <br />
+              이 형식을 리토르넬로(ritornello)라고 하며
+              <br />
+              바로크 협주곡의 핵심 구조예요.
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전: vv-sonnet</button>

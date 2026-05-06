@@ -1,6 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const correctCharactersErlkonig = ['해설자', '아버지', '아들', '마왕'];
@@ -29,27 +27,6 @@ const hallelujahPromptHints = [
   '노래가 작게 시작해서 크게 커지는 부분을 써보세요.',
   '같은 "할렐루야"가 다르게 들린 이유를 한 줄로 써보세요.'
 ];
-const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
-const compactText = (value) => normalizeText(value).replace(/\s+/g, '').replace(/[.,!?'"()\-]/g, '');
-const isSameSet = (a, b) => {
-  if (a.length !== b.length) return false;
-  const aset = new Set(a);
-  const bset = new Set(b);
-  if (aset.size !== bset.size) return false;
-  for (const v of aset) {
-    if (!bset.has(v)) return false;
-  }
-  return true;
-};
-const hasAllKeywords = (text, keywords) => keywords.every((kw) => text.includes(kw));
-const feedbackIndicatesAllCorrect = (text) => {
-  const t = String(text || '').trim();
-  if (!t) return false;
-  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
-  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
-  return positive.test(t) && !negative.test(t);
-};
-
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isMawang = selectedSong === 'mawang';
@@ -73,9 +50,6 @@ function AnalyticalOverview({ go }) {
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
   const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
-  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
-  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
-  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
   const correctCharacters = isHaydn
     ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
     : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
@@ -95,7 +69,7 @@ function AnalyticalOverview({ go }) {
     ? 'Q2. 이 음악은 어떤 동물을 떠올리게 하나요? 그 이유는 무엇인가요?'
     : (isErlkonig ? 'Q2. 줄거리' : 'Q2. 곡의 전개와 분위기');
   const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : `등장인물`;
-  const q2Placeholder = isHaydn ? '예: 종달새. 제1바이올린의 높은 선율이 새 지저귐처럼 들려서...' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
+  const q2Placeholder = isHaydn ? '' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
   const haydnPlayerHostRef = useRef(null);
   const haydnPlayerRef = useRef(null);
   const haydnWatchRef = useRef(null);
@@ -105,10 +79,6 @@ function AnalyticalOverview({ go }) {
   const q2AllFilled = useMemo(() => typeof story === 'string' && story.trim().length > 0, [story]);
   const isAllFilled = q1AllFilled && q2AllFilled;
 
-  const userCharactersText = useMemo(
-    () => characters.filter((c) => c && c.trim()).join(', '),
-    [characters]
-  );
   const emotionRows = useMemo(
     () =>
       emotionResult
@@ -123,56 +93,7 @@ function AnalyticalOverview({ go }) {
         : [],
     [emotionResult]
   );
-  const currentAnswerSnapshot = useMemo(
-    () =>
-      JSON.stringify({
-        characters: characters.map((c) => normalizeText(c)),
-        story: normalizeText(story)
-      }),
-    [characters, story]
-  );
-  const hasEditedAfterFeedback = hasRequestedFeedback && feedbackSnapshot !== currentAnswerSnapshot;
-  const isAlreadyCorrect = useMemo(() => {
-    if (!isAllFilled) return false;
-    const userQ1 = characters.map((c) => compactText(c)).filter(Boolean);
-    const answerQ1 = correctCharacters.map((c) => compactText(c));
-    const q1Correct = isSameSet(userQ1, answerQ1);
-    const storyCompact = compactText(story);
-    const q2Correct = isHaydn
-      ? (
-        (storyCompact.includes('종달새') || storyCompact.includes('새')) &&
-        (storyCompact.includes('바이올린') || storyCompact.includes('가락') || storyCompact.includes('선율')) &&
-        (storyCompact.includes('울음') || storyCompact.includes('지저귀') || storyCompact.includes('연상'))
-      )
-      : (isErlkonig
-        ? hasAllKeywords(storyCompact, ['폭풍', '아버지', '아들', '마왕', '죽'])
-        : hasAllKeywords(storyCompact, ['할렐루야', '반복', '합창', '장조']));
-    return q1Correct && q2Correct;
-  }, [isAllFilled, characters, correctCharacters, story, isHaydn, isErlkonig]);
-  const canOpenAnswerCheck =
-    isAllFilled && hasRequestedFeedback && (hasEditedAfterFeedback || isAlreadyCorrect || feedbackAllowsDirectCheck);
-
-  const requestAnalyticalFeedback = useCallback(
-    () =>
-      generateAnalyticalCompareFeedback({
-        userCharacterSlots: characters,
-        userCharactersText,
-        correctCharacters,
-        userStory: story,
-        correctStory,
-        q2Label: isHaydn ? '떠오르는 동물과 그 이유' : '줄거리 요약',
-        q2PromptGuide: isHaydn
-          ? '학생이 "종달새"라고 썼는지와 함께, 이유에 "바이올린 가락(선율)이 종달새 울음을 연상시킨다"는 근거가 드러나는지 비교한다.'
-          : '학생이 쓴 줄거리 요약이 모범 줄거리와 어떻게 맞는지 비교한다.'
-      }),
-    [characters, userCharactersText, story, correctStory, isHaydn]
-  );
-  const onFeedbackRequested = useCallback(() => {
-    setHasRequestedFeedback(true);
-    setFeedbackSnapshot(currentAnswerSnapshot);
-    setFeedbackAllowsDirectCheck(false);
-    setAnswerCheckOpen(false);
-  }, [currentAnswerSnapshot, setAnswerCheckOpen]);
+  const canOpenAnswerCheck = isAllFilled;
 
   useEffect(() => {
     if (!isAllFilled) setAnswerCheckOpen(false);
@@ -377,24 +298,6 @@ function AnalyticalOverview({ go }) {
           </>
         ) : null}
 
-        <CompareAiFeedbackBlock
-          requestFn={requestAnalyticalFeedback}
-          onRequested={onFeedbackRequested}
-          onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
-        />
-
-        {isAllFilled ? (
-          <div className="small-note" style={{ marginTop: 8 }}>
-            {!hasRequestedFeedback
-              ? '먼저 실시간 피드백을 받아보세요.'
-              : ((isAlreadyCorrect || feedbackAllowsDirectCheck)
-                ? '좋아요! 정답과 모두 일치해서 바로 확인할 수 있어요.'
-                : (hasEditedAfterFeedback
-                ? '좋아요! 이제 정답을 확인해 보세요.'
-                : '피드백을 반영해 답안을 한 번 수정하면 정답을 확인할 수 있어요.'))}
-          </div>
-        ) : null}
-
         {isAllFilled ? (
           <button
             type="button"
@@ -403,7 +306,7 @@ function AnalyticalOverview({ go }) {
             aria-expanded={answerCheckOpen}
             disabled={!canOpenAnswerCheck}
           >
-            <span className="answer-check-toggle-label">{canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
+            <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {answerCheckOpen ? '▲' : '▼'}
             </span>

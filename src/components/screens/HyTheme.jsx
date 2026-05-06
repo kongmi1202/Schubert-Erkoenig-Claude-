@@ -651,11 +651,13 @@ function HyTheme({ go }) {
           </div>
         </div>
 
-        <ArtSongTakeaway
-          eyebrow="고전주의 소나타 형식의 특징"
-          title="두 주제의 대비가 형식미를 만든다"
-          description="고전주의 소나타 형식에서 제1주제와 제2주제는 5도 차이의 조성을 사용해요. 같은 장조이지만 조성이 바뀌고 가락과 리듬꼴이 달라지면서 두 주제가 서로 대비를 이루고, 이것이 고전주의 음악의 형식미를 만들어냅니다."
-        />
+        {canProceed ? (
+          <ArtSongTakeaway
+            eyebrow="고전주의 소나타 형식의 특징"
+            title="두 주제의 대비가 형식미를 만든다"
+            description="고전주의 소나타 형식에서 제1주제와 제2주제는 5도 차이의 조성을 사용해요. 같은 장조이지만 조성이 바뀌고 가락과 리듬꼴이 달라지면서 두 주제가 서로 대비를 이루고, 이것이 고전주의 음악의 형식미를 만들어냅니다."
+          />
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>

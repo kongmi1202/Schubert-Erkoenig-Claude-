@@ -311,6 +311,30 @@ function AestheticPage({ go }) {
                 </div>
               </div>
 
+              <div className="review-item">{analyticalQ2Label}</div>
+              <div className="cmp-mini-grid">
+                <div>
+                  <div className="small-note">내 답변</div>
+                  <div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div>
+                </div>
+                <div>
+                  <div className="small-note">정답</div>
+                  {isHandel ? (
+                    <div className="fb show gold">{handelAnswerQ2.join('\n')}</div>
+                  ) : isHaydn ? (
+                    <div className="fb show gold">{haydnAnswerQ2}</div>
+                  ) : isSchoenberg ? (
+                    <div className="fb show gold">{schoenbergAnswerQ2}</div>
+                  ) : isVivaldi ? (
+                    <div className="fb show gold">{vivaldiAnswerQ2}</div>
+                  ) : isChopin ? (
+                    <div className="fb show gold">{chopinAnswerQ2}</div>
+                  ) : (
+                    <div className="fb show gold">{analyticalAnswerStory}</div>
+                  )}
+                </div>
+              </div>
+
               {isHandel ? (
                 <>
                   <div className="review-item">2-B 음화법 활동 (내 답변 + 정답)</div>
@@ -467,30 +491,6 @@ function AestheticPage({ go }) {
                   </div>
                 </>
               ) : null}
-
-              <div className="review-item">{analyticalQ2Label}</div>
-              <div className="cmp-mini-grid">
-                <div>
-                  <div className="small-note">내 답변</div>
-                  <div className="fb show info">{isHandel ? (handelOperaDiff || '없음') : (analyticalStory || '없음')}</div>
-                </div>
-                <div>
-                  <div className="small-note">정답</div>
-                  {isHandel ? (
-                    <div className="fb show gold">{handelAnswerQ2.join('\n')}</div>
-                  ) : isHaydn ? (
-                    <div className="fb show gold">{haydnAnswerQ2}</div>
-                  ) : isSchoenberg ? (
-                    <div className="fb show gold">{schoenbergAnswerQ2}</div>
-                  ) : isVivaldi ? (
-                    <div className="fb show gold">{vivaldiAnswerQ2}</div>
-                  ) : isChopin ? (
-                    <div className="fb show gold">{chopinAnswerQ2}</div>
-                  ) : (
-                    <div className="fb show gold">{analyticalAnswerStory}</div>
-                  )}
-                </div>
-              </div>
 
               {isMawang ? (
                 <>

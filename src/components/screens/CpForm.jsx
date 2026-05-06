@@ -7,6 +7,13 @@ const FORM_CARDS = [
   { id: 'cp-f3', num: '구간 3', subtitle: '마지막 부분' }
 ];
 
+const CHOPIN_VIDEO_ID = 'dHwhfpN--Bk';
+const segmentRangeById = {
+  'cp-f1': { start: 10, end: 70 },
+  'cp-f2': { start: 76, end: 215 },
+  'cp-f3': { start: 224, end: null }
+};
+
 const formCorrect = {
   'cp-f1': 'A',
   'cp-f2': 'B',
@@ -22,12 +29,12 @@ function CpForm({ go }) {
   const [open, setOpen] = useState(false);
   const [desc, setDesc] = useState(() => cpFormState?.desc || '');
   const [showHint, setShowHint] = useState(false);
-  const [playingId, setPlayingId] = useState('');
-  const audioRefs = useRef({
-    'cp-f1': null,
-    'cp-f2': null,
-    'cp-f3': null
-  });
+  const [currentSegmentId, setCurrentSegmentId] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const currentSegmentRef = useRef('');
+  const ytHostRef = useRef(null);
+  const ytPlayerRef = useRef(null);
+  const endWatcherRef = useRef(null);
 
   function selFormLabel(_el, cardId, label) {
     setFormAnswers((prev) => ({ ...prev, [cardId]: label }));
@@ -40,28 +47,43 @@ function CpForm({ go }) {
     setStageCompletion('voice', true);
   }
 
-  const stopOthers = (exceptId) => {
-    Object.entries(audioRefs.current).forEach(([id, el]) => {
-      if (!el) return;
-      if (id !== exceptId) el.pause();
-    });
+  const stopWatcher = () => {
+    if (endWatcherRef.current) {
+      window.clearInterval(endWatcherRef.current);
+      endWatcherRef.current = null;
+    }
   };
 
-  const togglePlay = async (audioId) => {
-    const el = audioRefs.current[audioId];
-    if (!el) return;
-    if (playingId === audioId) {
-      el.pause();
-      setPlayingId('');
+  const stopSegmentPlayback = (segmentId) => {
+    const player = ytPlayerRef.current;
+    if (!player || !segmentRangeById[segmentId]) return;
+    const range = segmentRangeById[segmentId];
+    stopWatcher();
+    if (typeof player.pauseVideo === 'function') player.pauseVideo();
+    if (typeof player.seekTo === 'function') player.seekTo(range.start, true);
+    setCurrentSegmentId(segmentId);
+    setIsPlaying(false);
+  };
+
+  const playSegment = (segmentId) => {
+    const player = ytPlayerRef.current;
+    if (!player || !segmentRangeById[segmentId]) return;
+    const range = segmentRangeById[segmentId];
+    if (currentSegmentId === segmentId && isPlaying) {
+      if (typeof player.pauseVideo === 'function') player.pauseVideo();
+      setIsPlaying(false);
       return;
     }
-    stopOthers(audioId);
-    try {
-      await el.play();
-      setPlayingId(audioId);
-    } catch {
-      setPlayingId('');
+    if (currentSegmentId === segmentId && !isPlaying) {
+      if (typeof player.playVideo === 'function') player.playVideo();
+      setIsPlaying(true);
+      return;
     }
+    stopWatcher();
+    if (typeof player.seekTo === 'function') player.seekTo(range.start, true);
+    if (typeof player.playVideo === 'function') player.playVideo();
+    setCurrentSegmentId(segmentId);
+    setIsPlaying(true);
   };
 
   const allSelected = useMemo(
@@ -77,6 +99,78 @@ function CpForm({ go }) {
     setCpFormState({ formAnswers, desc });
   }, [formAnswers, desc, setCpFormState]);
 
+  useEffect(() => {
+    currentSegmentRef.current = currentSegmentId;
+  }, [currentSegmentId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const createPlayer = () => {
+      if (cancelled || !ytHostRef.current || ytPlayerRef.current) return;
+      if (!window.YT || !window.YT.Player) return;
+      ytPlayerRef.current = new window.YT.Player(ytHostRef.current, {
+        width: 0,
+        height: 0,
+        videoId: CHOPIN_VIDEO_ID,
+        playerVars: {
+          controls: 0,
+          disablekb: 1,
+          playsinline: 1,
+          rel: 0,
+          modestbranding: 1
+        },
+        events: {
+          onStateChange: (event) => {
+            const state = window.YT?.PlayerState;
+            if (!state) return;
+            if (event.data === state.PLAYING) {
+              stopWatcher();
+              endWatcherRef.current = window.setInterval(() => {
+                const segId = currentSegmentRef.current;
+                if (!segId) return;
+                const range = segmentRangeById[segId];
+                if (!range || typeof range.end !== 'number') return;
+                const player = ytPlayerRef.current;
+                if (!player || typeof player.getCurrentTime !== 'function') return;
+                if (player.getCurrentTime() >= range.end) {
+                  stopSegmentPlayback(segId);
+                }
+              }, 200);
+            } else if (event.data === state.PAUSED || event.data === state.ENDED) {
+              stopWatcher();
+              setIsPlaying(false);
+            }
+          }
+        }
+      });
+    };
+
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevReady === 'function') prevReady();
+        createPlayer();
+      };
+      if (!document.getElementById('youtube-iframe-api')) {
+        const script = document.createElement('script');
+        script.id = 'youtube-iframe-api';
+        script.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(script);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+      stopWatcher();
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+        ytPlayerRef.current.destroy();
+      }
+      ytPlayerRef.current = null;
+    };
+  }, []);
+
   return (
     <div className="screen active" id="cp-form">
       <div className="stage-header">
@@ -86,6 +180,11 @@ function CpForm({ go }) {
       </div>
 
       <div className="body voice-body">
+        <div
+          ref={ytHostRef}
+          aria-hidden="true"
+          style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}
+        />
         <div className="fb show info">
           💡 음악은 여러 구간으로 나뉘어요.
           <br />
@@ -99,19 +198,16 @@ function CpForm({ go }) {
             const picked = formAnswers[card.id];
             return (
               <div key={card.id} className="form-puzzle-card">
-                <audio
-                  ref={(el) => {
-                    audioRefs.current[card.id] = el;
-                  }}
-                  src={`/audio/${card.id}.mp3`}
-                  preload="metadata"
-                  onEnded={() => setPlayingId((prev) => (prev === card.id ? '' : prev))}
-                />
                 <div className="form-puzzle-top">
                   <div className="form-puzzle-num">{card.num}</div>
-                  <button id={card.id} type="button" className="btn-s" onClick={() => togglePlay(card.id)}>
-                    {playingId === card.id ? '❚❚ 일시정지' : '▶ 재생'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button id={card.id} type="button" className="btn-s" onClick={() => playSegment(card.id)}>
+                      {currentSegmentId === card.id && isPlaying ? '❚❚ 일시정지' : '▶ 재생'}
+                    </button>
+                    <button type="button" className="btn-s" onClick={() => stopSegmentPlayback(card.id)}>
+                      ■ 정지
+                    </button>
+                  </div>
                   <div className="small-note">{card.subtitle}</div>
                 </div>
                 <div className="form-puzzle-label-opts">
@@ -182,23 +278,25 @@ function CpForm({ go }) {
           {hintText}
         </div>
 
-        <div className="feat-card">
-          <div className="feat-num">FEATURE</div>
-          <div className="feat-title">환상 즉흥곡의 특징 ①</div>
-          <div className="feat-body">
-            감정의 극적인 대비를 음악으로 표현한다
-            <br />
-            ABA 형식에서 A의 격렬함과
-            <br />
-            B의 서정성이 극적으로 대비돼요.
-            <br />
-            낭만주의 음악은 이처럼
-            <br />
-            감정의 변화와 대비를
-            <br />
-            음악 형식으로 구현해요.
+        {canProceed ? (
+          <div className="feat-card">
+            <div className="feat-num">FEATURE</div>
+            <div className="feat-title">환상 즉흥곡의 특징 ①</div>
+            <div className="feat-body">
+              감정의 극적인 대비를 음악으로 표현한다
+              <br />
+              ABA 형식에서 A의 격렬함과
+              <br />
+              B의 서정성이 극적으로 대비돼요.
+              <br />
+              낭만주의 음악은 이처럼
+              <br />
+              감정의 변화와 대비를
+              <br />
+              음악 형식으로 구현해요.
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전: cp-overview</button>

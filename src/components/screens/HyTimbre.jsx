@@ -196,11 +196,13 @@ function HyTimbre({ go }) {
           );
         })}
 
-        <ArtSongTakeaway
-          eyebrow="현악 4중주의 특징"
-          title="4개의 현악기가 하나의 앙상블을 이룬다"
-          description="제1바이올린(주선율), 제2바이올린(화음), 비올라(중성부), 첼로(베이스)가 각각 다른 역할을 맡아요. 4개의 악기가 음색·음역을 달리하며 풍부한 앙상블을 만들어냅니다."
-        />
+        {allSelected ? (
+          <ArtSongTakeaway
+            eyebrow="현악 4중주의 특징"
+            title="4개의 현악기가 하나의 앙상블을 이룬다"
+            description="제1바이올린(주선율), 제2바이올린(화음), 비올라(중성부), 첼로(베이스)가 각각 다른 역할을 맡아요. 4개의 악기가 음색·음역을 달리하며 풍부한 앙상블을 만들어냅니다."
+          />
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>

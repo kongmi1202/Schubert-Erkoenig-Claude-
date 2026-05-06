@@ -113,7 +113,7 @@ function CpRhythm({ go }) {
           preload="metadata"
           onEnded={() => setPlayingId((prev) => (prev === 'cp-rh' ? '' : prev))}
         />
-        <div className="audio-bar voice-audio-bar">
+        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
           <button type="button" className="aud-btn" onClick={() => togglePlay('cp-rh')}>
             {playingId === 'cp-rh' ? '❚❚' : '▶'}
           </button>
@@ -172,7 +172,7 @@ function CpRhythm({ go }) {
           preload="metadata"
           onEnded={() => setPlayingId((prev) => (prev === 'cp-lh' ? '' : prev))}
         />
-        <div className="audio-bar voice-audio-bar">
+        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
           <button type="button" className="aud-btn" onClick={() => togglePlay('cp-lh')}>
             {playingId === 'cp-lh' ? '❚❚' : '▶'}
           </button>
@@ -231,7 +231,7 @@ function CpRhythm({ go }) {
           preload="metadata"
           onEnded={() => setPlayingId((prev) => (prev === 'cp-both' ? '' : prev))}
         />
-        <div className="audio-bar voice-audio-bar">
+        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
           <button type="button" className="aud-btn" onClick={() => togglePlay('cp-both')}>
             {playingId === 'cp-both' ? '❚❚' : '▶'}
           </button>
@@ -249,13 +249,13 @@ function CpRhythm({ go }) {
                 <td className="note-both">♩</td>
                 <td></td>
                 <td></td>
-                <td></td>
-                <td className="note-rh">♩</td>
-                <td></td>
+                <td className="note-lh">♩</td>
                 <td></td>
                 <td></td>
-                <td className="note-rh">♩</td>
+                <td className="note-lh">♩</td>
                 <td></td>
+                <td></td>
+                <td className="note-lh">♩</td>
                 <td></td>
                 <td></td>
               </tr>
@@ -264,13 +264,13 @@ function CpRhythm({ go }) {
                 <td className="note-both">♩</td>
                 <td></td>
                 <td></td>
-                <td className="note-lh">♩</td>
+                <td></td>
+                <td className="note-rh">♩</td>
                 <td></td>
                 <td></td>
-                <td className="note-lh">♩</td>
                 <td></td>
+                <td className="note-rh">♩</td>
                 <td></td>
-                <td className="note-lh">♩</td>
                 <td></td>
                 <td></td>
               </tr>
@@ -340,25 +340,25 @@ function CpRhythm({ go }) {
           {hintText}
         </div>
 
-        <div className="feat-card">
-          <div className="feat-num">FEATURE</div>
-          <div className="feat-title">환상 즉흥곡의 특징 ②</div>
-          <div className="feat-body">
-            복잡한 리듬꼴로 긴장감과 추진력을 만든다
-            <br />
-            오른손 4박과 왼손 3박이 동시에 진행되는
-            <br />
-            폴리리듬은 단순한 반주와 멜로디의
-            <br />
-            조합을 넘어서요.
-            <br />
-            두 손이 독립적으로 움직이며
-            <br />
-            만들어내는 긴장감이
-            <br />
-            낭만주의 피아노 음악의 특징이에요.
+        {canProceed ? (
+          <div className="feat-card">
+            <div className="feat-num">FEATURE</div>
+            <div className="feat-title">환상 즉흥곡의 특징 ②</div>
+            <div className="feat-body">
+              환상즉흥곡은 복잡한 리듬꼴로 긴장감과 추진력을 만들어요.
+              <br />
+              오른손 4박과 왼손 3박이 동시에 진행되는
+              <br />
+              리듬을 폴리리듬이라고 하고, 이 리듬은 단순한 반주와 멜로디의
+              <br />
+              조합을 넘어서요.
+              <br />
+              두 손이 독립적으로 움직이며
+              <br />
+              만들어내는 긴장감이 특징이예요.
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전: cp-form</button>

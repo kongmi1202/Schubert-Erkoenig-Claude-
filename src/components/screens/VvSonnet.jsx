@@ -183,21 +183,23 @@ function VvSonnet({ go }) {
           );
         })}
 
-        <div className="feat-card">
-          <div className="feat-num">FEATURE</div>
-          <div className="feat-title">사계의 특징①: 표제음악</div>
-          <div className="feat-body">
-            소네트의 내용을 음악으로 직접 묘사한다
-            <br />
-            비발디는 시의 각 장면을
-            <br />
-            셈여림·빠르기·리듬꼴로 생생하게 표현해요.
-            <br />
-            이처럼 음악 외적 내용을 음악으로
-            <br />
-            묘사하는 것을 표제음악이라고 해요.
+        {canProceed ? (
+          <div className="feat-card">
+            <div className="feat-num">FEATURE</div>
+            <div className="feat-title">사계의 특징①: 표제음악</div>
+            <div className="feat-body">
+              소네트의 내용을 음악으로 직접 묘사한다
+              <br />
+              비발디는 시의 각 장면을
+              <br />
+              셈여림·빠르기·리듬꼴로 생생하게 표현해요.
+              <br />
+              이처럼 음악 외적 내용을 음악으로
+              <br />
+              묘사하는 것을 표제음악이라고 해요.
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전: vv-overview</button>

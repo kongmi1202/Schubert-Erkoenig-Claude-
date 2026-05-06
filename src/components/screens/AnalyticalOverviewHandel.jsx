@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateAnalyticalCompareFeedback } from '../../lib/compareFeedback';
 
 const HANDEL_ANSWER_Q1 =
   '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -34,15 +32,6 @@ function pickRandom(items, prevValue) {
   return next;
 }
 
-const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
-const feedbackIndicatesAllCorrect = (text) => {
-  const t = String(text || '').trim();
-  if (!t) return false;
-  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
-  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
-  return positive.test(t) && !negative.test(t);
-};
-
 function AnalyticalOverviewHandel({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
@@ -59,9 +48,6 @@ function AnalyticalOverviewHandel({ go }) {
   const [q2Example, setQ2Example] = useState(HANDEL_Q2_HINTS[0]);
   const [showQ1Example, setShowQ1Example] = useState(false);
   const [showQ2Example, setShowQ2Example] = useState(false);
-  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
-  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
-  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
 
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
@@ -80,24 +66,7 @@ function AnalyticalOverviewHandel({ go }) {
         : [],
     [emotionResult]
   );
-  const currentSnapshot = useMemo(() => JSON.stringify({ q1: q1Text.trim(), q2: q2Text.trim() }), [q1Text, q2Text]);
-  const isAlreadyCorrect = useMemo(() => {
-    const q1 = normalizeText(q1Text);
-    const q2 = normalizeText(q2Text);
-    if (!q1 || !q2) return false;
-    const q1Ok =
-      (q1.includes('성경') || q1.includes('요한계시록')) &&
-      q1.includes('찬양') &&
-      (q1.includes('할렐루야') || q1.includes('신의 위대함'));
-    const q2Ok =
-      q2.includes('종교') &&
-      q2.includes('연기') &&
-      (q2.includes('없음') || q2.includes('없다')) &&
-      (q2.includes('오페라') || q2.includes('오라토리오'));
-    return q1Ok && q2Ok;
-  }, [q1Text, q2Text]);
-  const canOpenAnswer =
-    canProceed && hasRequestedFeedback && (feedbackSnapshot !== currentSnapshot || isAlreadyCorrect || feedbackAllowsDirectCheck);
+  const canOpenAnswer = canProceed;
 
   const onQ1Example = () => {
     setQ1Example((prev) => pickRandom(HANDEL_Q1_HINTS, prev));
@@ -108,22 +77,6 @@ function AnalyticalOverviewHandel({ go }) {
     setQ2Example((prev) => pickRandom(HANDEL_Q2_HINTS, prev));
     setShowQ2Example(true);
   };
-  const requestFeedback = () =>
-    generateAnalyticalCompareFeedback({
-      userCharacterSlots: [],
-      userCharactersText: q1Text,
-      correctCharacters: ['성경(요한계시록)', '할렐루야 반복', '신의 위대함 찬양'],
-      userStory: q2Text,
-      correctStory: HANDEL_COMPARE_ROWS.map((row) => `${row.key}: ${row.opera} / ${row.oratorio}`).join(', ')
-    });
-  const onFeedbackRequested = () => {
-    setHasRequestedFeedback(true);
-    setFeedbackSnapshot(currentSnapshot);
-    setFeedbackAllowsDirectCheck(false);
-    setQ1Open(false);
-    setQ2Open(false);
-  };
-
   return (
     <div className="screen active">
       <div className="stage-header">
@@ -186,12 +139,9 @@ function AnalyticalOverviewHandel({ go }) {
             disabled={!canOpenAnswer}
             style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           >
-            <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
+            <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
           </button>
-        ) : null}
-        {canProceed && hasRequestedFeedback && (isAlreadyCorrect || feedbackAllowsDirectCheck) ? (
-          <div className="small-note" style={{ marginTop: 8 }}>좋아요! 정답 핵심이 모두 들어가서 바로 확인할 수 있어요.</div>
         ) : null}
         <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
@@ -219,12 +169,6 @@ function AnalyticalOverviewHandel({ go }) {
             {q2Example}
           </div>
         ) : null}
-        <CompareAiFeedbackBlock
-          requestFn={requestFeedback}
-          onRequested={onFeedbackRequested}
-          onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
-        />
-
         {canOpenQ2Answer ? (
           <button
             type="button"
@@ -234,7 +178,7 @@ function AnalyticalOverviewHandel({ go }) {
             disabled={!canOpenAnswer}
             style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           >
-            <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
+            <span className="answer-check-toggle-label">정답 확인하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
           </button>
         ) : null}

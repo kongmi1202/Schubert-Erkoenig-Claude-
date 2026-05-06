@@ -126,7 +126,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .lyrics-panel{background:var(--surface);border:1px solid var(--border);padding:14px;max-height:520px;overflow-y:auto}
 
 .fb{padding:13px 18px;font-size:15px;line-height:1.75;display:none;border-left:3px solid}
-.fb.show{display:block}.fb.info{background:var(--purple-pale);border-color:var(--purple);color:var(--purple-light)}.fb.gold{background:var(--gold-pale);border-color:var(--gold);color:#e8d090}.fb.ok{background:var(--green-pale);border-color:var(--green);color:#a0e0b8}
+.fb.show{display:block}.fb.info{background:var(--purple-pale);border-color:var(--purple);color:var(--purple-light)}.fb.gold{background:var(--gold-pale);border-color:var(--gold);color:#e8d090}.fb.ok{background:var(--green-pale);border-color:var(--green);color:#a0e0b8}.fb.ng{background:var(--crimson-pale);border-color:var(--crimson);color:#f2b0b0}
 .review-item{margin-bottom:10px;line-height:1.8;color:rgba(237,232,245,.84);font-size:16px}
 .small-note{
   font-size:12px;
@@ -608,6 +608,61 @@ canvas{display:block;width:100%;touch-action:none}
 }
 .cl-card.tonal  .cl-label { color: #90e0b0; }
 .cl-card.atonal .cl-label { color: #e09090; }
+.sb-slider-wrap{
+  padding:20px 0;
+  position:relative;
+}
+.sb-slider-ends{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  font-weight:400;
+  margin-bottom:12px;
+}
+.sb-speak-label{color:var(--crimson-light)}
+.sb-sing-label{color:#6b9fd4}
+.sb-tone-slider{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  height:8px;
+  border-radius:4px;
+  background:linear-gradient(
+    to right,
+    var(--crimson) 0%,
+    rgba(139,92,246,0.5) 50%,
+    #4a7fc1 100%
+  );
+  outline:none;
+}
+.sb-tone-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:#fff;
+  border:2px solid var(--purple);
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+.sb-tone-slider::-moz-range-thumb{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:#fff;
+  border:2px solid var(--purple);
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);
+}
+.sb-slider-state{
+  text-align:center;
+  font-size:11px;
+  color:var(--text-dim);
+  font-weight:300;
+  margin-top:8px;
+  height:18px;
+}
 .choice-list {
   display: grid;
   grid-template-columns: 1fr;

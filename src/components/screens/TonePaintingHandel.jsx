@@ -350,7 +350,7 @@ function TonePaintingHandel({ go }) {
           </div>
         </section>
 
-        {allCorrect ? (
+        {allAnswered ? (
           <ArtSongTakeaway
             eyebrow="오라토리오의 첫 번째 특징"
             title="종교적인 내용을 담는다"
