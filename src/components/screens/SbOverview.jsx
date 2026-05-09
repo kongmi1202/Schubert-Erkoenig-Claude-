@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
-const q2Answer = '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
 const helperHints = [
   '들리는 악기 이름을 생각나는 만큼 써보세요.',
   '목소리가 노래처럼 들리는지 말처럼 들리는지 써보세요.',
@@ -13,15 +12,11 @@ function SbOverview({ go }) {
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [q1, setQ1] = useState('');
-  const [q2, setQ2] = useState('');
   const [showQ1Hint, setShowQ1Hint] = useState(false);
-  const [showQ2Hint, setShowQ2Hint] = useState(false);
   const [q1Open, setQ1Open] = useState(false);
-  const [q2Open, setQ2Open] = useState(false);
   const [q1Hint, setQ1Hint] = useState(helperHints[0]);
-  const [q2Hint, setQ2Hint] = useState(helperHints[1]);
 
-  const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
+  const canProceed = useMemo(() => q1.trim(), [q1]);
   const canOpenAnswer = canProceed;
 
   const showHint = (forQ1) => {
@@ -29,9 +24,6 @@ function SbOverview({ go }) {
     if (forQ1) {
       setQ1Hint(next);
       setShowQ1Hint(true);
-    } else {
-      setQ2Hint(next);
-      setShowQ2Hint(true);
     }
   };
   return (
@@ -91,35 +83,6 @@ function SbOverview({ go }) {
         <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
             <div className="fb show info">정답: {q1Answer}</div>
-          </div>
-        </div>
-
-        <div className="sec">Q2. 이 음악의 전체적인 분위기는 어떤가요?</div>
-        <textarea
-          className="txt"
-          value={q2}
-          onChange={(e) => setQ2(e.target.value)}
-          placeholder="전체적인 분위기를 자유롭게 적어보세요."
-        />
-        <button type="button" className="ai-btn" onClick={() => showHint(false)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showQ2Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {q2Hint}
-        </div>
-        <button
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => setQ2Open((prev) => !prev)}
-          aria-expanded={q2Open}
-          disabled={!canOpenAnswer}
-          style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
-        </button>
-        <div className={`answer-compare-slide ${q2Open ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="fb show info">정답: {q2Answer}</div>
           </div>
         </div>
 
