@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { generateVvConcertoCompareFeedback } from '../../lib/compareFeedback';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 
 const VV_CONCERTO_Q = 'vv-concerto-q';
 const VV_CONCERTO_CORRECT = '독주와 총주가 번갈아 나온다';
 const VV_CONCERTO_CHOICES = ['독주만 계속 나온다', '총주만 계속 나온다', VV_CONCERTO_CORRECT];
+const VV_CONCERTO_DISCOVERY_QUESTION = '영상을 보니 독주와 총주가 어떻게 나타나나요?';
 
 const FEEDBACK_OK = `맞아요! 독주와 총주가
 번갈아가며 대화하듯 연주하는 것이
@@ -145,6 +148,22 @@ function VvConcerto({ go }) {
               {picked === choice ? '●' : '○'} {choice}
             </button>
           ))}
+        </div>
+
+        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
+          <CompareAiFeedbackBlock
+            key={`vv-concerto-ai-${picked || 'none'}`}
+            disabled={!picked}
+            requestFn={() =>
+              generateVvConcertoCompareFeedback({
+                soloCount,
+                tuttiCount,
+                question: VV_CONCERTO_DISCOVERY_QUESTION,
+                userChoice: picked || '',
+                correctAnswer: VV_CONCERTO_CORRECT
+              })
+            }
+          />
         </div>
 
         <button

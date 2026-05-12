@@ -580,3 +580,87 @@ export async function generateHyThemePart3Feedback({ selectedDeg }) {
 
   return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
+
+function buildVvSonnetFallback({ hasChoice }) {
+  if (!hasChoice) {
+    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 소네트 구절과 질문을 다시 읽고, 들린 셈여림·빠르기·리듬꼴 중 무엇이 가장 잘 드러나는지 골라보면 좋아요.';
+  }
+  return '표제음악에서는 시의 장면과 음악의 셈여림·빠르기·리듬꼴이 서로 맞물려요. 같은 구간을 다시 들으며, 갑자기 세진 부분과 잔잔한 부분이 어디인지 귀로만 짚어보세요.';
+}
+
+/**
+ * 비발디 사계 여름 — 소네트(표제음악) 객관식 선택에 대한 형성적 피드백
+ */
+export async function generateVvSonnetCompareFeedback({
+  quoteKr,
+  question,
+  choices,
+  userChoice,
+  correctAnswer
+}) {
+  const trimmed = (userChoice || '').trim();
+  const hasChoice = Boolean(trimmed);
+  const fallback = buildVvSonnetFallback({ hasChoice });
+  if (!hasChoice) return fallback;
+
+  const isCorrect = trimmed === (correctAnswer || '').trim();
+  const choiceList = Array.isArray(choices) ? choices.join(' / ') : '';
+
+  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 비발디 <사계> 여름악장의 소네트(표제음악) 활동이다.
+
+내부 참고(학생에게 정답 문구·오답 보기를 그대로 쓰지 말 것): 객관적 정오 = ${isCorrect ? '일치' : '불일치'}.
+
+소네트 구절(한국어): ${quoteKr}
+질문: ${question}
+보기 목록(참고): ${choiceList}
+학생이 고른 보기: ${trimmed}
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
+· 검증 ✓: 표제음악·셈여림·빠르기·리듬꼴·음형·스트카토 등에서 과제와 연결되는 요소명을 넣어 2~3문장 정교화. 학생 보기 문장을 그대로 베끼지 말 것. 개인 칭찬 금지.
+· 검증 ✗: 다른 보기 문구·정답 문장을 절대 쓰지 말 것. 다시 들을 때 귀를 둘 셈여림·속도·리듬 변화 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+}
+
+function buildVvConcertoFallback({ hasChoice }) {
+  if (!hasChoice) {
+    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 독주(바이올린 한 대)와 총주(현악 전체)가 번갈아 나오는지 영상을 다시 보며 확인해 보세요.';
+  }
+  return '바이올린 협주곡에서는 독주와 총주의 음색·밀도 대비가 중요해요. 영상에서 화려한 솔로 구간과 풀 앙상블 구간이 어떻게 바뀌는지 귀로만 비교해 보세요.';
+}
+
+/**
+ * 비발디 사계 여름 — 바이올린 협주(독주·총주) 발견 질문에 대한 형성적 피드백
+ */
+export async function generateVvConcertoCompareFeedback({
+  soloCount,
+  tuttiCount,
+  question,
+  userChoice,
+  correctAnswer
+}) {
+  const trimmed = (userChoice || '').trim();
+  const hasChoice = Boolean(trimmed);
+  const fallback = buildVvConcertoFallback({ hasChoice });
+  if (!hasChoice) return fallback;
+
+  const isCorrect = trimmed === (correctAnswer || '').trim();
+  const s = Number(soloCount) || 0;
+  const t = Number(tuttiCount) || 0;
+
+  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 비발디 <사계> 여름악장의 바이올린 협주곡(독주와 총주) 활동이다.
+
+내부 참고(학생에게 정답 문구·오답 보기를 그대로 쓰지 말 것): 객관적 정오 = ${isCorrect ? '일치' : '불일치'}.
+
+학생이 탭한 횟수(참고): 바이올린 독주 ${s}회, 현악 그룹(총주) ${t}회
+질문: ${question}
+학생이 고른 보기: ${trimmed}
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
+· 검증 ✓: 독주·총주·음색·밀도·리토르넬로(구조 이름만 필요할 때 한 번) 등 음악 개념으로 2~3문장 정교화. 탭 횟수는 귀 기울인 흔적으로만 가볍게 언급해도 된다. 개인 칭찬 금지.
+· 검증 ✗: 다른 보기·정답 문구를 쓰지 말 것. 독주와 총주를 귀로 구분하는 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+}

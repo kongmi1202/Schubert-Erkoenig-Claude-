@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResult }) {
+export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResult, disabled = false }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +19,7 @@ export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResul
 
   return (
     <div className="compare-ai-feedback">
-      <button type="button" className="btn-s" onClick={onClick} disabled={loading}>
+      <button type="button" className="btn-s" onClick={onClick} disabled={loading || disabled}>
         {loading ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
       </button>
       {text ? <div className="fb show info compare-ai-text">{text}</div> : null}
