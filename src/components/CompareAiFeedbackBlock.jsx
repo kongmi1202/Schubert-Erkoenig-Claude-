@@ -20,7 +20,7 @@ export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResul
   return (
     <div className="compare-ai-feedback">
       <button type="button" className="btn-s" onClick={onClick} disabled={loading}>
-        {loading ? '피드백 생성 중…' : 'AI 맞춤 피드백 받기'}
+        {loading ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
       </button>
       {text ? <div className="fb show info compare-ai-text">{text}</div> : null}
     </div>

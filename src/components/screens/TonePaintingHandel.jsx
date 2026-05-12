@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { generateTonePaintingCompareFeedback } from '../../lib/compareFeedback';
+import { feedbackAllowsProceedAfterAi, generateTonePaintingCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -56,14 +56,6 @@ const SEGMENTS = [
       '✓ 영원함을 끊임없이 이어지는 선율로 묘사했어요.'
   }
 ];
-
-const feedbackIndicatesAllCorrect = (text) => {
-  const t = String(text || '').trim();
-  if (!t) return false;
-  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
-  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
-  return positive.test(t) && !negative.test(t);
-};
 
 let ytApiPromise = null;
 function loadYouTubeIframeApi() {
@@ -197,7 +189,8 @@ function TonePaintingHandel({ go }) {
       lyric: activeSegment.lyric,
       question: activeSegment.question,
       options: activeSegment.options,
-      selectedIndex: selected[activeSegment.id]
+      selectedIndex: selected[activeSegment.id],
+      correctIndex: activeSegment.answer
     });
   const canShowAnswerCheck = selected[activeSegment.id] !== null;
   const isAlreadyCorrect = selected[activeSegment.id] === activeSegment.answer;
@@ -223,7 +216,7 @@ function TonePaintingHandel({ go }) {
       setAiFeedback((prev) => ({ ...prev, [segmentId]: nextText }));
       setFeedbackAllowsDirectCheck((prev) => ({
         ...prev,
-        [segmentId]: feedbackIndicatesAllCorrect(nextText)
+        [segmentId]: feedbackAllowsProceedAfterAi(nextText)
       }));
     } catch (error) {
       const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
@@ -309,7 +302,7 @@ function TonePaintingHandel({ go }) {
             </div>
             <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
               <button type="button" className="btn-s" onClick={handleRequestFeedback} disabled={loadingFeedback}>
-                {loadingFeedback ? '피드백 생성 중…' : 'AI 맞춤 피드백 받기'}
+                {loadingFeedback ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
               </button>
               {aiFeedback[activeSegment.id] ? (
                 <div className="fb show info compare-ai-text">{aiFeedback[activeSegment.id]}</div>

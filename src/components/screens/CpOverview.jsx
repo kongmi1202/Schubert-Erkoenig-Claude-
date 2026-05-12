@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import SensoryStage1Review from '../SensoryStage1Review';
 
 function CpOverview({ go }) {
-  const selectedKeywords = useAppStore((s) => s.selectedKeywords);
-  const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const analyticalCharacters = useAppStore((s) => s.analyticalCharacters);
   const analyticalStory = useAppStore((s) => s.analyticalStory);
@@ -32,19 +31,7 @@ function CpOverview({ go }) {
       </div>
 
       <div className="body video-page-body">
-        <div className="sec">1단계 감각적 감상 결과</div>
-        <div className="review-card" style={{ marginBottom: 18 }}>
-          <div className="review-grid">
-            <div>
-              <div className="review-section-title">감성 키워드</div>
-              <div id="rv-kw-cp" className="review-item">{selectedKeywords.join(', ') || '선택 없음'}</div>
-            </div>
-            <div>
-              <div className="review-section-title">서술</div>
-              <div id="rv-desc-cp" className="review-item">{sensoryDesc || '서술 없음'}</div>
-            </div>
-          </div>
-        </div>
+        <SensoryStage1Review ids={{ keywordsId: 'rv-kw-cp', sensoryDescId: 'rv-desc-cp' }} />
 
         <div className="sec">영상</div>
         <div className="video-wrap" style={{ marginBottom: 20 }}>

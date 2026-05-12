@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
+import { feedbackAllowsProceedAfterAi, generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -59,14 +59,6 @@ const voiceCompareCommentary = {
   마왕:
     '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 길게 이어지는 리듬, 중간 음색이 “부드러운 제안”처럼 들리게 설계된 모범안입니다.'
 };
-const feedbackIndicatesAllCorrect = (text) => {
-  const t = String(text || '').trim();
-  if (!t) return false;
-  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
-  const negative = /(빠진|틀렸|수정|보완|다시|부족|헷갈|아쉬|다른\s*칸)/;
-  return positive.test(t) && !negative.test(t);
-};
-
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
@@ -245,7 +237,7 @@ function VoiceDesign({ go }) {
             <CompareAiFeedbackBlock
               requestFn={requestVoiceFeedback}
               onRequested={onFeedbackRequested}
-              onResult={(text) => setFeedbackAllowsDirectCheck(feedbackIndicatesAllCorrect(text))}
+              onResult={(text) => setFeedbackAllowsDirectCheck(feedbackAllowsProceedAfterAi(text))}
             />
             <button
               type="button"

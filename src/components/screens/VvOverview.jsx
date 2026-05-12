@@ -1,16 +1,29 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import SensoryStage1Review from '../SensoryStage1Review';
 
 function VvOverview({ go }) {
-  const selectedKeywords = useAppStore((s) => s.selectedKeywords);
-  const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [q1, setQ1] = useState('');
+  /** 마지막으로 「내 응답 저장」한 텍스트(트림). 이것과 현재 입력이 같을 때만 정답 확인 가능 */
+  const [q1Saved, setQ1Saved] = useState('');
   const [q1Open, setQ1Open] = useState(false);
 
   const canProceed = useMemo(() => q1.trim(), [q1]);
-  const canOpenAnswer = canProceed;
-  return (
+  const canOpenAnswer = useMemo(
+    () => Boolean(q1.trim()) && q1.trim() === q1Saved,
+    [q1, q1Saved]
+  );
+
+  useEffect(() => {
+    if (!canOpenAnswer && q1Open) setQ1Open(false);
+  }, [canOpenAnswer, q1Open]);
+
+  const saveMyResponse = () => {
+    const t = q1.trim();
+    if (!t) return;
+    setQ1Saved(t);
+  };  return (
     <div className="screen active" id="vv-overview">
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-A · 분석적 감상 (비발디)</div>
@@ -18,19 +31,7 @@ function VvOverview({ go }) {
       </div>
 
       <div className="body video-page-body">
-        <div className="sec">1단계 감각적 감상 결과</div>
-        <div className="review-card" style={{ marginBottom: 18 }}>
-          <div className="review-grid">
-            <div>
-              <div className="review-section-title">감성 키워드</div>
-              <div id="rv-kw-vv" className="review-item">{selectedKeywords.join(', ') || '선택 없음'}</div>
-            </div>
-            <div>
-              <div className="review-section-title">서술</div>
-              <div id="rv-desc-vv" className="review-item">{sensoryDesc || '서술 없음'}</div>
-            </div>
-          </div>
-        </div>
+        <SensoryStage1Review ids={{ keywordsId: 'rv-kw-vv', sensoryDescId: 'rv-desc-vv' }} />
 
         <div className="sec">영상</div>
         <div className="video-wrap" style={{ marginBottom: 20 }}>
@@ -61,6 +62,11 @@ function VvOverview({ go }) {
           value={q1}
           onChange={(e) => setQ1(e.target.value)}
         />
+        <div className="btn-row" style={{ marginTop: 8, marginBottom: 8 }}>
+          <button type="button" className="btn-p" disabled={!q1.trim()} onClick={saveMyResponse}>
+            내 응답 저장
+          </button>
+        </div>
         <button
           type="button"
           className="answer-check-toggle"

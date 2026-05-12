@@ -183,7 +183,7 @@ export default function EmotionAnalysis({ text, triggerKey, hideButton = false }
     <div className="review-card" style={{ marginTop: 12 }}>
       {!hideButton ? (
         <button type="button" className="btn-p" onClick={analyzeEmotion} disabled={loading}>
-          {loading ? '분석 중...' : '📊 감정 분석하기'}
+          {loading ? '분석 중...' : '📊 이 곡에서 느낀 나의 감정 분석하기'}
         </button>
       ) : null}
 

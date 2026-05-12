@@ -14,18 +14,50 @@ const scienceOptions = [
   { emoji: '🌫️', label: '안개' }, { emoji: '🌋', label: '화산' }, { emoji: '🌑', label: '일식' }
 ];
 const ccItems = [
-  { name: '체육', icon: '🏃', desc: '사진 찍기' },
-  { name: '과학', icon: '🔬', desc: '자연 현상 고르기' },
-  { name: '사회', icon: '🗺️', desc: '지도에서 장소 선택' },
-  { name: '수학', icon: '△', desc: '도형 그리기' }
+  { name: '체육', icon: '🏃', desc: '이 곡의 느낌을 사진 찍어 동작으로 표현하기' },
+  { name: '과학', icon: '🔬', desc: '이 곡의 느낌을 자연 현상과 연관하여 표현하기' },
+  { name: '사회', icon: '🗺️', desc: '이 곡의 느낌을 지도에서 표시하여 장소로 표현하기' },
+  { name: '수학', icon: '△', desc: '이 곡의 느낌을 도형으로 그려 표현하기' }
 ];
-const sensoryPromptHints = [
-  '이 음악을 듣고 떠오른 장면 1가지를 한 문장으로 써보세요.',
-  '이 곡의 분위기를 말해주는 단어 3개를 써보세요. (예: 무서움, 빠름, 떨림)',
-  '처음 느낌과 끝부분 느낌이 어떻게 달랐는지 짧게 써보세요.',
-  '왜 그렇게 느꼈는지 이유 1가지를 써보세요. (예: 북소리가 커서 무서웠다)',
-  '이 음악에서 가장 기억에 남는 소리 1가지를 쓰고, 왜 기억에 남았는지 써보세요.'
-];
+/** 1단계 느낌·분위기 서술 — 모든 악곡 공통, 한 줄 안내 */
+const SENSORY_DESC_WRITING_TIP =
+  '떠오른 장면·분위기를 단어와 짧은 문장으로 적고, 왜 그렇게 느꼈는지 이유 한 가지를 덧붙여 보세요.';
+
+/** SongSelect 화면과 맞춘 표시용 악곡명 */
+const SONG_ID_TO_DISPLAY_NAME = {
+  vivaldi: '사계',
+  handel: '할렐루야',
+  haydn: '종달새',
+  mawang: '마왕',
+  chopin: '환상 즉흥곡',
+  schoenberg: '달에 홀린 피에로'
+};
+
+function hangulHasBatchim(char) {
+  const code = char.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+/** 명사 끝에 붙는 조사: 받침 있으면 '과', 없으면 '와' */
+function josaGwaWa(phrase) {
+  const t = (phrase || '').trim();
+  if (!t) return '와';
+  return hangulHasBatchim(t[t.length - 1]) ? '과' : '와';
+}
+
+/** 명사 끝에 붙는 조사: 받침 있으면 '이', 없으면 '가' */
+function josaIGa(phrase) {
+  const t = (phrase || '').trim();
+  if (!t) return '가';
+  return hangulHasBatchim(t[t.length - 1]) ? '이' : '가';
+}
+
+/** 교과 표현(동작·자연 현상·장소·도형)과 선택 악곡의 관계 질문 */
+function crossActivityRelationQuestion(activityNoun, songDisplayName) {
+  const song = (songDisplayName || '').trim() || '이 곡';
+  return `${activityNoun}${josaGwaWa(activityNoun)} '${song}'${josaIGa(song)} 어떤 관계가 있나요?`;
+}
 
 function MapClickHandler({ onPick }) {
   useMapEvents({
@@ -40,11 +72,10 @@ function SensoryPage({ go }) {
   const selectedKeywords = useAppStore((s) => s.selectedKeywords);
   const selectedColors = useAppStore((s) => s.selectedColors);
   const sensoryDesc = useAppStore((s) => s.sensoryDesc);
-  const aiOpen = useAppStore((s) => s.aiOpen);
+  const selectedSong = useAppStore((s) => s.selectedSong);
   const toggleKeyword = useAppStore((s) => s.toggleKeyword);
   const toggleColor = useAppStore((s) => s.toggleColor);
   const setSensoryDesc = useAppStore((s) => s.setSensoryDesc);
-  const toggleAi = useAppStore((s) => s.toggleAi);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const sensoryArtifacts = useAppStore((s) => s.sensoryArtifacts);
   const setSensoryArtifacts = useAppStore((s) => s.setSensoryArtifacts);
@@ -62,12 +93,13 @@ function SensoryPage({ go }) {
   const [drawSize, setDrawSize] = useState(4);
   const [drawingSaved, setDrawingSaved] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
-  const [sensoryHint, setSensoryHint] = useState(sensoryPromptHints[0]);
   const [emotionTrigger, setEmotionTrigger] = useState(0);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const mathCanvasRef = useRef(null);
   const drawingRef = useRef(false);
+
+  const songDisplayName = SONG_ID_TO_DISPLAY_NAME[selectedSong] || '이 곡';
 
   const isActivityOn = (name) => selectedActivities.includes(name);
 
@@ -214,12 +246,6 @@ function SensoryPage({ go }) {
     if (canvas) setMathDrawing(canvas.toDataURL('image/png'));
     setDrawingSaved(true);
   };
-  const showRandomSensoryHint = () => {
-    const next = sensoryPromptHints[Math.floor(Math.random() * sensoryPromptHints.length)];
-    setSensoryHint(next);
-    if (!aiOpen.sensory) toggleAi('sensory');
-  };
-
   const isStage1Complete = useMemo(() => {
     const hasKeywords = selectedKeywords.length > 0;
     const hasColors = selectedColors.length >= 2;
@@ -261,20 +287,22 @@ function SensoryPage({ go }) {
         <div className="palette">{colors.map((c) => <button key={c.name} title={c.name} className={`pal-btn ${selectedColors.includes(c.name) ? 'on' : ''}`} style={{ background: c.value }} onClick={() => toggleColor(c.name)} />)}</div>
         <div className="pal-note">선택된 색상: {selectedColors.length}개 (2~4개 선택)</div>
         <div className="pal-selected-names">{selectedColors.length ? selectedColors.join(', ') : '선택한 색상 이름이 여기에 표시됩니다.'}</div>
-        <div className="sec">느낌·분위기 서술</div>
+        <div
+          className="sec"
+          style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}
+        >
+          <span style={{ flexShrink: 0 }}>느낌·분위기 서술</span>
+          <span className="small-note" style={{ flex: '1 1 200px', margin: 0, lineHeight: 1.55 }}>
+            <span style={{ fontWeight: 600 }}>작성 TIP:</span> {SENSORY_DESC_WRITING_TIP}
+          </span>
+        </div>
         <textarea className="txt" value={sensoryDesc} onChange={(e) => setSensoryDesc(e.target.value)} placeholder="자유롭게 써보세요" />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="ai-btn" onClick={showRandomSensoryHint}>✨ 참고 예시 보기</button>
-          <button className="btn-p" type="button" onClick={() => setEmotionTrigger((v) => v + 1)}>📊 감정 분석하기</button>
-        </div>
-        <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
-        <div className={`ai-bubble ${aiOpen.sensory ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {sensoryHint}
+          <button className="btn-p" type="button" onClick={() => setEmotionTrigger((v) => v + 1)}>📊 이 곡에서 느낀 나의 감정 분석하기</button>
         </div>
         <EmotionAnalysis text={sensoryDesc} triggerKey={emotionTrigger} hideButton />
 
-        <div className="sec">음악 말고 다른 방식으로 표현하기 (2개 선택)</div>
+        <div className="sec">다른 방식으로 음악 표현하기 (2개 선택)</div>
         <div className="cc-grid">
           {ccItems.map((item) => (
             <button key={item.name} className={`cc-btn ${isActivityOn(item.name) ? 'on' : ''}`} onClick={() => toggleActivity(item.name)}>
@@ -306,7 +334,7 @@ function SensoryPage({ go }) {
             )}
             {pePhoto ? (
               <>
-                <div className="small-note">이 동작과 '마왕'을 감상한 느낌이 어떤 관계가 있나요?</div>
+                <div className="small-note">{crossActivityRelationQuestion('동작', songDisplayName)}</div>
                 <textarea className="txt" value={peAnswer} onChange={(e) => setPeAnswer(e.target.value)} />
               </>
             ) : null}
@@ -326,7 +354,7 @@ function SensoryPage({ go }) {
             {scienceSelected.length > 0 ? (
               <>
                 <div className="small-note">선택: {scienceSelected.join(', ')}</div>
-                <div className="small-note">이 자연 현상과 '마왕'을 감상한 느낌이 어떤 관계가 있나요?</div>
+                <div className="small-note">{crossActivityRelationQuestion('자연 현상', songDisplayName)}</div>
                 <textarea className="txt" value={scienceAnswer} onChange={(e) => setScienceAnswer(e.target.value)} />
               </>
             ) : null}
@@ -352,7 +380,7 @@ function SensoryPage({ go }) {
             {mapPosition ? <div className="map-address">선택한 위치: {mapAddress}</div> : <div className="small-note">지도를 클릭해 마커를 찍어주세요.</div>}
             {mapPosition ? (
               <>
-                <div className="small-note">이 장소와 '마왕'을 감상한 느낌이 어떤 관계가 있나요?</div>
+                <div className="small-note">{crossActivityRelationQuestion('장소', songDisplayName)}</div>
                 <textarea className="txt" value={mapAnswer} onChange={(e) => setMapAnswer(e.target.value)} />
               </>
             ) : null}
@@ -388,7 +416,7 @@ function SensoryPage({ go }) {
             </div>
             {drawingSaved ? (
               <>
-                <div className="small-note">이 도형과 '마왕'을 감상한 느낌이 어떤 관계가 있나요?</div>
+                <div className="small-note">{crossActivityRelationQuestion('도형', songDisplayName)}</div>
                 <textarea className="txt" value={mathAnswer} onChange={(e) => setMathAnswer(e.target.value)} />
               </>
             ) : null}

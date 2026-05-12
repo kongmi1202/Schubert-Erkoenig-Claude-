@@ -128,7 +128,11 @@ Das Haupt und taumelnd saugt und schlürft er
 고개를 든 채 비틀거리며 빨아들이고 들이켠다
 Den Wein, den man mit Augen trinkt.
 눈으로 마시는 포도주를.`;
-  const sonnetVivaldi = '아, 그의 두려움은 그럴 만하구나. 하늘은 천둥을 울리고 우박을 내려 익은 곡식을 모두 쓸어버리네.';
+  const sonnetVivaldiFull = `아, 그러나 그의 두려움은 얼마나 정당한가!
+하늘은 천둥 치고 번개 번뜩이며,
+쏟아지는 우박은 자라나는 곡식의 이삭과
+기세등등하게 피어있던 꽃들을 꺾어버린다.`;
+  const vivaldiGuideIntro = '소네트를 보고 소네트의 내용과 연관지어 음악을 감상해 보세요.';
   const haydnGuide = `1) 시작 주제: 가장 먼저 들리는 선율이 어떤 악기인지 짐작해보세요.
 2) 음색 구분: 제1바이올린·제2바이올린·비올라·첼로의 역할 차이를 들어보세요.
 3) 분위기 변화: 밝고 가벼운 느낌에서 서정적인 느낌으로 바뀌는 지점을 찾아보세요.
@@ -142,7 +146,9 @@ Den Wein, den man mit Augen trinkt.
   const lyrics = selectedSong === 'haydn'
     ? ''
     : selectedSong === 'vivaldi'
-      ? sonnetVivaldi
+      ? ''
+      : selectedSong === 'chopin'
+        ? ''
     : selectedSong === 'schoenberg'
       ? lyricsSchoenberg
       : (isErlkonig ? lyricsErlkonig : lyricsHallelujah);
@@ -157,13 +163,24 @@ Den Wein, den man mit Augen trinkt.
           </div>
           <div className="lyrics-panel">
             <div style={{ fontSize: 11, letterSpacing: '.15em', color: 'var(--purple-light)', marginBottom: 10 }}>
-              {(selectedSong === 'chopin' || selectedSong === 'haydn') ? '감상 가이드' : (selectedSong === 'vivaldi' ? '소네트' : '가사')}
+              {(selectedSong === 'chopin' || selectedSong === 'haydn' || selectedSong === 'vivaldi') ? '감상 가이드' : '가사'}
             </div>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
-              {selectedSong === 'chopin'
-                ? chopinGuide
-                : (selectedSong === 'haydn' ? haydnGuide : lyrics)}
-            </pre>
+            {selectedSong === 'vivaldi' ? (
+              <div>
+                <p style={{ margin: '0 0 14px', fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
+                  {vivaldiGuideIntro}
+                </p>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
+                  {sonnetVivaldiFull}
+                </pre>
+              </div>
+            ) : (
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, fontFamily: 'Noto Sans KR, sans-serif', fontSize: 12, lineHeight: 1.8, color: 'var(--text-dim)' }}>
+                {selectedSong === 'chopin'
+                  ? chopinGuide
+                  : (selectedSong === 'haydn' ? haydnGuide : lyrics)}
+              </pre>
+            )}
           </div>
         </div>
         <div className="fb show info">🎵 영상을 감상하며 음악이 주는 느낌을 자유롭게 느껴보세요.</div>

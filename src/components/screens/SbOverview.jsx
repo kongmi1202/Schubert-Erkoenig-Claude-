@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import SensoryStage1Review from '../SensoryStage1Review';
 
 const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
 const helperHints = [
@@ -8,8 +9,6 @@ const helperHints = [
   '음악 분위기를 단어 2개로 써보세요. (예: 불안, 신비)'
 ];
 function SbOverview({ go }) {
-  const selectedKeywords = useAppStore((s) => s.selectedKeywords);
-  const sensoryDesc = useAppStore((s) => s.sensoryDesc);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [q1, setQ1] = useState('');
   const [showQ1Hint, setShowQ1Hint] = useState(false);
@@ -34,19 +33,7 @@ function SbOverview({ go }) {
       </div>
 
       <div className="body video-page-body">
-        <div className="sec">1단계 감각적 감상 결과</div>
-        <div className="review-card" style={{ marginBottom: 18 }}>
-          <div className="review-grid">
-            <div>
-              <div className="review-section-title">감성 키워드</div>
-              <div id="rv-kw-sb" className="review-item">{selectedKeywords.join(', ') || '선택 없음'}</div>
-            </div>
-            <div>
-              <div className="review-section-title">서술</div>
-              <div id="rv-desc-sb" className="review-item">{sensoryDesc || '서술 없음'}</div>
-            </div>
-          </div>
-        </div>
+        <SensoryStage1Review ids={{ keywordsId: 'rv-kw-sb', sensoryDescId: 'rv-desc-sb' }} />
 
         <div className="sec">해설 영상</div>
         <div className="video-wrap" style={{ marginBottom: 20 }}>

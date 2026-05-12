@@ -12,10 +12,59 @@ const MSG_NO_KEY = `──
 · 로컬: 프로젝트 루트에 \`.env.local\`을 두고 \`VITE_OPENAI_API_KEY=sk-...\` 를 적은 뒤, 터미널에서 개발 서버를 완전히 끄고 다시 \`npm run dev\`로 실행하세요. (실행 중에 파일만 고치면 반영이 안 될 수 있어요.)
 · 배포 사이트: GitHub Pages·Netlify 등에는 \`.env.local\`이 올라가지 않습니다. 호스트의 “Build environment variables”에 같은 이름으로 키를 넣고 **다시 빌드·배포**해야 합니다.`;
 
+/**
+ * Kulhavy & Stock(1989) 검증·정교화 + Shute(2008) 형성적 피드백 — 모든 맞춤형 AI 피드백 프롬프트에 공통 적용
+ */
+const FORMATIVE_AI_FEEDBACK_RULES_KO = `[피드백 설계 원칙 — 반드시 준수]
+
+Kulhavy & Stock(1989)
+· 검증(Verification): 과제 기준에 맞는지 먼저 판단한다. 응답 첫 줄은 반드시 아래 형식만 사용한다.
+  검증: ✓  또는  검증: ✗
+· 정교화(Elaboration): 검증 다음 줄부터, 관련 음악 개념을 이름으로 짚어 설명한다. (예: 음색, 리듬꼴, 음계·장단조, 선율, 반주, 성부, 음역, 형식, 반복 등)
+
+Shute(2008)
+① 학습자 인물 칭찬이 아니라 음악 과제·요소에 초점을 둔다. ("잘했어요", "훌륭해요" 등 개인 칭찬 중심 문장 금지)
+② 음악 요소명과 개념을 구체적으로 직접 언급한다.
+③ 간결하게: 검증 줄 포함, 정답(검증 ✓)일 때는 총 2~3문장, 오답(검증 ✗)일 때는 총 2문장 이내.
+
+[오답 — 검증: ✗ 일 때]
+· 모범 정답 문구, 정답 보기, 정답 단어·숫자를 본문에 절대 넣지 않는다.
+· "틀렸습니다"만으로 끝내지 않는다.
+· 다시 들을 때 집중할 음악적 포인트를 힌트로 1문장 넣는다.
+· 마지막 문장은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요." 중 하나로 끝낸다.
+
+[정답 — 검증: ✓ 일 때]
+· 음악 요소명을 반드시 포함한다.
+· 개인 칭찬보다 음악 개념 설명에 비중을 둔다.`;
+
+function wrapFormativePrompt(taskPrompt) {
+  return `${FORMATIVE_AI_FEEDBACK_RULES_KO}
+
+---
+
+${taskPrompt}`;
+}
+
+/** 응답 첫 줄 검증 표기 — UI에서 「정답 확인」 게이트 등에 사용 */
+export function feedbackIndicatesVerificationCorrect(text) {
+  return /검증\s*[:：]\s*✓/.test(String(text || '').trim());
+}
+
+/** 명시적 ✗가 없을 때만, 구 형식 긍정 피드백을 폴백으로 인정 */
+export function feedbackAllowsProceedAfterAi(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return false;
+  if (/검증\s*[:：]\s*✗/.test(raw)) return false;
+  if (feedbackIndicatesVerificationCorrect(raw)) return true;
+  const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
+  const negative = /(빠진|틀렸|수정|보완|부족|헷갈|아쉬|다른\s*칸)/;
+  return positive.test(raw) && !negative.test(raw);
+}
+
 function msgApiFailed(status) {
   if (status === 429) {
     return `──
-OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「AI 맞춤 피드백 받기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
+OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「AI 맞춤형 피드백 보기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
   }
   return `──
 OpenAI 요청이 실패했습니다${status ? ` (HTTP ${status})` : ''}. API 키가 맞는지, 결제·크레딧이 있는지 확인해 보세요. 브라우저에서 F12 → 네트워크 탭에서 \`api.openai.com\` 응답 본문을 보면 원인 힌트가 나오는 경우가 많아요.`;
@@ -203,26 +252,30 @@ export async function generateAnalyticalCompareFeedback({
   if (normalizedStory.length <= 2) {
     return `${fallbackBody}\n\n${buildAnalyticalShortInputFeedback(normalizedStory, q2Label)}`;
   }
-  const prompt = `너는 음악 수업을 돕는 선생님이야. 초등·중학생 눈높이로 짧고 따뜻하게 말해줘.
+  const userSet = userCharacterNameSet(userCharacterSlots, userCharactersText);
+  const correctSet = new Set(correctCharacters);
+  const q1AllCorrect = [...correctSet].every((c) => userSet.has(c));
 
-Q1. 학생이 적은 등장인물 목록과 모범 목록을 비교해서, 빠진 인물·헷갈릴 수 있는 점·잘한 점을 2~3문장으로.
-Q2. ${q2PromptGuide} 학생 답변과 모범 답변을 비교해 2~3문장으로.
+  const taskPrompt = `너는 음악 수업을 돕는 선생님이야. 초등·중학생 눈높이 한국어.
+
+과제: 개요 파악 Q1(등장인물·요소 목록)과 Q2(${q2Label})를 모범과 비교해 형성적 피드백을 쓴다.
+Q2 비교 초점: ${q2PromptGuide}
+
+내부 참고(학생에게 그대로 밝히지 말 것): Q1 모범 목록과의 일치 여부 = ${q1AllCorrect ? '모든 항목 포함' : '누락 또는 불일치 있음'}.
 
 규칙:
-- 모범 문장을 그대로 복사하지 말고 비교 관점으로 설명할 것.
-- 총 120~220자 내외 한국어.
-- 과장 칭찬은 피하고 구체적으로.
-- 학생 입력에 없는 내용(감정, 사건, 인물 반응)을 추측해서 쓰지 말 것.
-- 학생 입력이 짧거나 불충분하면 "입력이 짧아 판단이 어렵다"라고 명시할 것.
-- 가능하면 학생이 실제로 쓴 단어를 짧게 인용해 근거를 보여줄 것.
+· 첫 줄은 반드시 검증: ✓ 또는 검증: ✗ 한 가지만. Q1·Q2를 종합해 과제 전체가 기준에 충분히 도달했으면 ✓, 아니면 ✗.
+· 검증 ✓: Q1·Q2 각각에 대해 음악·서사 요소명을 들어 정교화(총 2~3문장). 모범 문장 복사 금지.
+· 검증 ✗: 정답 인물명·정답 줄거리 문구를 쓰지 말 것. 빠진 요소나 줄거리의 어느 부분을 다시 짚을지 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
+· 학생이 쓴 단어를 짧게 인용해도 좋다. 추측 과장 금지.
 
-학생 Q1 (등장인물): ${userCharactersText || '(없음)'}
+학생 Q1: ${userCharactersText || '(없음)'}
 모범 Q1: ${correctCharacters.join(', ')}
 
 학생 Q2 (${q2Label}): ${(userStory || '').trim() || '(없음)'}
 모범 Q2: ${correctStory}`;
 
-  return requestCompareFeedback(prompt, fallbackBody);
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallbackBody);
 }
 
 function buildVoiceFallback(selectedChars, voiceDesign, answerKey) {
@@ -248,32 +301,39 @@ export async function generateVoiceDesignCompareFeedback(selectedChars, voiceDes
       모범: answerKey[name]?.[key] ?? '—'
     }))
   );
+  const allMatch = rows.length > 0 && rows.every((r) => r.학생 !== '—' && r.학생 === r.모범);
   const who = selectedChars.length > 1 ? '선택한 인물들' : `「${selectedChars[0] || ''}」`;
-  const prompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 음높이·음계·리듬꼴·음색 설계와 모범안이야. (대상: ${who})
 
-학생 눈높이로 3~5문장 한국어로:
-- 어떤 칸이 특히 잘 맞았는지, 어떤 칸에서 음악적 이유로 다르게 들릴 수 있는지 짧게 짚어줘.
-- 틀렸다고 단정하지 말고 "이렇게 들을 수도 있어요" 식으로 격려해줘.
-- 모범 문장을 그대로 반복하지 말 것.
+  const taskPrompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 음높이·음계·리듬꼴·음색 설계와 모범안이다. (대상: ${who})
+
+내부 참고: 네 칸 모두 학생 값이 모범과 같으면 ${allMatch ? 'true (검증 ✓)' : 'false (검증은 불일치 시 ✗)'}.
+
+규칙:
+· 첫 줄: 검증: ✓ (네 요소 모두 모범과 일치) 또는 검증: ✗ (하나라도 다름 또는 미선택).
+· 검증 ✓: 음높이·음계·리듬꼴·음색 중 무엇이 어떤 음악적 역할과 맞닿는지 2~3문장으로 정교화. 개인 칭찬 문장 금지.
+· 검증 ✗: 모범 칸의 정확한 단어(예: "높음", "단조")를 쓰지 말 것. 어느 요소를 어떤 소리 특징으로 다시 들을지 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
 
 데이터(JSON): ${JSON.stringify(rows)}`;
 
-  return requestCompareFeedback(prompt, fallback);
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
 
 const PIANO_FALLBACK_BODY =
   '오른손 선은 빠르게 오르내리는 느낌(말발굽·긴장), 왼손 선은 느리고 묵직하게 반복되는 느낌(심장·압박)이 드러나는지 그림과 모범 악보를 나란히 보며 확인해보세요.';
 
 export async function generatePianoCompareFeedback() {
-  const prompt = `슈베르트 가곡 <마왕> 피아노 반주 학습 맥락이야. 학생이 캔버스에 오른손·왼손 가락선을 그리고 모범 악보 이미지와 눈으로 비교한다고 가정해.
+  const taskPrompt = `슈베르트 가곡 <마왕> 피아노 반주 학습 맥락이다. 학생이 캔버스에 오른손·왼손 가락선을 그리고 모범 악보와 비교한다.
 
-모범 해설 요지:
-- 오른손: 빠르고 불규칙하게 오르내리는 셋잇단 느낌 → 말발굽·질주 같은 긴장감.
-- 왼손: 느리고 강하게 반복되는 베이스 → 심장 박동·쫓기는 느낌.
+참고 음악 개념:
+· 오른손: 빠르고 불규칙하게 오르내리는 셋잇단 느낌 → 질주·긴장감과 연결되는 리듬꼴·음역 특징.
+· 왼손: 느리고 강하게 반복되는 베이스 → 낮은 음역의 반복 동기.
 
-학생이 스스로 비교할 때 쓸 질문 3가지와 격려 1~2문장을 초등·중학생 눈높이 한국어로, 총 100~200자 내외로 적어줘.`;
+규칙:
+· 첫 줄은 반드시 "검증: ✓" 또는 "검증: ✗" — 학생 그림이 위 두 손의 핵심(리듬꼴·음역 대비)을 시각화했는지 네가 추정해 판정한다. 애매하면 ✗.
+· 이어서 2문장 이내로, 음악 요소명(리듬꼴, 음역, 반주)을 넣어 정교화한다. 개인 칭찬 금지.
+· 모범 악보 문구를 베끼지 말 것.`;
 
-  return requestCompareFeedback(prompt, PIANO_FALLBACK_BODY);
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), PIANO_FALLBACK_BODY);
 }
 
 function buildTonePaintingFallback({ segmentTitle, selectedIndex }) {
@@ -288,7 +348,8 @@ export async function generateTonePaintingCompareFeedback({
   lyric,
   question,
   options,
-  selectedIndex
+  selectedIndex,
+  correctIndex
 }) {
   const fallback = buildTonePaintingFallback({
     segmentTitle,
@@ -299,22 +360,26 @@ export async function generateTonePaintingCompareFeedback({
   }
 
   const studentAnswer = options[selectedIndex] || '선택 없음';
-  const prompt = `너는 초등학생 음악 감상 수업을 돕는 선생님이야.
-아래는 할렐루야 음화법 활동의 한 구간이야. 정답 여부를 판단하지 말고, 학생이 스스로 답을 점검하도록 힌트형 피드백을 3~4문장으로 줘.
+  const isCorrect =
+    typeof correctIndex === 'number' &&
+    correctIndex >= 0 &&
+    selectedIndex === correctIndex;
 
-규칙:
-- 정답/오답, 모범답, 맞다/틀리다 같은 표현을 절대 쓰지 말 것.
-- 보기 문구를 그대로 정답처럼 반복하지 말 것.
-- "가사 단어-음높이 변화-반복 느낌-선율 지속" 중 2개 이상을 체크 포인트로 제시할 것.
-- 마지막 문장은 반드시 "네가 고른 이유를 한 문장으로 써보자"로 끝낼 것.
-- 너무 길게 쓰지 말고 80~160자 한국어.
+  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 할렐루야 음화법(Tone Painting) 활동의 한 구간이다.
+
+내부 참고(학생에게 정답 문구를 쓰지 말 것): 객관적 정오 = ${isCorrect ? '일치' : '불일치'}.
 
 구간: ${segmentTitle}
 가사: ${lyric}
 질문: ${question}
-학생 선택(참고용): ${studentAnswer}`;
+학생이 고른 보기(참고): ${studentAnswer}
 
-  return requestCompareFeedback(prompt, fallback);
+규칙:
+· 첫 줄: 내부 참고에 따라 검증: ✓ 또는 검증: ✗.
+· 검증 ✓: 음화법·선율·음역·리듬꼴·반복 등 요소명을 넣어 왜 이 선택이 가사와 연결되는지 2~3문장. 보기 문장을 그대로 베끼지 말 것. 개인 칭찬 금지.
+· 검증 ✗: 다른 보기 문구·정답 내용을 절대 쓰지 말 것. 가사의 어느 음악적 특징(음 높낮이, 반복, 선율 길이 등)에 귀를 기울일지 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
 
 const MELODY_HANDEL_FALLBACK = {
@@ -441,25 +506,23 @@ export async function generateMelodyCanvasHandelFeedback(section, userDrawingDat
       ? '구간: 할렐루야 합창 전체(화성음악). 핵심은 네 성부의 동시 진행(함께 상하 이동) 인식이다.'
       : '구간: 또 주가 길이 다스리시리(다성음악). 핵심은 베이스→테너→알토→소프라노의 교대 진행 인식이다.';
 
-  const promptText = `너는 초등·중학생 음악 수업을 돕는 선생님이야.
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야.
 ${contextLabel}
 
-아래에 내가 순서대로 두 장의 그림을 첨부했어.
-- 첫 번째 첨부 이미지: 학생이 캔버스에 손으로 그린 가락선.
-- 두 번째 첨부 이미지: 수업용 모범 가락선 그림.
+아래에 순서대로 두 이미지가 첨부된다.
+· 첫 번째: 학생이 캔버스에 그린 가락선.
+· 두 번째: 수업용 모범 가락선.
 
 규칙:
-- "정답이다/틀렸다/맞았다"처럼 단정하지 말고, 학생이 스스로 다시 보며 고칠 수 있게 힌트만 준다.
-- 선의 모양 일치/그림체 평가는 하지 말고, 오직 음악 개념 인식만 본다.
-- 화성음악이면 "여러 성부가 동시에 같은 방향으로 움직이는가"를 중심으로 2가지 이상 점검 포인트를 준다.
-- 다성음악이면 "성부가 번갈아 들어오며 이어지는가"를 중심으로 2가지 이상 점검 포인트를 준다.
-- 마지막 문장은 반드시 "모양이 달라도 개념이 보이면 충분해." 로 끝낸다.
-- 한국어, 170~320자 내외, 친근한 말투.
+· 첫 줄: 학생 그림이 해당 음악 개념(화성=동시 진행 / 다성=교대 진행)을 드러내는지 추정해 검증: ✓ 또는 검증: ✗. 애매하면 ✗.
+· 검증 ✓: 성부·동시 진행 또는 교대 진행 등 용어로 2~3문장 정교화. 선 그림 평가·미술 칭찬 금지.
+· 검증 ✗: 모범 그림과 똑같이 그리라고 하지 말 것. 다시 볼 음악 개념 포인트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
+· 한국어, 검증 줄 포함 짧게.
 
-참고(내부용, 학생에게 말하지 말 것): 학생 그림에서 선으로 추정되는 픽셀 비율 대략 ${(metrics.darkRatio * 100).toFixed(1)}%.`;
+참고(내부용, 학생에게 말하지 말 것): 학생 그림 선 픽셀 비율 대략 ${(metrics.darkRatio * 100).toFixed(1)}%.`;
 
   const content = [
-    { type: 'input_text', text: promptText },
+    { type: 'input_text', text: wrapFormativePrompt(taskPrompt) },
     { type: 'input_image', image_url: userSmall, detail: 'low' },
     { type: 'input_image', image_url: modelSmall, detail: 'low' }
   ];
@@ -475,26 +538,25 @@ function buildHyThemePart2Fallback({ feelT1, feelT2, toneT1, toneT2 }) {
 
 export async function generateHyThemePart2Feedback({ feelT1, feelT2, toneT1, toneT2 }) {
   const fallback = buildHyThemePart2Fallback({ feelT1, feelT2, toneT1, toneT2 });
-  const prompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야.
-하이든 '종달새' 주제 비교 활동의 파트 2(느낌 표현 + 장단조 선택) 피드백을 작성해줘.
+  const toneOk = toneT1 === '장조' && toneT2 === '장조';
+
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 하이든 '종달새' 주제 비교 — 느낌 서술 + 장단조 선택에 대한 형성적 피드백.
 
 학생 입력:
-- 제1주제 느낌: ${(feelT1 || '').trim() || '(없음)'}
-- 제2주제 느낌: ${(feelT2 || '').trim() || '(없음)'}
-- 제1주제 장단조 선택: ${toneT1 || '(없음)'}
-- 제2주제 장단조 선택: ${toneT2 || '(없음)'}
+· 제1주제 느낌: ${(feelT1 || '').trim() || '(없음)'}
+· 제2주제 느낌: ${(feelT2 || '').trim() || '(없음)'}
+· 제1주제 선택: ${toneT1 || '(없음)'}
+· 제2주제 선택: ${toneT2 || '(없음)'}
+
+내부 참고(학생에게 정답으로 쓰지 말 것): 두 주제 모두 장조가 과제 기준과 일치하면 true. 현재: ${toneOk ? '일치' : '불일치'}.
 
 규칙:
-- 하이브리드 방식(부분 공개 + 유도형)으로 3~4문장.
-- 첫 문장은 현재 답안을 "방향은 좋아" 또는 "한 번 더 점검해보자" 수준으로만 진단할 것.
-- 정답(장조/단조)을 직접 말하지 말 것.
-- "정답", "오답", "맞다", "틀리다", "둘 다 장조" 같은 표현 금지.
-- 학생이 쓴 느낌 문장에서 제1·제2 각각 1개 이상 표현을 짧게 인용해 평가할 것.
-- 느낌 문장 평가를 반드시 포함할 것: "잘한 점 1개 + 보완점 1개"를 제1·제2 각각에 대해 제시.
-- 가락 힌트 1개(도약/순차) + 리듬 힌트 1개(짧고 경쾌/부드럽게 연결)를 반드시 넣을 것.
-- 마지막 전 문장은 반드시 "그래서 네가 고른 장·단조 근거를 각 주제마다 한 줄씩 덧붙여 보자." 로 끝낼 것.
-- 마지막 문장은 "다시 들으며 가락의 움직임과 리듬을 한 번 더 비교해 보자." 로 끝낼 것.`;
-  return requestCompareFeedback(prompt, fallback);
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 위 내부 참고와 느낌 서술이 과제에 충분하면 ✓, 장단조 선택이 기준에 맞지 않거나 서술이 빈약하면 ✗.
+· 검증 ✓: 장조·단조(조성)·선율·리듬꼴·도약/순차 등 용어로 2~3문장 정교화. "잘했어요" 금지.
+· 검증 ✗: "둘 다 장조", "정답은 장조" 같은 직접 정답 표현 금지. 어떤 음악적 귀로 다시 들을지 힌트. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
+· 학생 문장을 짧게 인용해도 좋다.`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
 
 function buildHyThemePart3Fallback(selectedDeg) {
@@ -503,17 +565,18 @@ function buildHyThemePart3Fallback(selectedDeg) {
 
 export async function generateHyThemePart3Feedback({ selectedDeg }) {
   const fallback = buildHyThemePart3Fallback(selectedDeg);
-  const prompt = `너는 초등·중학생 음악 수업 선생님이야.
-하이든 '종달새' 주제 비교 활동의 파트 3(도수 맞추기) 피드백을 작성해줘.
+  const degOk = selectedDeg === '5도';
+
+  const taskPrompt = `너는 초등·중학생 음악 수업 선생님이야. 하이든 '종달새' 주제 비교 — 도수 맞추기에 대한 형성적 피드백.
 
 학생 선택: ${selectedDeg || '(없음)'}
 
+내부 참고(학생에게 정답 숫자·도수를 쓰지 말 것): 과제 기준과의 일치 = ${degOk ? '일치' : '불일치'}.
+
 규칙:
-- 하이브리드 방식(부분 공개 + 유도형)으로 2~3문장.
-- 첫 문장은 현재 선택에 대해 "방향은 좋아" 또는 "한 번 더 세어보자" 수준 진단만 제공할 것.
-- 정답 도수 숫자를 직접 말하지 말 것.
-- "정답", "오답", "맞다", "틀리다", "5도" 같은 단정/직답 표현 금지.
-- 반드시 "시작음과 목표음을 포함해 세기" 힌트를 넣고, 마지막에 학생이 다시 고르도록 유도할 것.
-- 마지막 문장은 "건반 위에서 직접 손으로 세어 보면 더 정확해진다." 로 끝낼 것.`;
-  return requestCompareFeedback(prompt, fallback);
+· 첫 줄: 검증: ✓ 또는 검증: ✗.
+· 검증 ✓: 조성·도성·선율 관계 등 음악 개념 용어로 2~3문장 정교화. "5도" 같은 정답 수를 본문에 반복하지 말 것.
+· 검증 ✗: 정답 도수·숫자·보기 문구를 쓰지 말 것. 시작음·목표음을 포함해 건반에서 세는 방법만 힌트. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
