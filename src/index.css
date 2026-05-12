@@ -748,6 +748,25 @@ canvas{display:block;width:100%;touch-action:none}
   margin-bottom: 10px;
 }
 
+/* 소네트: YouTube 구간 소리만(플레이어는 화면 밖) */
+.vv-sonnet-yt-sr-only {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 320px;
+  height: 180px;
+  overflow: hidden;
+  opacity: 0.02;
+  pointer-events: none;
+}
+.vv-sonnet-audio-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
 /* 바이올린 협주곡 역할 카드 */
 .concerto-cards {
   display: grid;
@@ -801,6 +820,80 @@ canvas{display:block;width:100%;touch-action:none}
   font-size: 10px;
   color: var(--text-faint);
   font-weight: 300;
+}
+
+/* vv-concerto: 독주/총주 탭 카운트 */
+.vv-concerto-tap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.vv-concerto-tap-btn {
+  padding: 20px 14px;
+  border: 2px solid;
+  background: var(--surface);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 2px;
+}
+.vv-concerto-tap-btn.solo {
+  border-color: var(--gold);
+}
+.vv-concerto-tap-btn.tutti {
+  border-color: #4a7fc1;
+}
+.vv-concerto-tap-btn:active {
+  transform: scale(0.96);
+}
+.vv-concerto-tap-btn.solo:active {
+  background: var(--gold-pale);
+}
+.vv-concerto-tap-btn.tutti:active {
+  background: rgba(74, 127, 193, 0.12);
+}
+.vv-concerto-tap-emoji {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+.vv-concerto-tap-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.vv-concerto-tap-desc {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-weight: 300;
+  line-height: 1.5;
+}
+.vv-concerto-count {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.vv-concerto-count.solo {
+  color: var(--gold-light);
+}
+.vv-concerto-count.tutti {
+  color: #6b9fd4;
+}
+.vv-concerto-reset {
+  display: block;
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 10px;
+  text-align: center;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-family: inherit;
+}
+.vv-concerto-reset:hover {
+  color: var(--text-dim);
 }
 
 /* 구간 진행 표시 */

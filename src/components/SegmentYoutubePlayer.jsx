@@ -37,8 +37,28 @@ export function SegmentYoutubePlayer({
   const lastReplayRef = useRef(replaySignal);
   const onPlayerReadyRef = useRef(onPlayerReady);
   const onPlayingRef = useRef(onPlaying);
+  const clampTimerRef = useRef(null);
   onPlayerReadyRef.current = onPlayerReady;
   onPlayingRef.current = onPlaying;
+
+  const clearClamp = () => {
+    if (clampTimerRef.current) {
+      window.clearInterval(clampTimerRef.current);
+      clampTimerRef.current = null;
+    }
+  };
+
+  const startClamp = (player) => {
+    clearClamp();
+    clampTimerRef.current = window.setInterval(() => {
+      if (!player || typeof player.getCurrentTime !== 'function') return;
+      const t = player.getCurrentTime();
+      if (t >= end - 0.25) {
+        player.seekTo(start, true);
+        player.pauseVideo();
+      }
+    }, 250);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -67,8 +87,12 @@ export function SegmentYoutubePlayer({
           onStateChange: (event) => {
             if (event.data === YT.PlayerState.PLAYING) {
               onPlayingRef.current?.();
+              startClamp(event.target);
+            } else {
+              clearClamp();
             }
             if (event.data === YT.PlayerState.ENDED) {
+              clearClamp();
               event.target.seekTo(start, true);
               event.target.pauseVideo();
             }
@@ -78,6 +102,7 @@ export function SegmentYoutubePlayer({
     });
     return () => {
       mounted = false;
+      clearClamp();
       onPlayerReadyRef.current?.(null);
       if (playerRef.current?.destroy) playerRef.current.destroy();
       playerRef.current = null;

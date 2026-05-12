@@ -1,112 +1,72 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 
-const AUDIO_SRC = {
-  1: '/audio/vv-co1.mp3',
-  2: '/audio/vv-co2.mp3',
-  3: '/audio/vv-co3.mp3'
-};
+const VV_CONCERTO_Q = 'vv-concerto-q';
+const VV_CONCERTO_CORRECT = '독주와 총주가 번갈아 나온다';
+const VV_CONCERTO_CHOICES = ['독주만 계속 나온다', '총주만 계속 나온다', VV_CONCERTO_CORRECT];
 
-const vvAnswers = { 1: 'solo', 2: 'tutti', 3: 'solo' };
+const FEEDBACK_OK = `맞아요! 독주와 총주가
+번갈아가며 대화하듯 연주하는 것이
+바이올린 협주곡의 핵심이에요.
+독주자는 화려하게 선율을 이끌고
+그룹은 든든하게 받쳐주며
+서로 주고받는 구조를
+리토르넬로(ritornello)라고 해요.`;
+
+const FEEDBACK_NG = `영상을 다시 보며
+독주와 총주가 몇 번씩
+번갈아 나오는지
+확인해보세요!`;
 
 function VvConcerto({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const vvConcertoState = useAppStore((s) => s.vvConcertoState);
   const setVvConcertoState = useAppStore((s) => s.setVvConcertoState);
-  const [vvSegment, setVvSegment] = useState(1);
-  const [vvScore, setVvScore] = useState(() => vvConcertoState?.score || 0);
-  const [selectedBySegment, setSelectedBySegment] = useState(() => vvConcertoState?.selectedBySegment || {});
-  const [vvSelected, setVvSelected] = useState(null);
-  const [isChecked, setIsChecked] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
-  const [soloState, setSoloState] = useState('');
-  const [tuttiState, setTuttiState] = useState('');
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef(null);
 
-  const currentAudioId = `vv-co${vvSegment}`;
-  const canCheck = !!vvSelected && !isChecked && !isFinished;
-  const correctRole = vvAnswers[vvSegment];
-  const currentDot = vvSegment - 1;
+  const [soloCount, setSoloCount] = useState(() => vvConcertoState?.soloCount ?? 0);
+  const [tuttiCount, setTuttiCount] = useState(() => vvConcertoState?.tuttiCount ?? 0);
+  const [selectedByGroup, setSelectedByGroup] = useState(() => ({
+    [VV_CONCERTO_Q]: vvConcertoState?.discoveryChoice || ''
+  }));
+  const [resultByGroup, setResultByGroup] = useState(() => ({
+    [VV_CONCERTO_Q]: vvConcertoState?.quizResult || ''
+  }));
+  const [ansOpen, setAnsOpen] = useState(false);
 
-  const segmentFeedback = useMemo(() => ({
-    1: '✓ 바이올린 독주 — 혼자서 화려하게 연주해요',
-    2: '✓ 현악 그룹 — 힘차게 전체가 함께 연주해요',
-    3: '✓ 바이올린 독주 + 현악 그룹 — 독주자와 그룹이 대화하며 연주해요'
-  }), []);
-
-  function resetCardState() {
-    setSoloState('');
-    setTuttiState('');
-    setVvSelected(null);
-    setIsChecked(false);
+  function selectChoice(groupId, value) {
+    setSelectedByGroup((prev) => ({ ...prev, [groupId]: value }));
+    setResultByGroup((prev) => ({ ...prev, [groupId]: '' }));
+    setAnsOpen(false);
   }
 
-  function selectConcertoRole(role) {
-    if (isChecked || isFinished) return;
-    setVvSelected(role);
-    setSelectedBySegment((prev) => ({ ...prev, [vvSegment]: role }));
-    setSoloState(role === 'solo' ? 'selected-solo' : '');
-    setTuttiState(role === 'tutti' ? 'selected-tutti' : '');
+  function checkTP(groupId, correct, _btnId, bodyId) {
+    const picked = selectedByGroup[groupId];
+    if (!picked) return;
+    const isCorrect = picked === correct;
+    setResultByGroup((prev) => ({ ...prev, [groupId]: isCorrect ? 'ok' : 'ng' }));
+    setAnsOpen((prev) => !prev);
+    setStageCompletion('piano', true);
   }
 
-  function nextSegment() {
-    setVvSegment((prev) => prev + 1);
-    resetCardState();
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setPlaying(false);
-    }
-  }
-
-  function checkConcerto() {
-    if (!vvSelected || isChecked || isFinished) return;
-
-    const isCorrect = vvSelected === correctRole;
-    setIsChecked(true);
-
-    if (isCorrect) {
-      setVvScore((prev) => prev + 1);
-      if (correctRole === 'solo') setSoloState('correct');
-      if (correctRole === 'tutti') setTuttiState('correct');
-    } else {
-      if (vvSelected === 'solo') setSoloState('incorrect');
-      if (vvSelected === 'tutti') setTuttiState('incorrect');
-      if (correctRole === 'solo') setSoloState('correct');
-      if (correctRole === 'tutti') setTuttiState('correct');
-    }
-
-    if (vvSegment >= 3) {
-      setIsFinished(true);
-      setStageCompletion('piano', true);
-      return;
-    }
-
-    window.setTimeout(() => {
-      nextSegment();
-    }, 700);
-  }
-
-  const togglePlay = async () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-      setPlaying(false);
-      return;
-    }
-    try {
-      await el.play();
-      setPlaying(true);
-    } catch {
-      setPlaying(false);
-    }
+  const resetCounts = () => {
+    setSoloCount(0);
+    setTuttiCount(0);
   };
 
   useEffect(() => {
-    setVvConcertoState({ selectedBySegment, score: vvScore });
-  }, [selectedBySegment, vvScore, setVvConcertoState]);
+    setVvConcertoState({
+      soloCount,
+      tuttiCount,
+      discoveryChoice: selectedByGroup[VV_CONCERTO_Q] || '',
+      quizResult: resultByGroup[VV_CONCERTO_Q] || '',
+      selectedBySegment: {},
+      score: 0
+    });
+  }, [soloCount, tuttiCount, selectedByGroup, resultByGroup, setVvConcertoState]);
+
+  const result = resultByGroup[VV_CONCERTO_Q];
+  const picked = selectedByGroup[VV_CONCERTO_Q];
 
   return (
     <div className="screen active" id="vv-concerto">
@@ -117,97 +77,117 @@ function VvConcerto({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="concerto-cards">
+        <div className="sec">영상 보며 확인하기</div>
+        <div className="fb show info" style={{ marginBottom: 14 }}>
+          💡 영상을 보며 바이올린 한 대가
+          <br />
+          연주하는 부분(독주)과
+          <br />
+          모든 현악 그룹이 연주하는
+          <br />
+          부분(총주)을 구분해보세요!
+        </div>
+        <SegmentYoutubePlayer
+          videoId="wVAq3CzHf9E"
+          start={0}
+          end={60}
+          title="비발디 사계 여름 — 바이올린 협주 구간 (0:00–1:00)"
+        />
+
+        <div className="sec">나올 때마다 체크해보세요</div>
+        <div className="small-note" style={{ marginBottom: 12, lineHeight: 1.65 }}>
+          바이올린 한 대가 연주하는 부분(독주)과
+          <br />
+          모든 현악 그룹이 연주하는 부분(총주)이
+          <br />
+          나올 때마다 아래 버튼을 탭해보세요.
+        </div>
+        <div className="vv-concerto-tap-grid">
           <button
             type="button"
-            className={`concerto-role solo ${soloState}`}
-            onClick={() => selectConcertoRole('solo')}
-            disabled={isFinished}
+            className="vv-concerto-tap-btn solo"
+            onClick={() => setSoloCount((c) => c + 1)}
           >
-            <div className="concerto-role-icon">🎻</div>
-            <div className="concerto-role-name">바이올린 독주</div>
-            <div className="concerto-role-desc">혼자서 주선율을 연주해요</div>
+            <div className="vv-concerto-tap-emoji">🎻</div>
+            <div className="vv-concerto-tap-label">바이올린 독주</div>
+            <div className="vv-concerto-tap-desc">바이올린 한 대가 주로 연주해요</div>
+            <div className="vv-concerto-count solo">{soloCount}회</div>
           </button>
           <button
             type="button"
-            className={`concerto-role tutti ${tuttiState}`}
-            onClick={() => selectConcertoRole('tutti')}
-            disabled={isFinished}
+            className="vv-concerto-tap-btn tutti"
+            onClick={() => setTuttiCount((c) => c + 1)}
           >
-            <div className="concerto-role-icon">🎼</div>
-            <div className="concerto-role-name">현악 그룹</div>
-            <div className="concerto-role-desc">여러 악기가 함께 연주해요</div>
+            <div className="vv-concerto-tap-emoji">🎼</div>
+            <div className="vv-concerto-tap-label">현악 그룹</div>
+            <div className="vv-concerto-tap-desc">모든 현악기가 함께 연주해요</div>
+            <div className="vv-concerto-count tutti">{tuttiCount}회</div>
           </button>
         </div>
+        <button type="button" className="vv-concerto-reset" onClick={resetCounts}>
+          처음부터 다시
+        </button>
 
-        <div className="segment-progress">
-          {[0, 1, 2].map((idx) => (
-            <span
-              key={idx}
-              className={`seg-dot ${idx < currentDot ? 'active' : ''} ${idx === currentDot ? 'current' : ''}`}
-            />
+        <div className="sec" style={{ marginTop: 22 }}>발견한 것을 확인해보세요</div>
+        <div className="small-note" style={{ marginBottom: 10, lineHeight: 1.65 }}>
+          영상을 보니 독주와 총주가
+          <br />
+          어떻게 나타나나요?
+        </div>
+        <div id={VV_CONCERTO_Q} className="choice-list" style={{ marginBottom: 10 }}>
+          {VV_CONCERTO_CHOICES.map((choice) => (
+            <button
+              key={choice}
+              type="button"
+              className={`choice-item ${picked === choice ? 'selected' : ''}`}
+              onClick={() => selectChoice(VV_CONCERTO_Q, choice)}
+            >
+              {picked === choice ? '●' : '○'} {choice}
+            </button>
           ))}
         </div>
 
-        {!isFinished ? (
-          <>
-            <div className="sec">구간별 활동</div>
-            <div className="review-card" style={{ marginBottom: 14 }}>
-              <div style={{ marginBottom: 10 }}>구간 {vvSegment} / 3</div>
-              <audio
-                id={currentAudioId}
-                ref={audioRef}
-                src={AUDIO_SRC[vvSegment]}
-                preload="metadata"
-                onEnded={() => setPlaying(false)}
-              />
-              <button id={currentAudioId} type="button" className="btn-s" onClick={togglePlay}>
-                {playing ? '❚❚ 일시정지' : '▶ 재생'}
-              </button>
-            </div>
-            <button
-              type="button"
-              className="answer-check-toggle"
-              onClick={checkConcerto}
-              disabled={!canCheck}
-              style={!canCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">확인하기</span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">✓</span>
-            </button>
-            <div className="small-note" style={{ marginTop: 8 }}>
-              {vvSegment === 3 ? '구간3은 독주자와 그룹이 대화하듯 주고받는 흐름에 집중해보세요.' : '카드를 선택한 뒤 확인하기를 눌러주세요.'}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="score-result">
-              <div className="score-num">{vvScore} / 3</div>
-              <div className="score-label">정답</div>
-            </div>
-            <div className="fb show ok">{segmentFeedback[1]}</div>
-            <div className="fb show ok">{segmentFeedback[2]}</div>
-            <div className="fb show ok">{segmentFeedback[3]}</div>
-          </>
-        )}
-
-        {isFinished ? (
-          <div className="feat-card">
-            <div className="feat-num">FEATURE</div>
-            <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>
-            <div className="feat-body">
-              독주자와 그룹이 대화하며 연주한다
-              <br />
-              바이올린 협주곡에서 독주 바이올린과
-              <br />
-              현악 그룹은 번갈아가며 주고받아요.
-              <br />
-              이 형식을 리토르넬로(ritornello)라고 하며
-              <br />
-              바로크 협주곡의 핵심 구조예요.
-            </div>
+        <button
+          id="ans-vv-concerto-btn"
+          type="button"
+          className="answer-check-toggle"
+          onClick={() => checkTP(VV_CONCERTO_Q, VV_CONCERTO_CORRECT, 'ans-vv-concerto-btn', 'ans-vv-concerto-body')}
+          aria-expanded={ansOpen}
+          disabled={!picked}
+          style={!picked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+        >
+          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-chevron" aria-hidden="true">{ansOpen ? '▲' : '▼'}</span>
+        </button>
+        <div id="ans-vv-concerto-body" className={`answer-compare-slide ${ansOpen ? 'open' : ''}`}>
+          <div className="answer-compare-inner">
+            {result ? (
+              <div className={`fb show ${result === 'ok' ? 'ok' : 'ng'}`} style={{ whiteSpace: 'pre-line' }}>
+                {result === 'ok' ? FEEDBACK_OK : FEEDBACK_NG}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
+
+        <div className="feat-card">
+          <div className="feat-num">FEATURE</div>
+          <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>
+          <div className="feat-body">
+            독주자와 그룹이
+            <br />
+            번갈아가며 연주한다
+            <br />
+            바이올린 협주곡에서
+            <br />
+            독주 바이올린과 현악 그룹은
+            <br />
+            번갈아가며 주고받아요.
+            <br />
+            이 형식을 리토르넬로라고 하며
+            <br />
+            &apos;사계&apos;의 핵심 구조예요.
+          </div>
+        </div>
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전: vv-sonnet</button>

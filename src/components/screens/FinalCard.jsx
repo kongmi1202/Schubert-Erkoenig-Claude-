@@ -70,7 +70,6 @@ function FinalCard({ go }) {
   };
   const hyTimbreCorrect = { 'ig-1': '제1바이올린', 'ig-2': '첼로', 'ig-3': '비올라' };
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
-  const vvConcertoCorrect = { 1: 'solo', 2: 'tutti', 3: 'solo' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
@@ -386,16 +385,13 @@ function FinalCard({ go }) {
                 <div className="fb show gold">정답: {vvSonnetCorrect['vv-c2']}</div>
               </div>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-C 구간1: {vvConcertoState?.selectedBySegment?.[1] || '없음'}</div>
-                <div className="fb show gold">정답: {vvConcertoCorrect[1]}</div>
+                <div className="fb show info">
+                  2-C 독주·총주 탭: 독주 {vvConcertoState?.soloCount ?? 0}회 · 총주 {vvConcertoState?.tuttiCount ?? 0}회
+                </div>
               </div>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-C 구간2: {vvConcertoState?.selectedBySegment?.[2] || '없음'}</div>
-                <div className="fb show gold">정답: {vvConcertoCorrect[2]}</div>
-              </div>
-              <div className="cmp-mini-grid">
-                <div className="fb show info">2-C 구간3: {vvConcertoState?.selectedBySegment?.[3] || '없음'}</div>
-                <div className="fb show gold">정답: {vvConcertoCorrect[3]}</div>
+                <div className="fb show info">2-C 발견 질문: {vvConcertoState?.discoveryChoice || '없음'}</div>
+                <div className="fb show gold">정답: 독주와 총주가 번갈아 나온다</div>
               </div>
             </>
           ) : null}

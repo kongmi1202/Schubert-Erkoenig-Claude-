@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
+
+/** 비발디 사계 여름 — 표제음악(소네트) 구간: https://youtu.be/wVAq3CzHf9E */
+const YOUTUBE_VIDEO_ID = 'wVAq3CzHf9E';
 
 const SEGMENTS = [
   {
     id: 'vv-c1',
-    audioId: 'vv-s1',
+    startSec: 0,
+    endSec: 42,
     quote: 'Tuona e fulmina il Ciel e grandioso',
     quoteKr: '하늘이 천둥치고 번개가 번쩍인다',
     question: '이 구절에서 음악은 어떻게 표현됐나요?',
     choices: [
       '음이 부드럽고 느리게 이어진다',
       '음이 갑자기 강하고 빠르게 터진다',
-      '음이 점점 낮아지며 사라진다',
-      '조용하고 규칙적으로 반복된다'
+      '음이 점점 낮아지며 사라진다'
     ],
     answer: '음이 갑자기 강하고 빠르게 터진다',
     btnId: 'ans-vv-c1-btn',
@@ -21,13 +25,13 @@ const SEGMENTS = [
   },
   {
     id: 'vv-c2',
-    audioId: 'vv-s2',
+    startSec: 109,
+    endSec: 125,
     quote: 'Tronca il capo alle Spiche il Gran Grandiniero',
     quoteKr: '우박이 익은 이삭의 머리를 베어버린다',
     question: '우박이 쏟아지는 장면을 음악으로 어떻게 표현했나요?',
     choices: [
       '음이 길게 이어지며 서정적으로 흐른다',
-      '음이 점점 높아지며 웅장해진다',
       '음이 짧고 강하게 반복된다',
       '음이 매우 느리고 조용해진다'
     ],
@@ -38,11 +42,6 @@ const SEGMENTS = [
   }
 ];
 
-const AUDIO_SRC = {
-  'vv-s1': '/audio/vv-s1.mp3',
-  'vv-s2': '/audio/vv-s2.mp3'
-};
-
 function VvSonnet({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const vvSonnetState = useAppStore((s) => s.vvSonnetState);
@@ -50,35 +49,10 @@ function VvSonnet({ go }) {
   const [selectedById, setSelectedById] = useState(() => vvSonnetState?.selectedById || {});
   const [resultById, setResultById] = useState({});
   const [openByBodyId, setOpenByBodyId] = useState({});
-  const [playingId, setPlayingId] = useState('');
-  const audioRefs = useRef({
-    'vv-s1': null,
-    'vv-s2': null
-  });
-
-  const stopOthers = (exceptId) => {
-    Object.entries(audioRefs.current).forEach(([id, el]) => {
-      if (!el) return;
-      if (id !== exceptId) el.pause();
-    });
-  };
-
-  const togglePlay = async (audioId) => {
-    const el = audioRefs.current[audioId];
-    if (!el) return;
-    if (playingId === audioId) {
-      el.pause();
-      setPlayingId('');
-      return;
-    }
-    stopOthers(audioId);
-    try {
-      await el.play();
-      setPlayingId(audioId);
-    } catch {
-      setPlayingId('');
-    }
-  };
+  const [ytReady, setYtReady] = useState({});
+  const [controlsArmed, setControlsArmed] = useState({});
+  const [playingSegmentId, setPlayingSegmentId] = useState('');
+  const playerCtlRef = useRef({});
 
   function selectChoice(groupId, value) {
     setSelectedById((prev) => ({ ...prev, [groupId]: value }));
@@ -93,6 +67,27 @@ function VvSonnet({ go }) {
     setOpenByBodyId((prev) => ({ ...prev, [bodyId]: !prev[bodyId] }));
     setStageCompletion('voice', true);
   }
+
+  const stopOtherSegments = (exceptId) => {
+    SEGMENTS.forEach((s) => {
+      if (s.id === exceptId) return;
+      playerCtlRef.current[s.id]?.stop?.();
+    });
+  };
+
+  const playSegment = (segmentId) => {
+    stopOtherSegments(segmentId);
+    playerCtlRef.current[segmentId]?.play?.();
+    setControlsArmed((prev) => ({ ...prev, [segmentId]: true }));
+  };
+
+  const pauseSegment = (segmentId) => {
+    playerCtlRef.current[segmentId]?.pause?.();
+  };
+
+  const stopSegment = (segmentId) => {
+    playerCtlRef.current[segmentId]?.stop?.();
+  };
 
   const canProceed = useMemo(
     () => SEGMENTS.every((segment) => typeof selectedById[segment.id] === 'string' && selectedById[segment.id]),
@@ -124,23 +119,57 @@ function VvSonnet({ go }) {
           const picked = selectedById[segment.id];
           const result = resultById[segment.id];
           const answerOpen = openByBodyId[segment.bodyId];
+          const ready = !!ytReady[segment.id];
+          const armed = !!controlsArmed[segment.id];
+          const isPlaying = playingSegmentId === segment.id;
 
           return (
             <div key={segment.id} className="sonnet-item">
-              <audio
-                id={segment.audioId}
-                ref={(el) => {
-                  audioRefs.current[segment.audioId] = el;
+              <VvSonnetYoutubeAudio
+                ref={(r) => {
+                  if (r) playerCtlRef.current[segment.id] = r;
+                  else delete playerCtlRef.current[segment.id];
                 }}
-                src={AUDIO_SRC[segment.audioId]}
-                preload="metadata"
-                onEnded={() => setPlayingId((prev) => (prev === segment.audioId ? '' : prev))}
+                videoId={YOUTUBE_VIDEO_ID}
+                start={segment.startSec}
+                end={segment.endSec}
+                onReady={() => setYtReady((prev) => ({ ...prev, [segment.id]: true }))}
+                onPlaybackStateChange={(playing) => {
+                  if (playing) setPlayingSegmentId(segment.id);
+                  else setPlayingSegmentId((cur) => (cur === segment.id ? '' : cur));
+                }}
               />
               <div className="sonnet-quote">"{segment.quote}"</div>
               <div className="sonnet-quote-kr">"{segment.quoteKr}"</div>
-              <button id={segment.audioId} type="button" className="btn-s" onClick={() => togglePlay(segment.audioId)} style={{ marginBottom: 12 }}>
-                {playingId === segment.audioId ? '❚❚ 일시정지' : '▶ 재생'}
-              </button>
+              <div className="vv-sonnet-audio-btns">
+                <button
+                  type="button"
+                  className="btn-s"
+                  disabled={!ready}
+                  style={!ready ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  onClick={() => playSegment(segment.id)}
+                >
+                  ▶ 재생
+                </button>
+                <button
+                  type="button"
+                  className="btn-s"
+                  disabled={!armed || !isPlaying}
+                  style={!armed || !isPlaying ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  onClick={() => pauseSegment(segment.id)}
+                >
+                  ❚❚ 일시정지
+                </button>
+                <button
+                  type="button"
+                  className="btn-s"
+                  disabled={!armed}
+                  style={!armed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  onClick={() => stopSegment(segment.id)}
+                >
+                  ■ 정지
+                </button>
+              </div>
               <div className="sonnet-q">{segment.question}</div>
               <div id={segment.id} className="choice-list" style={{ marginBottom: 10 }}>
                 {segment.choices.map((choice) => (

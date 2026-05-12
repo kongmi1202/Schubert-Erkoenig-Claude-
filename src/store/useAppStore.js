@@ -83,8 +83,10 @@ export const useAppStore = create((set) => ({
     selectedById: {}
   },
   vvConcertoState: {
-    selectedBySegment: {},
-    score: 0
+    soloCount: 0,
+    tuttiCount: 0,
+    discoveryChoice: '',
+    quizResult: ''
   },
   cpFormState: {
     formAnswers: {},
