@@ -70,7 +70,8 @@ export const useAppStore = create((set) => ({
     savedPreview: { harmony: '', poly: '' }
   },
   hyTimbreState: {
-    selectedByGrid: {}
+    selectedByGrid: {},
+    roleByGrid: {}
   },
   hyThemeState: {
     matchPlaced: { theme1: [], theme2: [] },

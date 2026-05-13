@@ -83,7 +83,8 @@ function FinalCard({ go }) {
     s2: ['지루함을 준다', '강조와 확신을 표현한다', '슬픔을 나타낸다', '음악이 끝나는 느낌을 준다'],
     s3: ['음악이 갑자기 끝난다', '음이 매우 낮아진다', '선율이 끝없이 이어진다', '리듬이 점점 빨라진다']
   };
-  const hyTimbreCorrect = { 'ig-1': '제1바이올린', 'ig-2': '첼로', 'ig-3': '비올라' };
+  const hyTimbreCorrectInstr = { 'ig-1': '바이올린', 'ig-2': '비올라', 'ig-3': '첼로' };
+  const hyTimbreCorrectRole = { 'ig-1': '주선율', 'ig-2': '중성부', 'ig-3': '베이스' };
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
@@ -370,16 +371,22 @@ function FinalCard({ go }) {
           {isHaydn ? (
             <>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-B 구간1: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'}</div>
-                <div className="fb show gold">정답: {hyTimbreCorrect['ig-1']}</div>
+                <div className="fb show info">
+                  2-B 구간1: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'} · 역할 {hyTimbreState?.roleByGrid?.['ig-1'] || '없음'}
+                </div>
+                <div className="fb show gold">정답: {hyTimbreCorrectInstr['ig-1']} · {hyTimbreCorrectRole['ig-1']}</div>
               </div>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-B 구간2: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'}</div>
-                <div className="fb show gold">정답: {hyTimbreCorrect['ig-2']}</div>
+                <div className="fb show info">
+                  2-B 구간2: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'} · 역할 {hyTimbreState?.roleByGrid?.['ig-2'] || '없음'}
+                </div>
+                <div className="fb show gold">정답: {hyTimbreCorrectInstr['ig-2']} · {hyTimbreCorrectRole['ig-2']}</div>
               </div>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-B 구간3: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'}</div>
-                <div className="fb show gold">정답: {hyTimbreCorrect['ig-3']}</div>
+                <div className="fb show info">
+                  2-B 구간3: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'} · 역할 {hyTimbreState?.roleByGrid?.['ig-3'] || '없음'}
+                </div>
+                <div className="fb show gold">정답: {hyTimbreCorrectInstr['ig-3']} · {hyTimbreCorrectRole['ig-3']}</div>
               </div>
               <div className="cmp-mini-grid">
                 <div className="fb show info">2-C 제1주제 칸: {formatHyThemePlacedFinal(hyThemeState?.matchPlaced?.theme1)}</div>

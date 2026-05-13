@@ -52,7 +52,8 @@ function AestheticPage({ go }) {
     s2: ['지루함을 준다', '강조와 확신을 표현한다', '슬픔을 나타낸다', '음악이 끝나는 느낌을 준다'],
     s3: ['음악이 갑자기 끝난다', '음이 매우 낮아진다', '선율이 끝없이 이어진다', '리듬이 점점 빨라진다']
   };
-  const hyTimbreCorrect = { 'ig-1': '제1바이올린', 'ig-2': '첼로', 'ig-3': '비올라' };
+  const hyTimbreCorrectInstr = { 'ig-1': '바이올린', 'ig-2': '비올라', 'ig-3': '첼로' };
+  const hyTimbreCorrectRole = { 'ig-1': '주선율', 'ig-2': '중성부', 'ig-3': '베이스' };
   const hyThemeMatchIdToLabel = {
     o1: '음이 크게 도약한다',
     o2: '음이 순차적으로 이어진다',
@@ -85,9 +86,9 @@ function AestheticPage({ go }) {
       ]
     : isHaydn
       ? [
-          { value: '현악음색', label: '현악 4중주 음색 (종달새)' },
-          { value: '주제비교', label: '두 주제 비교 (종달새)' },
-          { value: '맥락', label: '사회·역사적 맥락' }
+          { value: '현악음색', label: '현악 4중주(음색)' },
+          { value: '주제비교', label: '제1, 2주제(가락, 리듬꼴, 음계)' },
+          { value: '맥락', label: '사회역사적 맥락' }
         ]
       : isSchoenberg
         ? [
@@ -323,16 +324,22 @@ function AestheticPage({ go }) {
                 <>
                   <div className="review-item">2-B 현악 4중주 음색 비교 (내 답변 + 정답)</div>
                   <div className="cmp-mini-grid">
-                    <div className="fb show info">구간1: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'}</div>
-                    <div className="fb show gold">구간1 정답: {hyTimbreCorrect['ig-1']}</div>
+                    <div className="fb show info">
+                      구간1 악기: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-1'] || '없음'}
+                    </div>
+                    <div className="fb show gold">구간1 정답: {hyTimbreCorrectInstr['ig-1']} · {hyTimbreCorrectRole['ig-1']}</div>
                   </div>
                   <div className="cmp-mini-grid">
-                    <div className="fb show info">구간2: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'}</div>
-                    <div className="fb show gold">구간2 정답: {hyTimbreCorrect['ig-2']}</div>
+                    <div className="fb show info">
+                      구간2 악기: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-2'] || '없음'}
+                    </div>
+                    <div className="fb show gold">구간2 정답: {hyTimbreCorrectInstr['ig-2']} · {hyTimbreCorrectRole['ig-2']}</div>
                   </div>
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
-                    <div className="fb show info">구간3: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'}</div>
-                    <div className="fb show gold">구간3 정답: {hyTimbreCorrect['ig-3']}</div>
+                    <div className="fb show info">
+                      구간3 악기: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-3'] || '없음'}
+                    </div>
+                    <div className="fb show gold">구간3 정답: {hyTimbreCorrectInstr['ig-3']} · {hyTimbreCorrectRole['ig-3']}</div>
                   </div>
                   <div className="review-item">2-C 주제 비교 — 두 주제 특징 배치</div>
                   <div className="cmp-mini-grid">
