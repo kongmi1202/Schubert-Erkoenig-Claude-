@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import SensoryStage1Review from '../SensoryStage1Review';
 
+const CP_OVERVIEW_Q2_HINT = '앞부분과 중간부에서 빠르기·세기·분위기가 어떻게 달라지는지 대비해서 적어 보세요.';
+
 function CpOverview({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const analyticalCharacters = useAppStore((s) => s.analyticalCharacters);
@@ -10,18 +12,10 @@ function CpOverview({ go }) {
   const setAnalyticalStory = useAppStore((s) => s.setAnalyticalStory);
   const q1 = analyticalCharacters?.[0] || '';
   const q2 = analyticalStory || '';
-  const [showQ1Hint, setShowQ1Hint] = useState(false);
-  const [showQ2Hint, setShowQ2Hint] = useState(false);
   const [q1Open, setQ1Open] = useState(false);
   const [q2Open, setQ2Open] = useState(false);
 
   const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
-  const q1Example = `피아노 한 대 소리인지 먼저 써보세요.
-다른 악기가 들리지 않으면 피아노 독주예요.
-"피아노 독주"라고 짧게 써도 좋아요.`;
-  const q2Example = `처음은 빠르고 세게 들렸는지 써보세요.
-중간은 느리고 부드럽게 바뀌는지 써보세요.
-"앞은 긴장, 중간은 차분"처럼 써보세요.`;
 
   return (
     <div className="screen active" id="cp-overview">
@@ -50,11 +44,6 @@ function CpOverview({ go }) {
           onChange={(e) => setAnalyticalCharacter(0, e.target.value)}
           placeholder="악기 편성을 적어보세요."
         />
-        <button type="button" className="ai-btn" onClick={() => setShowQ1Hint((prev) => !prev)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showQ1Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {q1Example}
-        </div>
         <button
           type="button"
           className="answer-check-toggle"
@@ -86,10 +75,8 @@ function CpOverview({ go }) {
           onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder="분위기 변화와 느낌 전환 지점을 적어보세요."
         />
-        <button type="button" className="ai-btn" onClick={() => setShowQ2Hint((prev) => !prev)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showQ2Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {q2Example}
+        <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
+          작성 힌트: {CP_OVERVIEW_Q2_HINT}
         </div>
         <button
           type="button"
