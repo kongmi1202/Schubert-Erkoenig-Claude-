@@ -573,10 +573,10 @@ canvas{display:block;width:100%;touch-action:none}
   padding:18px;margin-bottom:14px;}
 .keyboard-label{font-size:10px;letter-spacing:.2em;color:#4a7fc1;
   font-weight:300;margin-bottom:12px;}
-.keyboard{display:flex;align-items:flex-end;gap:2px;height:68px;margin-bottom:12px;}
-.key-w{flex:1;height:68px;background:#e8e8e8;border:1px solid #ccc;
-  border-radius:0 0 3px 3px;position:relative;cursor:default;
-  display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;overflow:visible;}
+.keyboard{display:flex;align-items:flex-end;gap:2px;height:120px;margin-bottom:12px;}
+.key-w{flex:1;height:120px;background:#e8e8e8;border:1px solid #ccc;
+  border-radius:0 0 4px 4px;position:relative;cursor:default;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:visible;}
 .keyboard-wrap .key-w{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}
 .keyboard-wrap .key-w:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
 .keyboard-wrap .key-w.is-pressed{background:#d4d4d4;}
@@ -584,11 +584,12 @@ canvas{display:block;width:100%;touch-action:none}
 .keyboard-wrap .key-w.m2.is-pressed{background:#fde047;}
 .key-w.m1{background:#dbeafe;border-color:#4a7fc1;}
 .key-w.m2{background:#fef3c7;border-color:#c4922a;}
-.key-label{font-size:8px;font-weight:600;color:#333;}
-.key-label.b1{color:#4a7fc1;font-size:9px;}
-.key-label.b2{color:#c4922a;font-size:9px;}
-.keyboard-wrap .key-b{width:48%;height:40px;background:#2a2a2a;border-radius:0 0 2px 2px;
-  position:absolute;top:0;right:-24%;z-index:2;border:none;padding:0;font:inherit;}
+.key-label{font-size:9px;font-weight:600;color:#333;}
+.key-label.b1{color:#4a7fc1;font-size:10px;}
+.key-label.b2{color:#c4922a;font-size:10px;}
+.keyboard-wrap .key-b{width:52%;height:74px;background:#1a1a1a;border-radius:0 0 3px 3px;
+  position:absolute;top:0;right:-26%;z-index:2;border:none;padding:0;font:inherit;
+  box-shadow:0 2px 4px rgba(0,0,0,.35);}
 .keyboard-wrap .key-b{cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .keyboard-wrap .key-b:focus-visible{outline:2px solid #fde047;outline-offset:1px;}
 .keyboard-wrap .key-b.is-pressed{background:#444;}

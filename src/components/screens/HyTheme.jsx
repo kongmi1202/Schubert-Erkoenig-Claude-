@@ -709,6 +709,10 @@ function HyTheme({ go }) {
         <div className="sec">파트 3 — 건반 그림 + 도 수 맞추기</div>
         <div className="keyboard-wrap">
           <div className="keyboard-label">피아노 건반으로 보는 두 주제의 조성</div>
+          <div className="small-note" style={{ marginBottom: 10, lineHeight: 1.65, color: 'var(--text-dim)' }}>
+            흰 건반과 검은 건반을 누르면 소리가 나요. 소리를 들으며 <strong style={{ color: 'var(--text)' }}>G(솔)</strong>에서{' '}
+            <strong style={{ color: 'var(--text)' }}>D(레)</strong>까지의 도수를 계산해 보세요.
+          </div>
           <div
             className="keyboard"
             role="group"
