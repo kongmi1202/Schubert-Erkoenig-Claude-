@@ -10,28 +10,6 @@ const HANDEL_COMPARE_ROWS = [
   { key: '무대·연기', opera: '의상·연기 있음', oratorio: '의상·연기 없음' },
   { key: '공연장소', opera: '오페라 극장', oratorio: '교회·콘서트홀' }
 ];
-const HANDEL_Q1_HINTS = [
-  '가사에 자주 나오는 단어를 1~2개 써보세요.',
-  '이 노래가 누구를 찬양하는지 써보세요.',
-  '종교 노래처럼 느껴진 이유를 한 줄로 써보세요.',
-  '"무엇을 노래하나요?"에 먼저 답해보세요.'
-];
-const HANDEL_Q2_HINTS = [
-  '오페라는 연기가 있고, 오라토리오는 없는지 비교해보세요.',
-  '옷/무대/장소 차이 중 1가지만 골라 써도 좋아요.',
-  '"오페라는 __, 오라토리오는 __" 형식으로 써보세요.',
-  '가사 내용 차이(이야기/종교)도 함께 써보세요.'
-];
-
-function pickRandom(items, prevValue) {
-  if (!items.length) return '';
-  if (items.length === 1) return items[0];
-  let next = items[Math.floor(Math.random() * items.length)];
-  while (next === prevValue) {
-    next = items[Math.floor(Math.random() * items.length)];
-  }
-  return next;
-}
 
 function AnalyticalOverviewHandel({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -41,25 +19,14 @@ function AnalyticalOverviewHandel({ go }) {
   const setQ2Text = useAppStore((s) => s.setHandelOperaDiff);
   const [q1Open, setQ1Open] = useState(false);
   const [q2Open, setQ2Open] = useState(false);
-  const [q1Example, setQ1Example] = useState(HANDEL_Q1_HINTS[0]);
-  const [q2Example, setQ2Example] = useState(HANDEL_Q2_HINTS[0]);
-  const [showQ1Example, setShowQ1Example] = useState(false);
-  const [showQ2Example, setShowQ2Example] = useState(false);
+  const q1WritingHint = '가사에서 누구를 찬양하는지와 어떤 내용인지 한 문장으로 써보세요.';
+  const q2WritingHint = '이 곡의 장르는 오라토리오예요. 오페라와 이 곡의 차이를 주제(가사 내용), 무대 연출, 의상, 연기 등에서 비교해 보세요.';
 
   const canOpenQ1Answer = useMemo(() => q1Text.trim().length > 0, [q1Text]);
   const canOpenQ2Answer = useMemo(() => q2Text.trim().length > 0, [q2Text]);
   const canProceed = canOpenQ1Answer && canOpenQ2Answer;
   const canOpenAnswer = canProceed;
 
-  const onQ1Example = () => {
-    setQ1Example((prev) => pickRandom(HANDEL_Q1_HINTS, prev));
-    setShowQ1Example(true);
-  };
-
-  const onQ2Example = () => {
-    setQ2Example((prev) => pickRandom(HANDEL_Q2_HINTS, prev));
-    setShowQ2Example(true);
-  };
   return (
     <div className="screen active">
       <div className="stage-header">
@@ -82,16 +49,7 @@ function AnalyticalOverviewHandel({ go }) {
           onChange={(e) => setQ1Text(e.target.value)}
           placeholder="할렐루야의 가사 내용을 써보세요..."
         />
-        <button type="button" className="ai-btn" onClick={onQ1Example}>
-          ✨ 참고 예시 보기
-        </button>
-        <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
-        {showQ1Example ? (
-          <div className="ai-bubble show">
-            <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-            {q1Example}
-          </div>
-        ) : null}
+        <div className="small-note">작성 힌트: {q1WritingHint}</div>
         {canOpenQ1Answer ? (
           <button
             type="button"
@@ -121,16 +79,7 @@ function AnalyticalOverviewHandel({ go }) {
           onChange={(e) => setQ2Text(e.target.value)}
           placeholder="오페라와의 차이를 써보세요..."
         />
-        <button type="button" className="ai-btn" onClick={onQ2Example}>
-          ✨ 참고 예시 보기
-        </button>
-        <div className="small-note">버튼을 다시 누르면 예시가 랜덤으로 바뀝니다.</div>
-        {showQ2Example ? (
-          <div className="ai-bubble show">
-            <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-            {q2Example}
-          </div>
-        ) : null}
+        <div className="small-note">작성 힌트: {q2WritingHint}</div>
         {canOpenQ2Answer ? (
           <button
             type="button"
