@@ -87,6 +87,7 @@ function FinalCard({ go }) {
   const hyTimbreCorrectRole = { 'ig-1': '주선율', 'ig-2': '중성부', 'ig-3': '베이스' };
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
+  const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
   const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
   const [essayText, setEssayText] = useState('');
@@ -436,6 +437,22 @@ function FinalCard({ go }) {
               <div className="cmp-mini-grid">
                 <div className="fb show info">2-B 구간3: {cpFormState?.formAnswers?.['cp-f3'] || '없음'}</div>
                 <div className="fb show gold">정답: {cpFormCorrect['cp-f3']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간1 특징: {cpFormState?.featureById?.['cp-f1'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFeatureCorrect['cp-f1']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간2 특징: {cpFormState?.featureById?.['cp-f2'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFeatureCorrect['cp-f2']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B 구간3 특징: {cpFormState?.featureById?.['cp-f3'] || '없음'}</div>
+                <div className="fb show gold">정답: {cpFeatureCorrect['cp-f3']}</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-B ABA 발견 질문: {cpFormState?.discoveryChoice || '없음'}</div>
+                <div className="fb show gold">정답: 서로 다른 느낌을 대비시키기 위해</div>
               </div>
               <div className="cmp-mini-grid">
                 <div className="fb show info">2-C 오른손 묶음: {cpRhythmState?.selectedByGroup?.['cp-rh-q'] || '없음'}</div>

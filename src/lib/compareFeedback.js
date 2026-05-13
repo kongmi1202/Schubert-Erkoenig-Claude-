@@ -782,3 +782,48 @@ export async function generateVvConcertoCompareFeedback({
     isCorrect
   );
 }
+
+function buildCpFormAbaDiscoveryFallback({ hasChoice, isCorrect }) {
+  if (!hasChoice) {
+    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 각 구간에서 셈여림(소리의 세기)과 빠르기가 어떻게 다른지 다시 들어보세요.';
+  }
+  if (isCorrect) {
+    return 'ABA에서 가운데 구간은 앞쪽·뒤쪽과 달리 들리는 부분이에요. 쇼팽 곡에서 A·B·A\u2019를 이어 들으며 셈여림과 빠르기가 어떻게 달라지는지 짚어 보세요.';
+  }
+  return '선택한 보기가 질문과 잘 맞는지, 세 구간의 셈여림과 빠르기만 귀로 비교해 보세요. 다시 들어보세요.';
+}
+
+/**
+ * 쇼팽 2-B ABA 형식 — 발견 질문(B구간이 왜 있는가) 형성적 피드백
+ */
+export async function generateCpFormAbaDiscoveryFeedback({
+  question,
+  userChoice,
+  correctAnswer,
+  choiceListText
+}) {
+  const trimmedNorm = normalizeFormativeChoice(userChoice);
+  const hasChoice = Boolean(trimmedNorm);
+  if (!hasChoice) return buildCpFormAbaDiscoveryFallback({ hasChoice: false, isCorrect: false });
+
+  const isCorrect = trimmedNorm === normalizeFormativeChoice(correctAnswer);
+  const fallback = buildCpFormAbaDiscoveryFallback({ hasChoice, isCorrect });
+
+  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 쇼팽 <환상 즉흥곡>의 ABA 형식(구조) 활동의 마지막 발견 질문이다.
+
+내부 참고(학생에게 정답 문구·오답 보기를 그대로 쓰지 말 것): 객관적 정오 = ${isCorrect ? '일치' : '불일치'}.
+
+질문: ${question}
+보기 목록(참고): ${choiceListText}
+학생이 고른 보기: ${trimmedNorm}
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
+· 검증 ✓: 형식·셈여림·빠르기·구간(A·B·A\u2019) 등 음악 개념으로 2~3문장 정교화. 보기 목록의 정답 문장이나 그 동의어(예: 대비, 서로 다른 느낌, 느낌의 차이를 나란히, 극적 대비 등)를 그대로 인용하거나 앞두고 설명하지 말 것. 개인 칭찬 금지.
+· 검증 ✗(매우 중요): 정답 보기 문구·그 요지·한글 동의어를 본문에 절대 넣지 말 것. "B구간은 ~역할", "가운데 구간은 ~하기 위해"처럼 B의 목적·역할을 한 문장으로 설명하는 서술 금지. "대비""서로 다른 느낌""느낌을 나란히""극적으로 다르게" 같은 표현 금지. B가 A·A\u2019와 셈여림·빠르기 면에서 어떻게 들리는지 귀로만 다시 짚으라는 힌트 1문장만 허용. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    isCorrect
+  );
+}

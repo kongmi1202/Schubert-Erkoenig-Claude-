@@ -68,6 +68,7 @@ function AestheticPage({ go }) {
       : '없음';
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
+  const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
   const q1WritingHint = '처음 느낌과 분석 후 느낌이 어떻게 달라졌는지 한 문장으로 써보세요.';
   const q2WritingHint = '고른 분석 요소가 왜 이 곡을 특별하게 만드는지 이유를 한 문장으로 써보세요.';
@@ -393,6 +394,22 @@ function AestheticPage({ go }) {
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">구간3: {cpFormState?.formAnswers?.['cp-f3'] || '없음'}</div>
                     <div className="fb show gold">구간3 정답: {cpFormCorrect['cp-f3']}</div>
+                  </div>
+                  <div className="cmp-mini-grid">
+                    <div className="fb show info">구간1 특징: {cpFormState?.featureById?.['cp-f1'] || '없음'}</div>
+                    <div className="fb show gold">정답: {cpFeatureCorrect['cp-f1']}</div>
+                  </div>
+                  <div className="cmp-mini-grid">
+                    <div className="fb show info">구간2 특징: {cpFormState?.featureById?.['cp-f2'] || '없음'}</div>
+                    <div className="fb show gold">정답: {cpFeatureCorrect['cp-f2']}</div>
+                  </div>
+                  <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
+                    <div className="fb show info">구간3 특징: {cpFormState?.featureById?.['cp-f3'] || '없음'}</div>
+                    <div className="fb show gold">정답: {cpFeatureCorrect['cp-f3']}</div>
+                  </div>
+                  <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
+                    <div className="fb show info">ABA 발견 질문: {cpFormState?.discoveryChoice || '없음'}</div>
+                    <div className="fb show gold">정답: 서로 다른 느낌을 대비시키기 위해</div>
                   </div>
                   <div className="review-item">2-C 폴리리듬 활동 (내 답변 + 정답)</div>
                   <div className="cmp-mini-grid">

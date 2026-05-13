@@ -88,7 +88,9 @@ export const useAppStore = create((set) => ({
   },
   cpFormState: {
     formAnswers: {},
-    desc: ''
+    featureById: {},
+    discoveryChoice: '',
+    discoveryQuizResult: ''
   },
   cpRhythmState: {
     selectedByGroup: {},
