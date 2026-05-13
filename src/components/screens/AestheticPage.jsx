@@ -53,6 +53,18 @@ function AestheticPage({ go }) {
     s3: ['음악이 갑자기 끝난다', '음이 매우 낮아진다', '선율이 끝없이 이어진다', '리듬이 점점 빨라진다']
   };
   const hyTimbreCorrect = { 'ig-1': '제1바이올린', 'ig-2': '첼로', 'ig-3': '비올라' };
+  const hyThemeMatchIdToLabel = {
+    o1: '음이 크게 도약한다',
+    o2: '음이 순차적으로 이어진다',
+    o3: '리듬이 짧게 끊어진다',
+    o4: '리듬이 길게 이어진다',
+    o5: '밝고 활기차다',
+    o6: '부드럽고 서정적이다'
+  };
+  const formatHyThemePlaced = (ids) =>
+    Array.isArray(ids) && ids.length
+      ? ids.map((id) => hyThemeMatchIdToLabel[id] || id).join(', ')
+      : '없음';
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
@@ -67,9 +79,9 @@ function AestheticPage({ go }) {
   const showAnalyticalQ2 = !isVivaldi;
   const q2Options = isHandel
     ? [
-        { value: '음색', label: '성부/음화법' },
-        { value: '반주', label: '멜로디/가락선' },
-        { value: '맥락', label: '사회·역사적 맥락' }
+        { value: '음화법', label: '음화법(음색, 가락)' },
+        { value: '화성다성음악', label: '화성·다성음악(다양한 소리의 어울림)' },
+        { value: '맥락', label: '사회역사적 맥락' }
       ]
     : isHaydn
       ? [
@@ -322,18 +334,18 @@ function AestheticPage({ go }) {
                     <div className="fb show info">구간3: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'}</div>
                     <div className="fb show gold">구간3 정답: {hyTimbreCorrect['ig-3']}</div>
                   </div>
-                  <div className="review-item">2-C 주제 비교 (내 답변 + 정답)</div>
+                  <div className="review-item">2-C 주제 비교 — 두 주제 특징 배치</div>
                   <div className="cmp-mini-grid">
-                    <div>
-                      <div className="small-note">내 가락선</div>
-                      {hyThemeState?.myPreview?.t1 ? <img src={hyThemeState.myPreview.t1} alt="하이든 제1주제 내 가락선" className="score-image-inline" /> : <div className="review-empty">제1주제 없음</div>}
-                      {hyThemeState?.myPreview?.t2 ? <img src={hyThemeState.myPreview.t2} alt="하이든 제2주제 내 가락선" className="score-image-inline" style={{ marginTop: 8 }} /> : <div className="review-empty">제2주제 없음</div>}
-                    </div>
-                    <div>
-                      <div className="small-note">핵심 선택</div>
-                      <div className="review-item">장·단조 선택: 제1주제 {hyThemeState?.toneByGroup?.['hy-tone-t1'] || '없음'} / 제2주제 {hyThemeState?.toneByGroup?.['hy-tone-t2'] || '없음'} (정답: 둘 다 장조)</div>
-                      <div className="review-item">도수 선택: {hyThemeState?.selectedDeg || '없음'} (정답: 5도)</div>
-                    </div>
+                    <div className="fb show info">제1주제 칸: {formatHyThemePlaced(hyThemeState?.matchPlaced?.theme1)}</div>
+                    <div className="fb show gold">제1주제 정답 보기: 음이 크게 도약한다, 리듬이 짧게 끊어진다, 밝고 활기차다</div>
+                  </div>
+                  <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
+                    <div className="fb show info">제2주제 칸: {formatHyThemePlaced(hyThemeState?.matchPlaced?.theme2)}</div>
+                    <div className="fb show gold">제2주제 정답 보기: 음이 순차적으로 이어진다, 리듬이 길게 이어진다, 부드럽고 서정적이다</div>
+                  </div>
+                  <div className="review-item">2-C 도수 맞추기</div>
+                  <div className="cmp-mini-grid">
+                    <div className="review-item">도수 선택: {hyThemeState?.selectedDeg || '없음'} (정답: 5도)</div>
                   </div>
                 </>
               ) : null}

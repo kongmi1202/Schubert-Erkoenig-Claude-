@@ -128,6 +128,9 @@ function HyTimbre({ go }) {
           return (
             <section key={segment.gridId} style={{ marginBottom: 20 }}>
                 <div className="sec">구간 {segment.idx}</div>
+                <div className="small-note" style={{ marginBottom: 10, fontSize: 16, lineHeight: 1.5 }}>
+                  구간{segment.idx}을 듣고 어떤 악기의 음색인지 맞춰보세요.
+                </div>
               <div className="review-card" style={{ marginBottom: 10 }}>
                 <audio
                   id={segment.audioId}

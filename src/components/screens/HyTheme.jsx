@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import {
   canOpenAnswerAfterFormativeAiGate,
-  generateHyThemePart2Feedback,
+  generateHyThemeMatchFeedback,
   generateHyThemePart3Feedback
 } from '../../lib/compareFeedback';
 
@@ -14,6 +14,27 @@ const HY_THEME1_END_SEC = 12;
 const HY_THEME2_YT_VIDEO_ID = '_l3bN9LNenk';
 const HY_THEME2_START_SEC = 0;
 const HY_THEME2_END_SEC = 7;
+
+const HY_MATCH_OPTIONS = [
+  { id: 'o1', label: '음이 크게 도약한다' },
+  { id: 'o2', label: '음이 순차적으로 이어진다' },
+  { id: 'o3', label: '리듬이 짧게 끊어진다' },
+  { id: 'o4', label: '리듬이 길게 이어진다' },
+  { id: 'o5', label: '밝고 활기차다' },
+  { id: 'o6', label: '부드럽고 서정적이다' }
+];
+
+const THEME1_CORRECT = new Set(['o1', 'o3', 'o5']);
+const THEME1_WRONG = new Set(['o2', 'o4', 'o6']);
+const THEME2_CORRECT = new Set(['o2', 'o4', 'o6']);
+const THEME2_WRONG = new Set(['o1', 'o3', 'o5']);
+
+function matchColumnCorrect(placedIds, correctSet, wrongSet) {
+  if (!Array.isArray(placedIds) || placedIds.length === 0) return false;
+  const hasCorrect = placedIds.some((id) => correctSet.has(id));
+  const hasWrong = placedIds.some((id) => wrongSet.has(id));
+  return hasCorrect && !hasWrong;
+}
 
 let ytApiPromise = null;
 function loadYouTubeIframeApi() {
@@ -33,57 +54,62 @@ function loadYouTubeIframeApi() {
   return ytApiPromise;
 }
 
-function setupDraw(canvas, getBrush, onDirty) {
-  const ctx = canvas.getContext('2d');
-  let drawing = false;
-
-  const getPos = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height)
-    };
+function normPlaced(p) {
+  return {
+    theme1: Array.isArray(p?.theme1) ? p.theme1 : [],
+    theme2: Array.isArray(p?.theme2) ? p.theme2 : []
   };
+}
 
-  const onDown = (e) => {
-    drawing = true;
-    onDirty();
-    const p = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    canvas.setPointerCapture?.(e.pointerId);
-  };
+/** C4=60 … 화면에 맞는 한 옥타브+ 범위 (제1 G, 제2 D 포함) */
+const HY_THEME_KEYBOARD_KEYS = [
+  { note: 'C', black: true, wMidi: 60, bMidi: 61 },
+  { note: 'D', black: true, wMidi: 62, bMidi: 63 },
+  { note: 'E', wMidi: 64 },
+  { note: 'F', black: true, wMidi: 65, bMidi: 66 },
+  { note: 'G', black: true, wMidi: 67, bMidi: 68, mark: 'm1', label: 'G 제1', bClass: 'b1' },
+  { note: 'A', black: true, wMidi: 69, bMidi: 70 },
+  { note: 'B', wMidi: 71 },
+  { note: 'C', black: true, wMidi: 72, bMidi: 73 },
+  { note: 'D', black: true, wMidi: 74, bMidi: 75, mark: 'm2', label: 'D 제2', bClass: 'b2' }
+];
 
-  const onMove = (e) => {
-    if (!drawing) return;
-    const p = getPos(e);
-    const brush = getBrush();
-    ctx.lineWidth = brush.erase ? 20 : brush.size;
-    ctx.strokeStyle = brush.erase ? '#1a1520' : brush.color;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  };
+function midiToFreq(midi) {
+  return 440 * 2 ** ((midi - 69) / 12);
+}
 
-  const onUp = (e) => {
-    drawing = false;
-    canvas.releasePointerCapture?.(e.pointerId);
-  };
+/** 짧은 건반음 (샘플 없이 Web Audio) */
+function playHyKeyboardMidi(ctx, midi) {
+  const t0 = ctx.currentTime;
+  const dur = 0.28;
+  const f = midiToFreq(midi);
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc1.type = 'triangle';
+  osc2.type = 'sine';
+  osc1.frequency.setValueAtTime(f, t0);
+  osc2.frequency.setValueAtTime(f * 2, t0);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.16, t0 + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+  osc1.start(t0);
+  osc2.start(t0);
+  osc1.stop(t0 + dur + 0.03);
+  osc2.stop(t0 + dur + 0.03);
+}
 
-  canvas.addEventListener('pointerdown', onDown);
-  canvas.addEventListener('pointermove', onMove);
-  canvas.addEventListener('pointerup', onUp);
-  canvas.addEventListener('pointerleave', onUp);
-
-  return () => {
-    canvas.removeEventListener('pointerdown', onDown);
-    canvas.removeEventListener('pointermove', onMove);
-    canvas.removeEventListener('pointerup', onUp);
-    canvas.removeEventListener('pointerleave', onUp);
-  };
+/** Fisher–Yates shuffle (copy) */
+function shuffleMatchOptions(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 function HyTheme({ go }) {
@@ -91,47 +117,28 @@ function HyTheme({ go }) {
   const hyThemeState = useAppStore((s) => s.hyThemeState);
   const setHyThemeState = useAppStore((s) => s.setHyThemeState);
 
-  const t1Ref = useRef(null);
-  const t2Ref = useRef(null);
-  const modelT1Ref = useRef(null);
-  const modelT2Ref = useRef(null);
   const t1YtHostRef = useRef(null);
   const t1YtPlayerRef = useRef(null);
   const t2YtHostRef = useRef(null);
   const t2YtPlayerRef = useRef(null);
+  const keySoundCtxRef = useRef(null);
+  const pressedClearRef = useRef(null);
 
-  const [t1Brush, setT1Brush] = useState({ color: '#4a7fc1', size: 3, erase: false });
-  const [t2Brush, setT2Brush] = useState({ color: '#c4922a', size: 3, erase: false });
-  const [t1Dirty, setT1Dirty] = useState(false);
-  const [t2Dirty, setT2Dirty] = useState(false);
   const [playing, setPlaying] = useState('');
-  const [myPreview, setMyPreview] = useState(() => hyThemeState?.myPreview || { t1: '', t2: '' });
-  const [cvOpen, setCvOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState({ t1: true, t2: false });
+  const [pressedKeyId, setPressedKeyId] = useState(null);
+  const [placedOptions, setPlacedOptions] = useState(() => normPlaced(hyThemeState?.matchPlaced));
+  const [selectedOption, setSelectedOption] = useState(null);
 
-  const [feelT1, setFeelT1] = useState(() => hyThemeState?.feelT1 || '');
-  const [feelT2, setFeelT2] = useState(() => hyThemeState?.feelT2 || '');
-  const [toneByGroup, setToneByGroup] = useState(() => hyThemeState?.toneByGroup || { 'hy-tone-t1': '', 'hy-tone-t2': '' });
-  const [toneChecked, setToneChecked] = useState(false);
-  const [toneOpen, setToneOpen] = useState(false);
-  /** AI 맞춤형 피드백 완료 후 정답 확인 게이트 — { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } */
-  const [toneAiGate, setToneAiGate] = useState(null);
+  const [matchChecked, setMatchChecked] = useState(false);
+  const [matchOpen, setMatchOpen] = useState(false);
+  const [matchAiGate, setMatchAiGate] = useState(null);
 
   const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
   const [degChecked, setDegChecked] = useState(false);
   const [degOpen, setDegOpen] = useState(false);
   const [degAiGate, setDegAiGate] = useState(null);
 
-  useEffect(() => {
-    const cleanups = [];
-    if (t1Ref.current) {
-      cleanups.push(setupDraw(t1Ref.current, () => t1Brush, () => setT1Dirty(true)));
-    }
-    if (t2Ref.current) {
-      cleanups.push(setupDraw(t2Ref.current, () => t2Brush, () => setT2Dirty(true)));
-    }
-    return () => cleanups.forEach((fn) => fn());
-  }, [t1Brush, t2Brush]);
+  const shuffledMatchOptions = useMemo(() => shuffleMatchOptions(HY_MATCH_OPTIONS), []);
 
   useEffect(() => {
     const initCV = (id) => {
@@ -143,7 +150,7 @@ function HyTheme({ go }) {
       ctx.lineJoin = 'round';
     };
     const onLoad = () => {
-      ['rh-cv', 'lh-cv', 'harm-cv', 'poly-cv', 'hy-t1-cv', 'hy-t2-cv'].forEach(initCV);
+      ['rh-cv', 'lh-cv', 'harm-cv', 'poly-cv'].forEach(initCV);
     };
     window.addEventListener('load', onLoad);
     onLoad();
@@ -254,75 +261,81 @@ function HyTheme({ go }) {
     setPlaying('hy-th2');
   };
 
-  const clearCanvas = (canvasRef, key) => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    if (key === 't1') {
-      setT1Dirty(false);
-      setMyPreview((prev) => ({ ...prev, t1: '' }));
-    } else {
-      setT2Dirty(false);
-      setMyPreview((prev) => ({ ...prev, t2: '' }));
-    }
+  const flashPressed = useCallback((id) => {
+    setPressedKeyId(id);
+    if (pressedClearRef.current) clearTimeout(pressedClearRef.current);
+    pressedClearRef.current = window.setTimeout(() => {
+      setPressedKeyId((prev) => (prev === id ? null : prev));
+    }, 140);
+  }, []);
+
+  const playWhiteKey = useCallback(
+    (midi, idx) => {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!keySoundCtxRef.current) keySoundCtxRef.current = new AC();
+      const ctx = keySoundCtxRef.current;
+      void ctx.resume?.().catch(() => {});
+      try {
+        playHyKeyboardMidi(ctx, midi);
+      } catch {
+        /* noop */
+      }
+      flashPressed(`w-${idx}`);
+    },
+    [flashPressed]
+  );
+
+  const playBlackKey = useCallback(
+    (midi, idx) => {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!keySoundCtxRef.current) keySoundCtxRef.current = new AC();
+      const ctx = keySoundCtxRef.current;
+      void ctx.resume?.().catch(() => {});
+      try {
+        playHyKeyboardMidi(ctx, midi);
+      } catch {
+        /* noop */
+      }
+      flashPressed(`b-${idx}`);
+    },
+    [flashPressed]
+  );
+
+  useEffect(
+    () => () => {
+      if (pressedClearRef.current) clearTimeout(pressedClearRef.current);
+    },
+    []
+  );
+
+  const optionFullyPlaced = (id) =>
+    placedOptions.theme1.includes(id) && placedOptions.theme2.includes(id);
+
+  const tapOption = (id) => {
+    if (optionFullyPlaced(id)) return;
+    setSelectedOption((prev) => (prev === id ? null : id));
+    setMatchChecked(false);
   };
 
-  const saveCanvasPreview = (canvasRef, key) => {
-    const c = canvasRef.current;
-    if (!c) return;
-    setMyPreview((prev) => ({ ...prev, [key]: c.toDataURL('image/png') }));
-  };
-
-  function drawHyModel(hand) {
-    const target = hand === 't1' ? modelT1Ref.current : modelT2Ref.current;
-    if (!target) return;
-    const ctx = target.getContext('2d');
-    ctx.clearRect(0, 0, target.width, target.height);
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = hand === 't1' ? '#4a7fc1' : '#c4922a';
-    ctx.beginPath();
-    if (hand === 't1') {
-      const pts = [
-        [16, 84], [60, 52], [108, 88], [150, 40], [196, 72], [244, 34], [286, 80],
-        [334, 46], [380, 86], [426, 44], [472, 74], [520, 30], [566, 82], [620, 50]
-      ];
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      pts.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
-    } else {
-      const pts = [
-        [16, 70], [72, 64], [128, 58], [184, 62], [240, 66], [296, 60],
-        [352, 54], [408, 58], [464, 64], [520, 68], [576, 62], [624, 56]
-      ];
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      pts.slice(1).forEach(([x, y]) => ctx.lineTo(x, y));
-    }
-    ctx.stroke();
-  }
-
-  function checkHyCV() {
-    if (!t1Ref.current || !t2Ref.current) return;
-    setMyPreview({
-      t1: t1Ref.current.toDataURL('image/png'),
-      t2: t2Ref.current.toDataURL('image/png')
+  const placeInSlot = (slot) => {
+    if (!selectedOption) return;
+    setPlacedOptions((prev) => {
+      if (prev[slot].includes(selectedOption)) return prev;
+      return { ...prev, [slot]: [...prev[slot], selectedOption] };
     });
-    drawHyModel('t1');
-    drawHyModel('t2');
-    setCvOpen((prev) => !prev);
-    setStageCompletion('piano', true);
-  }
+    setSelectedOption(null);
+    setMatchChecked(false);
+  };
 
-  function selToneH(el, groupId) {
-    setToneByGroup((prev) => ({ ...prev, [groupId]: el }));
-    setToneChecked(false);
-  }
-
-  function checkToneH() {
-    setToneChecked(true);
-    setToneOpen((prev) => !prev);
-  }
+  const removeFromSlot = (slot, id) => {
+    setPlacedOptions((prev) => ({
+      ...prev,
+      [slot]: prev[slot].filter((x) => x !== id)
+    }));
+    setMatchChecked(false);
+  };
 
   function selDegH(el) {
     setSelectedDeg(el);
@@ -334,37 +347,39 @@ function HyTheme({ go }) {
     setDegOpen((prev) => !prev);
   }
 
-  const canCheckCV = useMemo(() => t1Dirty && t2Dirty, [t1Dirty, t2Dirty]);
-  const canCheckTone = useMemo(
-    () => feelT1.trim() && feelT2.trim() && toneByGroup['hy-tone-t1'] && toneByGroup['hy-tone-t2'],
-    [feelT1, feelT2, toneByGroup]
-  );
+  function checkMatchH() {
+    setMatchChecked(true);
+    setMatchOpen((prev) => !prev);
+    setStageCompletion('piano', true);
+  }
+
+  const canCheckMatch = placedOptions.theme1.length > 0 && placedOptions.theme2.length > 0;
   const canCheckDeg = useMemo(() => !!selectedDeg, [selectedDeg]);
-  const canProceed = useMemo(
-    () => canCheckCV && canCheckTone && canCheckDeg,
-    [canCheckCV, canCheckTone, canCheckDeg]
-  );
-  const toneCorrect = toneByGroup['hy-tone-t1'] === '장조' && toneByGroup['hy-tone-t2'] === '장조';
-  const degCorrect = selectedDeg === '5도';
-  const toneSnapshot = useMemo(
+  const canProceed = useMemo(() => canCheckMatch && canCheckDeg, [canCheckMatch, canCheckDeg]);
+
+  const matchCol1Ok = matchColumnCorrect(placedOptions.theme1, THEME1_CORRECT, THEME1_WRONG);
+  const matchCol2Ok = matchColumnCorrect(placedOptions.theme2, THEME2_CORRECT, THEME2_WRONG);
+  const matchBothCorrect = matchCol1Ok && matchCol2Ok;
+
+  const matchSnapshot = useMemo(
     () =>
       JSON.stringify({
-        feelT1: feelT1.trim(),
-        feelT2: feelT2.trim(),
-        tone1: toneByGroup['hy-tone-t1'] || '',
-        tone2: toneByGroup['hy-tone-t2'] || ''
+        t1: [...placedOptions.theme1].sort(),
+        t2: [...placedOptions.theme2].sort()
       }),
-    [feelT1, feelT2, toneByGroup]
+    [placedOptions]
   );
   const degSnapshot = useMemo(() => JSON.stringify({ selectedDeg: selectedDeg || '' }), [selectedDeg]);
-  const canOpenToneAnswerCheck =
-    canCheckTone &&
-    toneAiGate?.feedbackCompleted &&
+  const degCorrect = selectedDeg === '5도';
+
+  const canOpenMatchAnswerCheck =
+    canCheckMatch &&
+    matchAiGate?.feedbackCompleted &&
     canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: toneAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: toneAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: toneAiGate.responseAtFeedback,
-      currentResponse: toneSnapshot
+      feedbackCompleted: matchAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: matchAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: matchAiGate.responseAtFeedback,
+      currentResponse: matchSnapshot
     });
   const canOpenDegAnswerCheck =
     canCheckDeg &&
@@ -377,8 +392,40 @@ function HyTheme({ go }) {
     });
 
   useEffect(() => {
-    setHyThemeState({ myPreview, feelT1, feelT2, toneByGroup, selectedDeg });
-  }, [myPreview, feelT1, feelT2, toneByGroup, selectedDeg, setHyThemeState]);
+    setHyThemeState({ matchPlaced: placedOptions, selectedDeg });
+  }, [placedOptions, selectedDeg, setHyThemeState]);
+
+  const slotBaseStyle = {
+    background: 'var(--bg3)',
+    border: '1px solid var(--border)',
+    minHeight: 80,
+    padding: 12,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    borderRadius: 4
+  };
+
+  const slotCheckedStyle = (slot) => {
+    if (!matchChecked) return {};
+    const ok = slot === 'theme1' ? matchCol1Ok : matchCol2Ok;
+    return {
+      borderColor: ok ? 'var(--green)' : 'var(--crimson)',
+      background: ok ? 'var(--green-pale)' : 'var(--crimson-pale)'
+    };
+  };
+
+  const tagStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    padding: '5px 10px',
+    background: 'var(--surface2)',
+    border: '1px solid var(--border2)',
+    fontSize: 11,
+    fontWeight: 300,
+    borderRadius: 4
+  };
 
   return (
     <div className="screen active">
@@ -389,209 +436,272 @@ function HyTheme({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="sec">파트 1 — 두 주제 듣고 가락선 그리기</div>
-
-        <div className="sec">제1주제</div>
-        <div ref={t1YtHostRef} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
-        <div className="audio-bar voice-audio-bar hy-audio-bar">
-          <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#4a7fc1,#6b9fd4)' }} onClick={() => toggleAudio('hy-th1')}>
-            {playing === 'hy-th1' ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">제1주제만 듣기</div>
-            <div className="aud-sub">밝고 도약적인 선율</div>
-          </div>
-        </div>
-        <div className="piano-guide">
-          <button type="button" className="piano-guide-head" onClick={() => setGuideOpen((v) => ({ ...v, t1: !v.t1 }))} aria-expanded={guideOpen.t1}>
-            <span>💡 가락선 악보 그리는 법</span>
-            <span aria-hidden="true">{guideOpen.t1 ? '▲' : '▼'}</span>
-          </button>
-          {guideOpen.t1 ? (
-            <div className="piano-guide-body">
-              <p>음악의 높낮이와 흐름을 <strong>선으로</strong> 표현하는 방법이에요.</p>
-              <div className="piano-guide-grid">
-                <div className="piano-guide-chip">🔼 음이 높아지면 위로</div>
-                <div className="piano-guide-chip">🔽 음이 낮아지면 아래로</div>
-                <div className="piano-guide-chip">⚡ 빠르면 짧게</div>
-                <div className="piano-guide-chip">〰️ 느리면 길게</div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="palette-bar" style={{ marginBottom: 10 }}>
-          {['#4a7fc1', '#6b9fd4', '#34d399'].map((c, i) => (
-            <button
-              key={c}
-              id={`pb-hyt1-${i + 1}`}
-              className={`pal-color-btn ${t1Brush.color === c && !t1Brush.erase ? 'active' : ''}`}
-              style={{ background: c }}
-              onClick={() => setT1Brush((b) => ({ ...b, color: c, erase: false }))}
-            />
-          ))}
-          <button id="hy-t1-er" className={`pal-tool ${t1Brush.erase ? 'active' : ''}`} onClick={() => setT1Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-          <button className="pal-tool" onClick={() => clearCanvas(t1Ref, 't1')}>전체지우기</button>
-          <button className="btn-p" onClick={() => saveCanvasPreview(t1Ref, 't1')}>저장</button>
-        </div>
-        <div className="canvas-wrap" style={{ marginBottom: 16 }}><canvas id="hy-t1-cv" ref={t1Ref} width="640" height="120" /></div>
-
-        <div className="sec">제2주제</div>
-        <div ref={t2YtHostRef} style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
-        <div className="audio-bar voice-audio-bar hy-audio-bar">
-          <button type="button" className="aud-btn" style={{ background: 'linear-gradient(135deg,#c4922a,#d4aa4a)' }} onClick={() => toggleAudio('hy-th2')}>
-            {playing === 'hy-th2' ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">제2주제만 듣기</div>
-            <div className="aud-sub">부드럽고 순차적인 선율</div>
-          </div>
-        </div>
-        <div className="piano-guide">
-          <button type="button" className="piano-guide-head" onClick={() => setGuideOpen((v) => ({ ...v, t2: !v.t2 }))} aria-expanded={guideOpen.t2}>
-            <span>💡 가락선 악보 그리는 법</span>
-            <span aria-hidden="true">{guideOpen.t2 ? '▲' : '▼'}</span>
-          </button>
-          {guideOpen.t2 ? (
-            <div className="piano-guide-body">
-              <p>제1주제와 같은 방식으로 제2주제의 흐름을 선으로 그려보세요.</p>
-              <div className="piano-guide-grid">
-                <div className="piano-guide-chip">🔼 음이 높아지면 위로</div>
-                <div className="piano-guide-chip">🔽 음이 낮아지면 아래로</div>
-                <div className="piano-guide-chip">⚡ 빠르면 짧게</div>
-                <div className="piano-guide-chip">〰️ 느리면 길게</div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="palette-bar" style={{ marginBottom: 10 }}>
-          {['#c4922a', '#d4aa4a', '#a78bfa'].map((c, i) => (
-            <button
-              key={c}
-              id={`pb-hyt2-${i + 1}`}
-              className={`pal-color-btn ${t2Brush.color === c && !t2Brush.erase ? 'active' : ''}`}
-              style={{ background: c }}
-              onClick={() => setT2Brush((b) => ({ ...b, color: c, erase: false }))}
-            />
-          ))}
-          <button id="hy-t2-er" className={`pal-tool ${t2Brush.erase ? 'active' : ''}`} onClick={() => setT2Brush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-          <button className="pal-tool" onClick={() => clearCanvas(t2Ref, 't2')}>전체지우기</button>
-          <button className="btn-p" onClick={() => saveCanvasPreview(t2Ref, 't2')}>저장</button>
-        </div>
-        <div className="canvas-wrap" style={{ marginBottom: 12 }}><canvas id="hy-t2-cv" ref={t2Ref} width="640" height="120" /></div>
-
-        <button
-          id="hy-ans-cv-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={checkHyCV}
-          disabled={!canCheckCV}
-          style={!canCheckCV ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          aria-expanded={cvOpen}
+        <div
+          style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }}
         >
-          <span className="answer-check-toggle-label">가락선 정답 비교하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{cvOpen ? '▲' : '▼'}</span>
-        </button>
-        <div id="hy-ans-cv-body" className={`answer-compare-slide ${cvOpen ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="sec">제1주제</div>
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {myPreview.t1 ? <img id="hy-my-t1" src={myPreview.t1} alt="제1주제 내가 그린 가락선" className="cv-drawing-image" /> : <div className="small-note">아직 없음</div>}
-                </div>
-              </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 가락선</div>
-                <div className="cv-panel"><canvas id="hy-model-t1" ref={modelT1Ref} width="640" height="120" /></div>
-              </div>
-            </div>
-            <div className="fb show info">음이 활발하게 도약하고 짧게 끊어지는 리듬 → 경쾌한 느낌</div>
-
-            <div className="sec">제2주제</div>
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {myPreview.t2 ? <img id="hy-my-t2" src={myPreview.t2} alt="제2주제 내가 그린 가락선" className="cv-drawing-image" /> : <div className="small-note">아직 없음</div>}
-                </div>
-              </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 가락선</div>
-                <div className="cv-panel"><canvas id="hy-model-t2" ref={modelT2Ref} width="640" height="120" /></div>
-              </div>
-            </div>
-            <div className="fb show info">음이 순차적으로 부드럽게 이어지는 선율 → 서정적 느낌</div>
-          </div>
+          <div ref={t1YtHostRef} />
+          <div ref={t2YtHostRef} />
         </div>
 
-        <div className="sec">파트 2 — 느낌 표현 + 장단조 선택</div>
-        <div className="fb show info" style={{ marginBottom: 12 }}>장조는 밝고 활기찬 느낌, 단조는 어둡고 무거운 느낌이에요.</div>
+        <div className="sec">두 주제의 특징을 찾아보세요</div>
+        <div className="fb show info" style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
+          {`💡 두 주제를 각각 들으며
+아래 보기 카드 중 알맞은 것을
+각 주제 칸에 넣어보세요.
+여러 개를 넣어도 좋아요!`}
+        </div>
 
-        <div className="feel-grid-h">
-          <div className="feel-card-h fc1">
-            <div className="feel-title-h">제1주제</div>
-            <textarea id="hy-feel-t1" className="txt" value={feelT1} onChange={(e) => setFeelT1(e.target.value)} placeholder="제1주제 느낌을 써보세요..." />
-            <div id="hy-tone-t1" className="tone-opts-h">
-              {['장조', '단조'].map((tone) => (
-                <button key={tone} type="button" className={`tone-opt-h ${toneByGroup['hy-tone-t1'] === tone ? 'sel' : ''}`} onClick={() => selToneH(tone, 'hy-tone-t1')}>{tone}</button>
-              ))}
-            </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 12,
+            marginBottom: 16
+          }}
+        >
+          <button
+            type="button"
+            id="hy-th1"
+            onClick={() => toggleAudio('hy-th1')}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 4,
+              padding: '14px 16px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: '#4a7fc1',
+              color: '#fff',
+              cursor: 'pointer',
+              textAlign: 'left'
+            }}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>{playing === 'hy-th1' ? '❚❚' : '▶'}</span>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>제1주제</span>
+            <span style={{ fontSize: 12, opacity: 0.95 }}>밝고 도약적인 선율</span>
+          </button>
+          <button
+            type="button"
+            id="hy-th2"
+            onClick={() => toggleAudio('hy-th2')}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 4,
+              padding: '14px 16px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: '#c4922a',
+              color: '#fff',
+              cursor: 'pointer',
+              textAlign: 'left'
+            }}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1 }}>{playing === 'hy-th2' ? '❚❚' : '▶'}</span>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>제2주제</span>
+            <span style={{ fontSize: 12, opacity: 0.95 }}>부드럽고 순차적인 선율</span>
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 10,
+            marginBottom: 16
+          }}
+        >
+          {shuffledMatchOptions.map((opt) => {
+            const exhausted = optionFullyPlaced(opt.id);
+            const isSel = selectedOption === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => tapOption(opt.id)}
+                disabled={exhausted}
+                style={{
+                  border: '1px solid var(--border)',
+                  background: isSel ? 'var(--purple-pale)' : 'var(--surface)',
+                  padding: '12px 14px',
+                  fontSize: 12,
+                  cursor: exhausted ? 'not-allowed' : 'pointer',
+                  textAlign: 'center',
+                  borderRadius: 6,
+                  borderColor: isSel ? 'var(--purple)' : 'var(--border)',
+                  color: isSel ? 'var(--purple-light)' : 'var(--text)',
+                  opacity: exhausted ? 0.4 : 1,
+                  pointerEvents: exhausted ? 'none' : 'auto'
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => placeInSlot('theme1')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                placeInSlot('theme1');
+              }
+            }}
+            style={{
+              ...slotBaseStyle,
+              borderLeft: '3px solid #4a7fc1',
+              ...slotCheckedStyle('theme1'),
+              width: '100%',
+              cursor: 'pointer',
+              alignItems: 'stretch',
+              textAlign: 'left'
+            }}
+          >
+              <div style={{ fontWeight: 600, color: '#4a7fc1', fontSize: 13 }}>제1주제</div>
+              {placedOptions.theme1.length === 0 ? (
+                <div style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  보기를 선택한 후 탭하세요
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {placedOptions.theme1.map((oid, idx) => (
+                    <span key={`t1-${oid}-${idx}`} style={tagStyle}>
+                      {HY_MATCH_OPTIONS.find((o) => o.id === oid)?.label}
+                      <button
+                        type="button"
+                        aria-label="칸에서 빼기"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFromSlot('theme1', oid);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-dim)',
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: 12,
+                          lineHeight: 1
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
           </div>
-          <div className="feel-card-h fc2">
-            <div className="feel-title-h">제2주제</div>
-            <textarea id="hy-feel-t2" className="txt" value={feelT2} onChange={(e) => setFeelT2(e.target.value)} placeholder="제2주제 느낌을 써보세요..." />
-            <div id="hy-tone-t2" className="tone-opts-h">
-              {['장조', '단조'].map((tone) => (
-                <button key={tone} type="button" className={`tone-opt-h ${toneByGroup['hy-tone-t2'] === tone ? 'sel' : ''}`} onClick={() => selToneH(tone, 'hy-tone-t2')}>{tone}</button>
-              ))}
-            </div>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => placeInSlot('theme2')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                placeInSlot('theme2');
+              }
+            }}
+            style={{
+              ...slotBaseStyle,
+              borderLeft: '3px solid #c4922a',
+              ...slotCheckedStyle('theme2'),
+              width: '100%',
+              cursor: 'pointer',
+              alignItems: 'stretch',
+              textAlign: 'left'
+            }}
+          >
+              <div style={{ fontWeight: 600, color: '#c4922a', fontSize: 13 }}>제2주제</div>
+              {placedOptions.theme2.length === 0 ? (
+                <div style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  보기를 선택한 후 탭하세요
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {placedOptions.theme2.map((oid, idx) => (
+                    <span key={`t2-${oid}-${idx}`} style={tagStyle}>
+                      {HY_MATCH_OPTIONS.find((o) => o.id === oid)?.label}
+                      <button
+                        type="button"
+                        aria-label="칸에서 빼기"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFromSlot('theme2', oid);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-dim)',
+                          cursor: 'pointer',
+                          padding: 0,
+                          fontSize: 12,
+                          lineHeight: 1
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
           </div>
         </div>
 
         <CompareAiFeedbackBlock
           requestFn={() =>
-            generateHyThemePart2Feedback({
-              feelT1,
-              feelT2,
-              toneT1: toneByGroup['hy-tone-t1'],
-              toneT2: toneByGroup['hy-tone-t2']
+            generateHyThemeMatchFeedback({
+              theme1Ids: placedOptions.theme1,
+              theme2Ids: placedOptions.theme2
             })
           }
+          disabled={!canCheckMatch}
           onRequested={() => {
-            setToneAiGate({
+            setMatchAiGate({
               feedbackCompleted: false,
-              responseAtFeedback: toneSnapshot,
-              wasCorrectWhenFeedbackRequested: toneCorrect
+              responseAtFeedback: matchSnapshot,
+              wasCorrectWhenFeedbackRequested: matchBothCorrect
             });
-            setToneOpen(false);
+            setMatchOpen(false);
           }}
           onResult={() => {
-            setToneAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+            setMatchAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
           }}
         />
         <button
           id="hy-ans-tone-btn"
           type="button"
           className="answer-check-toggle"
-          onClick={checkToneH}
-          disabled={!canOpenToneAnswerCheck}
-          style={!canOpenToneAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          aria-expanded={toneOpen}
+          onClick={checkMatchH}
+          disabled={!canOpenMatchAnswerCheck}
+          style={!canOpenMatchAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          aria-expanded={matchOpen}
         >
           <span className="answer-check-toggle-label">
-            {canOpenToneAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+            {canOpenMatchAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
           </span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{toneOpen ? '▲' : '▼'}</span>
+          <span className="answer-check-toggle-chevron" aria-hidden="true">
+            {matchOpen ? '▲' : '▼'}
+          </span>
         </button>
-        <div id="hy-ans-tone-body" className={`answer-compare-slide ${toneOpen ? 'open' : ''}`}>
+        {!canCheckMatch ? (
+          <div className="small-note" style={{ marginTop: 8 }}>
+            칸을 채워주세요
+          </div>
+        ) : null}
+        <div id="hy-ans-tone-body" className={`answer-compare-slide ${matchOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
-            <div className={`fb show ${toneChecked && toneCorrect ? 'ok' : 'info'}`}>
-              정답: 둘 다 장조
+            <div className={`fb show ${matchChecked && matchCol1Ok && matchCol2Ok ? 'ok' : 'info'}`}>
+              정답 요약
               <br />
-              두 주제 모두 장조예요! 가락의 흐름과 리듬꼴이 달라서
+              제1주제: 음이 크게 도약한다 · 리듬이 짧게 끊어진다 · 밝고 활기차다
               <br />
-              느낌이 다르게 느껴져요.
+              제2주제: 음이 순차적으로 이어진다 · 리듬이 길게 이어진다 · 부드럽고 서정적이다
             </div>
           </div>
         </div>
@@ -599,36 +709,53 @@ function HyTheme({ go }) {
         <div className="sec">파트 3 — 건반 그림 + 도 수 맞추기</div>
         <div className="keyboard-wrap">
           <div className="keyboard-label">피아노 건반으로 보는 두 주제의 조성</div>
-          <div className="keyboard">
-            {[
-              { note: 'C', black: true },
-              { note: 'D', black: true },
-              { note: 'E' },
-              { note: 'F', black: true },
-              { note: 'G', black: true, mark: 'm1', label: 'G 제1', bClass: 'b1' },
-              { note: 'A', black: true },
-              { note: 'B' },
-              { note: 'C', black: true },
-              { note: 'D', black: true, mark: 'm2', label: 'D 제2', bClass: 'b2' }
-            ].map((k, idx) => (
-              <div key={`${k.note}-${idx}`} className={`key-w ${k.mark || ''}`}>
-                {k.black ? <span className="key-b" /> : null}
+          <div
+            className="keyboard"
+            role="group"
+            aria-label="조성 확인용 건반. 흰 건반과 검은 건반을 누르면 소리가 납니다."
+          >
+            {HY_THEME_KEYBOARD_KEYS.map((k, idx) => (
+              <div
+                key={`hy-k-${k.wMidi}-${idx}`}
+                tabIndex={0}
+                className={`key-w ${k.mark || ''} ${pressedKeyId === `w-${idx}` ? 'is-pressed' : ''}`}
+                onClick={() => playWhiteKey(k.wMidi, idx)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    playWhiteKey(k.wMidi, idx);
+                  }
+                }}
+                aria-label={`${k.note} 흰 건반`}
+              >
+                {k.black ? (
+                  <button
+                    type="button"
+                    className={`key-b ${pressedKeyId === `b-${idx}` ? 'is-pressed' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (typeof k.bMidi === 'number') playBlackKey(k.bMidi, idx);
+                    }}
+                    aria-label={`${k.note}와 다음 음 사이 검은 건반`}
+                  />
+                ) : null}
                 <span className={`key-label ${k.bClass || ''}`}>{k.label || k.note}</span>
               </div>
             ))}
           </div>
           <div className="keyboard-note">
-            {toneChecked ? (
+            {matchChecked ? (
               <>
-                제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제: <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
+                제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제:{' '}
+                <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
                 <br />
                 G에서 D까지 몇 도 차이일까요?
               </>
             ) : (
               <>
-                파트 2 활동을 완료하면 두 주제의 조성이 공개됩니다.
+                주제 특징 활동을 완료하면 두 주제의 조성이 공개됩니다.
                 <br />
-                먼저 느낌 표현과 장단조 선택을 마무리해 주세요.
+                먼저 보기 배치와 정답 확인을 마무리해 주세요.
               </>
             )}
           </div>
@@ -636,7 +763,9 @@ function HyTheme({ go }) {
 
         <div id="hy-deg-opts" className="degree-opts-h">
           {['3도', '5도', '8도'].map((deg) => (
-            <button key={deg} type="button" className={`degree-opt-h ${selectedDeg === deg ? 'sel' : ''}`} onClick={() => selDegH(deg)}>{deg}</button>
+            <button key={deg} type="button" className={`degree-opt-h ${selectedDeg === deg ? 'sel' : ''}`} onClick={() => selDegH(deg)}>
+              {deg}
+            </button>
           ))}
         </div>
 
@@ -670,7 +799,9 @@ function HyTheme({ go }) {
           <span className="answer-check-toggle-label">
             {canOpenDegAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
           </span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{degOpen ? '▲' : '▼'}</span>
+          <span className="answer-check-toggle-chevron" aria-hidden="true">
+            {degOpen ? '▲' : '▼'}
+          </span>
         </button>
         <div id="hy-ans-deg-body" className={`answer-compare-slide ${degOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
@@ -693,7 +824,9 @@ function HyTheme({ go }) {
         ) : null}
 
         <div className="btn-row">
-          <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
+          <button className="btn-s" onClick={() => go('voiceDesign')}>
+            ← 이전
+          </button>
           <button
             className="btn-p"
             disabled={!canProceed}

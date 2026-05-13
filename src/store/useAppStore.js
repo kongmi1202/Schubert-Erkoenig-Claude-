@@ -73,10 +73,7 @@ export const useAppStore = create((set) => ({
     selectedByGrid: {}
   },
   hyThemeState: {
-    myPreview: { t1: '', t2: '' },
-    feelT1: '',
-    feelT2: '',
-    toneByGroup: { 'hy-tone-t1': '', 'hy-tone-t2': '' },
+    matchPlaced: { theme1: [], theme2: [] },
     selectedDeg: ''
   },
   vvSonnetState: {

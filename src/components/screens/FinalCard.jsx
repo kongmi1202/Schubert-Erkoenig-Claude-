@@ -13,6 +13,20 @@ const colorMap = {
   자주: '#86198f'
 };
 
+const HY_THEME_MATCH_ID_TO_LABEL = {
+  o1: '음이 크게 도약한다',
+  o2: '음이 순차적으로 이어진다',
+  o3: '리듬이 짧게 끊어진다',
+  o4: '리듬이 길게 이어진다',
+  o5: '밝고 활기차다',
+  o6: '부드럽고 서정적이다'
+};
+
+function formatHyThemePlacedFinal(ids) {
+  if (!Array.isArray(ids) || !ids.length) return '없음';
+  return ids.map((id) => HY_THEME_MATCH_ID_TO_LABEL[id] || id).join(', ');
+}
+
 function FinalCard({ go }) {
   const {
     student, selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
@@ -368,8 +382,12 @@ function FinalCard({ go }) {
                 <div className="fb show gold">정답: {hyTimbreCorrect['ig-3']}</div>
               </div>
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-C 장·단조: {hyThemeState?.toneByGroup?.['hy-tone-t1'] || '없음'} / {hyThemeState?.toneByGroup?.['hy-tone-t2'] || '없음'}</div>
-                <div className="fb show gold">정답: 둘 다 장조</div>
+                <div className="fb show info">2-C 제1주제 칸: {formatHyThemePlacedFinal(hyThemeState?.matchPlaced?.theme1)}</div>
+                <div className="fb show gold">정답: 음이 크게 도약한다, 리듬이 짧게 끊어진다, 밝고 활기차다</div>
+              </div>
+              <div className="cmp-mini-grid">
+                <div className="fb show info">2-C 제2주제 칸: {formatHyThemePlacedFinal(hyThemeState?.matchPlaced?.theme2)}</div>
+                <div className="fb show gold">정답: 음이 순차적으로 이어진다, 리듬이 길게 이어진다, 부드럽고 서정적이다</div>
               </div>
               <div className="cmp-mini-grid">
                 <div className="fb show info">2-C 도수 선택: {hyThemeState?.selectedDeg || '없음'}</div>

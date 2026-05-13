@@ -605,31 +605,64 @@ ${contextLabel}
   return requestCompareFeedbackMultimodal(content, fallback);
 }
 
-function buildHyThemePart2Fallback({ feelT1, feelT2, toneT1, toneT2 }) {
-  const a = (feelT1 || '').trim() || '제1주제 느낌 미입력';
-  const b = (feelT2 || '').trim() || '제2주제 느낌 미입력';
-  return `제1주제 느낌(${a})과 제2주제 느낌(${b})을 비교해, 각 문장에서 잘 잡은 표현 1개와 더 구체화할 표현 1개를 찾아 보세요. 제1주제는 도약/경쾌, 제2주제는 순차/부드러운 흐름 근거를 한 줄씩 덧붙이면 느낌 설명의 설득력이 더 좋아져요. 지금 선택은 제1주제 ${toneT1 || '미선택'}, 제2주제 ${toneT2 || '미선택'}이니, 선택 근거도 함께 점검해 보세요.`;
+const HY_THEME_MATCH_OPT_LABELS = {
+  o1: '음이 크게 도약한다',
+  o2: '음이 순차적으로 이어진다',
+  o3: '리듬이 짧게 끊어진다',
+  o4: '리듬이 길게 이어진다',
+  o5: '밝고 활기차다',
+  o6: '부드럽고 서정적이다'
+};
+
+function hyThemeMatchColumnOk(placedIds, correctSet, wrongSet) {
+  if (!Array.isArray(placedIds) || placedIds.length === 0) return false;
+  const hasCorrect = placedIds.some((id) => correctSet.has(id));
+  const hasWrong = placedIds.some((id) => wrongSet.has(id));
+  return hasCorrect && !hasWrong;
 }
 
-export async function generateHyThemePart2Feedback({ feelT1, feelT2, toneT1, toneT2 }) {
-  const fallback = buildHyThemePart2Fallback({ feelT1, feelT2, toneT1, toneT2 });
-  const toneOk = toneT1 === '장조' && toneT2 === '장조';
+function buildHyThemeMatchFallback({ theme1Ids, theme2Ids }) {
+  const t1 = (theme1Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id]).filter(Boolean).join(', ') || '미배치';
+  const t2 = (theme2Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id]).filter(Boolean).join(', ') || '미배치';
+  return `제1주제 칸: ${t1}. 제2주제 칸: ${t2}. 선율·리듬꼴·느낌의 차이에 귀를 두고 두 음원을 번갈아 들으며, 각 칸에 넣은 문구가 같은 듣기에서 모였는지 점검해 보세요. 과제(칸 나누기)에만 초점을 두고, 칸을 바꿔 넣어 실험해 보아도 좋아요. 마지막은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+}
 
-  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 하이든 '종달새' 주제 비교 — 느낌 서술 + 장단조 선택에 대한 형성적 피드백.
+/**
+ * 하이든 '종달새' 주제 비교 — 보기 카드 매칭(두 주제 특징) 형성적 피드백
+ */
+export async function generateHyThemeMatchFeedback({ theme1Ids, theme2Ids }) {
+  const fallback = buildHyThemeMatchFallback({ theme1Ids, theme2Ids });
+  const t1Correct = new Set(['o1', 'o3', 'o5']);
+  const t1Wrong = new Set(['o2', 'o4', 'o6']);
+  const t2Correct = new Set(['o2', 'o4', 'o6']);
+  const t2Wrong = new Set(['o1', 'o3', 'o5']);
+  const col1Ok = hyThemeMatchColumnOk(theme1Ids, t1Correct, t1Wrong);
+  const col2Ok = hyThemeMatchColumnOk(theme2Ids, t2Correct, t2Wrong);
+  const bothOk = col1Ok && col2Ok;
 
-학생 입력:
-· 제1주제 느낌: ${(feelT1 || '').trim() || '(없음)'}
-· 제2주제 느낌: ${(feelT2 || '').trim() || '(없음)'}
-· 제1주제 선택: ${toneT1 || '(없음)'}
-· 제2주제 선택: ${toneT2 || '(없음)'}
+  const list1 = (theme1Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id] || id).join(' / ') || '(없음)';
+  const list2 = (theme2Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id] || id).join(' / ') || '(없음)';
 
-내부 참고(학생에게 정답으로 쓰지 말 것): 두 주제 모두 장조가 과제 기준과 일치하면 true. 현재: ${toneOk ? '일치' : '불일치'}.
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 하이든 '종달새' 주제 비교 — 두 주제의 특징 보기 카드 매칭에 대한 형성적 피드백이다.
 
-규칙:
-· 첫 줄: 검증: ✓ 또는 검증: ✗ — 위 내부 참고와 느낌 서술이 과제에 충분하면 ✓, 장단조 선택이 기준에 맞지 않거나 서술이 빈약하면 ✗.
-· 검증 ✓: 장조·단조(조성)·선율·리듬꼴·도약/순차 등 용어로 2~3문장 정교화. "잘했어요" 금지.
-· 검증 ✗: "둘 다 장조", "정답은 장조" 같은 직접 정답 표현 금지. 어떤 음악적 귀로 다시 들을지 힌트. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
-· 학생 문장을 짧게 인용해도 좋다.`;
+바로 위에 붙은 공통 블록 [피드백 설계 원칙](Kulhavy & Stock 1989의 검증·정교화, Shute 2008의 형성적 피드백)을 **반드시** 따른다. (검증 줄 → 정교화, 과제·음악 요소 중심, 개인 칭찬 중심 금지, 음악 요소명 구체 언급, 길이·쉬운 말 규칙 등)
+
+학생 배치(참고):
+· 제1주제 칸에 넣은 보기: ${list1}
+· 제2주제 칸에 넣은 보기: ${list2}
+
+내부 판정용(학생에게 출력·암시 금지): 과제 기준 충족 = ${bothOk ? '일치' : '불일치'}.
+
+[이 과제만의 추가 제한 — 공통 원칙과 겹치면 아래를 우선해 답안 유출을 막는다]
+· 정교화에서 **화면의 보기 여섯 문장**을 인용·복붙·한두 단어만 바꾼 요약으로 쓰지 말 것. (학생이 칸에 넣은 문구도 본문에서 반복하지 말 것.)
+· "어느 보기가 어느 주제" "이 칸에는 ~가 와야" 식의 정답·조합 암시 금지.
+· 두 클립의 음악적 차이를 **보기 카드와 같은 말로** 한 번에 짝지어 설명하지 말 것. (한 클립은 A특징·다른 클립은 B특징처럼 정답 쌍을 드러내는 식의 대비 서술 금지.)
+· Kulhavy의 정교화와 Shute ②를 지키려면, **선율·리듬꼴·느낌의 대비(악상)** 같은 **음악 요소 이름**으로만 짚을 것. "어디에 귀를 둘지" "칸과 듣기를 어떻게 맞출지" 같은 **듣기·과제 행동**을 정교화에 담을 것.
+
+규칙(공통 블록의 문장 수·마침 규칙을 그대로 적용):
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 판정과 일치.
+· 검증 ✓: 검증 줄 포함 총 2~3문장. 음악 요소명을 넣어 정교화하되, 위 [추가 제한]을 지킬 것. 마지막 문장은 공통 블록의 정답일 때 관례에 맞게 짧게 마무리(필요 시 "다음 단계로 넘어가 보세요." 정도만, 과제 맥락 유지).
+· 검증 ✗: 검증 다음 본문 1~2문장. 음악 요소명으로 다시 들을 **초점**만 제시하고, 위 [추가 제한]을 지킬 것. 마지막 문장은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
 
   return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
