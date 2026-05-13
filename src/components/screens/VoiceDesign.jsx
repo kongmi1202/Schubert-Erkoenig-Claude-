@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { feedbackAllowsProceedAfterAi, generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate, generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -76,9 +76,8 @@ function VoiceDesign({ go }) {
   });
   const [showCompare, setShowCompare] = useState(false);
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
-  const [hasRequestedFeedback, setHasRequestedFeedback] = useState(false);
-  const [feedbackSnapshot, setFeedbackSnapshot] = useState('');
-  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState(false);
+  /** { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } | null */
+  const [voiceAiGate, setVoiceAiGate] = useState(null);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
@@ -135,18 +134,26 @@ function VoiceDesign({ go }) {
       }),
     [selectedCharacter, voiceDesign]
   );
-  const isAlreadyCorrect = useMemo(() => {
-    if (!canShowAnswerCheck) return false;
-    return designKeys.every((key) => voiceDesign[selectedCharacter]?.[key] === answerKey[selectedCharacter]?.[key]);
-  }, [canShowAnswerCheck, selectedCharacter, voiceDesign]);
   const canOpenAnswerCheck =
-    canShowAnswerCheck && hasRequestedFeedback && (feedbackSnapshot !== currentSnapshot || isAlreadyCorrect || feedbackAllowsDirectCheck);
+    canShowAnswerCheck &&
+    voiceAiGate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: voiceAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: voiceAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: voiceAiGate.responseAtFeedback,
+      currentResponse: currentSnapshot
+    });
   const onFeedbackRequested = useCallback(() => {
-    setHasRequestedFeedback(true);
-    setFeedbackSnapshot(currentSnapshot);
-    setFeedbackAllowsDirectCheck(false);
+    const wasCorrect = designKeys.every(
+      (key) => voiceDesign[selectedCharacter]?.[key] === answerKey[selectedCharacter]?.[key]
+    );
+    setVoiceAiGate({
+      feedbackCompleted: false,
+      responseAtFeedback: currentSnapshot,
+      wasCorrectWhenFeedbackRequested: wasCorrect
+    });
     setShowCompare(false);
-  }, [currentSnapshot]);
+  }, [currentSnapshot, selectedCharacter, voiceDesign]);
 
   useEffect(() => {
     if (canCheckAnswer) setStageCompletion('voice', true);
@@ -155,6 +162,10 @@ function VoiceDesign({ go }) {
   useEffect(() => {
     if (!canShowAnswerCheck) setShowCompare(false);
   }, [canShowAnswerCheck]);
+
+  useEffect(() => {
+    setVoiceAiGate(null);
+  }, [selectedCharacter]);
 
   useEffect(() => {
     setVoiceDesignState({ selectedChars, voiceDesign });
@@ -237,7 +248,9 @@ function VoiceDesign({ go }) {
             <CompareAiFeedbackBlock
               requestFn={requestVoiceFeedback}
               onRequested={onFeedbackRequested}
-              onResult={(text) => setFeedbackAllowsDirectCheck(feedbackAllowsProceedAfterAi(text))}
+              onResult={() => {
+                setVoiceAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+              }}
             />
             <button
               type="button"
@@ -252,7 +265,9 @@ function VoiceDesign({ go }) {
                 {showCompare ? '▲' : '▼'}
               </span>
             </button>
-            {hasRequestedFeedback && (isAlreadyCorrect || feedbackAllowsDirectCheck) ? (
+            {voiceAiGate?.feedbackCompleted &&
+            voiceAiGate.wasCorrectWhenFeedbackRequested &&
+            currentSnapshot === voiceAiGate.responseAtFeedback ? (
               <div className="small-note" style={{ marginTop: 8 }}>
                 좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
               </div>

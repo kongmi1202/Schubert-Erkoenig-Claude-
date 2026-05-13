@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { generateVvSonnetCompareFeedback } from '../../lib/compareFeedback';
+import {
+  canOpenAnswerAfterFormativeAiGate,
+  generateVvSonnetCompareFeedback,
+  normalizeFormativeChoice
+} from '../../lib/compareFeedback';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 
@@ -49,6 +53,7 @@ function VvSonnet({ go }) {
   const vvSonnetState = useAppStore((s) => s.vvSonnetState);
   const setVvSonnetState = useAppStore((s) => s.setVvSonnetState);
   const [selectedById, setSelectedById] = useState(() => vvSonnetState?.selectedById || {});
+  const [sonnetAiGateById, setSonnetAiGateById] = useState({});
   const [resultById, setResultById] = useState({});
   const [openByBodyId, setOpenByBodyId] = useState({});
   const [ytReady, setYtReady] = useState({});
@@ -59,12 +64,17 @@ function VvSonnet({ go }) {
   function selectChoice(groupId, value) {
     setSelectedById((prev) => ({ ...prev, [groupId]: value }));
     setResultById((prev) => ({ ...prev, [groupId]: '' }));
+    setSonnetAiGateById((prev) => {
+      const next = { ...prev };
+      delete next[groupId];
+      return next;
+    });
   }
 
   function checkTP(groupId, correct, _btnId, bodyId) {
     const picked = selectedById[groupId];
     if (!picked) return;
-    const isCorrect = picked === correct;
+    const isCorrect = normalizeFormativeChoice(picked) === normalizeFormativeChoice(correct);
     setResultById((prev) => ({ ...prev, [groupId]: isCorrect ? 'ok' : 'ng' }));
     setOpenByBodyId((prev) => ({ ...prev, [bodyId]: !prev[bodyId] }));
     setStageCompletion('voice', true);
@@ -121,6 +131,16 @@ function VvSonnet({ go }) {
           const picked = selectedById[segment.id];
           const result = resultById[segment.id];
           const answerOpen = openByBodyId[segment.bodyId];
+          const gate = sonnetAiGateById[segment.id];
+          const canOpenAnswerCheck =
+            !!picked &&
+            gate?.feedbackCompleted &&
+            canOpenAnswerAfterFormativeAiGate({
+              feedbackCompleted: gate.feedbackCompleted,
+              wasCorrectWhenFeedbackRequested: gate.wasCorrectWhenFeedbackRequested,
+              responseAtFeedback: gate.responseAtFeedback,
+              currentResponse: picked
+            });
           const ready = !!ytReady[segment.id];
           const armed = !!controlsArmed[segment.id];
           const isPlaying = playingSegmentId === segment.id;
@@ -199,6 +219,24 @@ function VvSonnet({ go }) {
                       correctAnswer: segment.answer
                     })
                   }
+                  onRequested={() => {
+                    setSonnetAiGateById((prev) => ({
+                      ...prev,
+                      [segment.id]: {
+                        feedbackCompleted: false,
+                        responseAtFeedback: picked,
+                        wasCorrectWhenFeedbackRequested:
+                          normalizeFormativeChoice(picked) === normalizeFormativeChoice(segment.answer)
+                      }
+                    }));
+                  }}
+                  onResult={() => {
+                    setSonnetAiGateById((prev) => {
+                      const g = prev[segment.id];
+                      if (!g) return prev;
+                      return { ...prev, [segment.id]: { ...g, feedbackCompleted: true } };
+                    });
+                  }}
                 />
               </div>
 
@@ -208,10 +246,12 @@ function VvSonnet({ go }) {
                 className="answer-check-toggle"
                 onClick={() => checkTP(segment.id, segment.answer, segment.btnId, segment.bodyId)}
                 aria-expanded={!!answerOpen}
-                disabled={!picked}
-                style={!picked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                disabled={!canOpenAnswerCheck}
+                style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
               >
-                <span className="answer-check-toggle-label">정답 확인하기</span>
+                <span className="answer-check-toggle-label">
+                  {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+                </span>
                 <span className="answer-check-toggle-chevron" aria-hidden="true">
                   {answerOpen ? '▲' : '▼'}
                 </span>

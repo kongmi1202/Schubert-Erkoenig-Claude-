@@ -25,12 +25,14 @@ Kulhavy & Stock(1989)
 Shute(2008)
 ① 학습자 인물 칭찬이 아니라 음악 과제·요소에 초점을 둔다. ("잘했어요", "훌륭해요" 등 개인 칭찬 중심 문장 금지)
 ② 음악 요소명과 개념을 구체적으로 직접 언급한다.
-③ 간결하게: 검증 줄 포함, 정답(검증 ✓)일 때는 총 2~3문장, 오답(검증 ✗)일 때는 총 2문장 이내.
+③ 간결하게: 검증 줄 포함, 정답(검증 ✓)일 때는 총 2~3문장, 오답(검증 ✗)일 때는 검증 다음 본문 1~2문장(힌트와 재시도 유도를 이 안에 담는다).
 
 [오답 — 검증: ✗ 일 때]
 · 모범 정답 문구, 정답 보기, 정답 단어·숫자를 본문에 절대 넣지 않는다.
+· 시의 제목·장면 설명(예: 천둥·번개)을 빌려 정답 음악 행동을 암시하는 문장도 금지한다. ("~을 위해 강하고 빠른 음이 필요하다"처럼 과제 정답을 유추하게 만드는 서술 금지)
+· 정답을 대신 말하는 표현도 금지한다. (예: "~이 필요합니다", "~해야 합니다", "더 세게·더 빠르게" 등 구체적 음악 행동 지시) 집중할 음악 요소의 이름(셈여림·빠르기·리듬꼴 등)만 제시한다.
 · "틀렸습니다"만으로 끝내지 않는다.
-· 다시 들을 때 집중할 음악적 포인트를 힌트로 1문장 넣는다.
+· 다시 들을 때 집중할 음악적 포인트를 힌트로 넣는다.
 · 마지막 문장은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요." 중 하나로 끝낸다.
 
 [정답 — 검증: ✓ 일 때]
@@ -59,6 +61,69 @@ export function feedbackAllowsProceedAfterAi(text) {
   const positive = /(완벽|모두\s*맞|전부\s*맞|정확|맞아떨어|좋은\s*선택)/;
   const negative = /(빠진|틀렸|수정|보완|부족|헷갈|아쉬|다른\s*칸)/;
   return positive.test(raw) && !negative.test(raw);
+}
+
+/**
+ * 1차 응답 후 「AI 맞춤형 피드백」을 받은 뒤 「정답 확인」 허용 여부(과제 기준 정오는 UI에서 판별한 값 사용).
+ * · 피드백 요청 시점에 정답이면 → 피드백 완료 후 응답이 그때와 같으면 바로 허용.
+ * · 오답이면 → 피드백 본 뒤 응답이 그때와 달라졌을 때만 허용(2차 응답).
+ * `responseAtFeedback` / `currentResponse`는 문자열·숫자 등 `===` 로 비교 가능한 값이면 된다.
+ */
+export function canOpenAnswerAfterFormativeAiGate({
+  feedbackCompleted,
+  wasCorrectWhenFeedbackRequested,
+  responseAtFeedback,
+  currentResponse
+}) {
+  if (!feedbackCompleted) return false;
+  if (wasCorrectWhenFeedbackRequested) return currentResponse === responseAtFeedback;
+  return currentResponse !== responseAtFeedback;
+}
+
+/** 보기 문자열 비교용(유니코드 정규형·앞뒤 공백) — UI 정오 판별과 동일 규칙으로 맞추려면 이걸 쓴다. */
+export function normalizeFormativeChoice(s) {
+  const t = String(s ?? '').trim();
+  try {
+    return t.normalize('NFC');
+  } catch {
+    return t;
+  }
+}
+
+/**
+ * 모델이 내부 참고와 달리 검증 줄을 잘못 출력하는 경우가 있어,
+ * 피드백 첫 줄을 코드에서 판별한 객관적 정오(isCorrect)에 맞춘다.
+ */
+function syncFormativeAiVerificationLine(text, isCorrect) {
+  const raw = String(text || '').trim();
+  const verificationLine = isCorrect ? '검증: ✓' : '검증: ✗';
+  if (!raw) return verificationLine;
+  const lines = raw.split(/\r?\n/);
+  const first = lines[0] ?? '';
+  if (/검증\s*[:：]\s*[✓✗]/.test(first)) {
+    lines[0] = verificationLine;
+    return lines.join('\n');
+  }
+  return `${verificationLine}\n${raw}`;
+}
+
+const SAFE_OBJECTIVE_CORRECT_BODY =
+  '선택은 과제 기준과 잘 맞아요. 같은 음악을 다시 들으며 셈여림·빠르기·리듬꼴·선율 흐름 중 과제와 연결되는 점을 한 가지 짚어 보세요.';
+const SAFE_OBJECTIVE_WRONG_BODY =
+  '과제와 잘 맞지 않는 선택이에요. 같은 부분을 다시 들으며 셈여림·속도(템포)·리듬·선율 측면에서 어떤 점이 다른지 귀를 기울여 보세요. 다시 생각해보세요.';
+
+/** 객관적 정오와 모델 검증/본문이 크게 엇갈릴 때 안전한 짧은 피드백으로 대체한다. */
+function finalizeObjectiveChoiceAiFeedback(text, isCorrect) {
+  const raw = String(text || '').trim();
+  if (!raw) {
+    return isCorrect ? `검증: ✓\n${SAFE_OBJECTIVE_CORRECT_BODY}` : `검증: ✗\n${SAFE_OBJECTIVE_WRONG_BODY}`;
+  }
+  const first = (raw.split(/\r?\n/)[0] || '').trim();
+  const aiMarkedWrong = /검증\s*[:：]\s*✗/.test(first);
+  const aiMarkedCorrect = /검증\s*[:：]\s*✓/.test(first);
+  if (isCorrect && aiMarkedWrong) return `검증: ✓\n${SAFE_OBJECTIVE_CORRECT_BODY}`;
+  if (!isCorrect && aiMarkedCorrect) return `검증: ✗\n${SAFE_OBJECTIVE_WRONG_BODY}`;
+  return syncFormativeAiVerificationLine(raw, isCorrect);
 }
 
 function msgApiFailed(status) {
@@ -315,7 +380,10 @@ export async function generateVoiceDesignCompareFeedback(selectedChars, voiceDes
 
 데이터(JSON): ${JSON.stringify(rows)}`;
 
-  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    allMatch
+  );
 }
 
 const PIANO_FALLBACK_BODY =
@@ -379,7 +447,10 @@ export async function generateTonePaintingCompareFeedback({
 · 검증 ✓: 음화법·선율·음역·리듬꼴·반복 등 요소명을 넣어 왜 이 선택이 가사와 연결되는지 2~3문장. 보기 문장을 그대로 베끼지 말 것. 개인 칭찬 금지.
 · 검증 ✗: 다른 보기 문구·정답 내용을 절대 쓰지 말 것. 가사의 어느 음악적 특징(음 높낮이, 반복, 선율 길이 등)에 귀를 기울일지 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
 
-  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    isCorrect
+  );
 }
 
 const MELODY_HANDEL_FALLBACK = {
@@ -578,7 +649,10 @@ export async function generateHyThemePart3Feedback({ selectedDeg }) {
 · 검증 ✓: 조성·도성·선율 관계 등 음악 개념 용어로 2~3문장 정교화. "5도" 같은 정답 수를 본문에 반복하지 말 것.
 · 검증 ✗: 정답 도수·숫자·보기 문구를 쓰지 말 것. 시작음·목표음을 포함해 건반에서 세는 방법만 힌트. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
 
-  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    degOk
+  );
 }
 
 function buildVvSonnetFallback({ hasChoice }) {
@@ -598,12 +672,13 @@ export async function generateVvSonnetCompareFeedback({
   userChoice,
   correctAnswer
 }) {
-  const trimmed = (userChoice || '').trim();
-  const hasChoice = Boolean(trimmed);
+  const trimmedNorm = normalizeFormativeChoice(userChoice);
+  const correctNorm = normalizeFormativeChoice(correctAnswer);
+  const hasChoice = Boolean(trimmedNorm);
   const fallback = buildVvSonnetFallback({ hasChoice });
   if (!hasChoice) return fallback;
 
-  const isCorrect = trimmed === (correctAnswer || '').trim();
+  const isCorrect = trimmedNorm === correctNorm;
   const choiceList = Array.isArray(choices) ? choices.join(' / ') : '';
 
   const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 비발디 <사계> 여름악장의 소네트(표제음악) 활동이다.
@@ -613,14 +688,17 @@ export async function generateVvSonnetCompareFeedback({
 소네트 구절(한국어): ${quoteKr}
 질문: ${question}
 보기 목록(참고): ${choiceList}
-학생이 고른 보기: ${trimmed}
+학생이 고른 보기: ${trimmedNorm}
 
 규칙:
 · 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
 · 검증 ✓: 표제음악·셈여림·빠르기·리듬꼴·음형·스트카토 등에서 과제와 연결되는 요소명을 넣어 2~3문장 정교화. 학생 보기 문장을 그대로 베끼지 말 것. 개인 칭찬 금지.
-· 검증 ✗: 다른 보기 문구·정답 문장을 절대 쓰지 말 것. 다시 들을 때 귀를 둘 셈여림·속도·리듬 변화 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+· 검증 ✗: 다른 보기 문구·정답 문장을 절대 쓰지 말 것. 시 구절의 상황(폭풍·번개 등)을 빌려 "이런 음이 필요하다" 식으로 정답을 암시하지 말 것. 다시 들을 때 셈여림(음의 강약)·속도(템포)·리듬(리듬꼴) 중 어디에 귀를 기울일지 요소 이름만 힌트로 1문장에 담을 것. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
 
-  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    isCorrect
+  );
 }
 
 function buildVvConcertoFallback({ hasChoice }) {
@@ -640,12 +718,12 @@ export async function generateVvConcertoCompareFeedback({
   userChoice,
   correctAnswer
 }) {
-  const trimmed = (userChoice || '').trim();
-  const hasChoice = Boolean(trimmed);
+  const trimmedNorm = normalizeFormativeChoice(userChoice);
+  const hasChoice = Boolean(trimmedNorm);
   const fallback = buildVvConcertoFallback({ hasChoice });
   if (!hasChoice) return fallback;
 
-  const isCorrect = trimmed === (correctAnswer || '').trim();
+  const isCorrect = trimmedNorm === normalizeFormativeChoice(correctAnswer);
   const s = Number(soloCount) || 0;
   const t = Number(tuttiCount) || 0;
 
@@ -655,12 +733,15 @@ export async function generateVvConcertoCompareFeedback({
 
 학생이 탭한 횟수(참고): 바이올린 독주 ${s}회, 현악 그룹(총주) ${t}회
 질문: ${question}
-학생이 고른 보기: ${trimmed}
+학생이 고른 보기: ${trimmedNorm}
 
 규칙:
 · 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
 · 검증 ✓: 독주·총주·음색·밀도·리토르넬로(구조 이름만 필요할 때 한 번) 등 음악 개념으로 2~3문장 정교화. 탭 횟수는 귀 기울인 흔적으로만 가볍게 언급해도 된다. 개인 칭찬 금지.
 · 검증 ✗: 다른 보기·정답 문구를 쓰지 말 것. 독주와 총주를 귀로 구분하는 힌트 1문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
 
-  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  return finalizeObjectiveChoiceAiFeedback(
+    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
+    isCorrect
+  );
 }

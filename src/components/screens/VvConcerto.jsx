@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { generateVvConcertoCompareFeedback } from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate, generateVvConcertoCompareFeedback, normalizeFormativeChoice } from '../../lib/compareFeedback';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 
@@ -36,17 +36,19 @@ function VvConcerto({ go }) {
     [VV_CONCERTO_Q]: vvConcertoState?.quizResult || ''
   }));
   const [ansOpen, setAnsOpen] = useState(false);
+  const [concertoAiGate, setConcertoAiGate] = useState(null);
 
   function selectChoice(groupId, value) {
     setSelectedByGroup((prev) => ({ ...prev, [groupId]: value }));
     setResultByGroup((prev) => ({ ...prev, [groupId]: '' }));
     setAnsOpen(false);
+    setConcertoAiGate(null);
   }
 
   function checkTP(groupId, correct, _btnId, bodyId) {
     const picked = selectedByGroup[groupId];
     if (!picked) return;
-    const isCorrect = picked === correct;
+    const isCorrect = normalizeFormativeChoice(picked) === normalizeFormativeChoice(correct);
     setResultByGroup((prev) => ({ ...prev, [groupId]: isCorrect ? 'ok' : 'ng' }));
     setAnsOpen((prev) => !prev);
     setStageCompletion('piano', true);
@@ -70,6 +72,15 @@ function VvConcerto({ go }) {
 
   const result = resultByGroup[VV_CONCERTO_Q];
   const picked = selectedByGroup[VV_CONCERTO_Q];
+  const canOpenAnswerCheck =
+    !!picked &&
+    concertoAiGate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: concertoAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: concertoAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: concertoAiGate.responseAtFeedback,
+      currentResponse: picked
+    });
 
   return (
     <div className="screen active" id="vv-concerto">
@@ -163,6 +174,17 @@ function VvConcerto({ go }) {
                 correctAnswer: VV_CONCERTO_CORRECT
               })
             }
+            onRequested={() => {
+              setConcertoAiGate({
+                feedbackCompleted: false,
+                responseAtFeedback: picked,
+                wasCorrectWhenFeedbackRequested:
+                  normalizeFormativeChoice(picked) === normalizeFormativeChoice(VV_CONCERTO_CORRECT)
+              });
+            }}
+            onResult={() => {
+              setConcertoAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+            }}
           />
         </div>
 
@@ -172,10 +194,12 @@ function VvConcerto({ go }) {
           className="answer-check-toggle"
           onClick={() => checkTP(VV_CONCERTO_Q, VV_CONCERTO_CORRECT, 'ans-vv-concerto-btn', 'ans-vv-concerto-body')}
           aria-expanded={ansOpen}
-          disabled={!picked}
-          style={!picked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          disabled={!canOpenAnswerCheck}
+          style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">
+            {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+          </span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{ansOpen ? '▲' : '▼'}</span>
         </button>
         <div id="ans-vv-concerto-body" className={`answer-compare-slide ${ansOpen ? 'open' : ''}`}>

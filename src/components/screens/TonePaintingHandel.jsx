@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { feedbackAllowsProceedAfterAi, generateTonePaintingCompareFeedback } from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate, generateTonePaintingCompareFeedback } from '../../lib/compareFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -162,16 +162,8 @@ function TonePaintingHandel({ go }) {
     s2: false,
     s3: false
   });
-  const [feedbackSnapshot, setFeedbackSnapshot] = useState({
-    s1: null,
-    s2: null,
-    s3: null
-  });
-  const [feedbackAllowsDirectCheck, setFeedbackAllowsDirectCheck] = useState({
-    s1: false,
-    s2: false,
-    s3: false
-  });
+  /** { [segmentId]: { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } } */
+  const [segmentAiGate, setSegmentAiGate] = useState({});
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const activeSegment = SEGMENTS.find((s) => s.id === activeSegmentId) || SEGMENTS[0];
 
@@ -193,31 +185,36 @@ function TonePaintingHandel({ go }) {
       correctIndex: activeSegment.answer
     });
   const canShowAnswerCheck = selected[activeSegment.id] !== null;
-  const isAlreadyCorrect = selected[activeSegment.id] === activeSegment.answer;
+  const gate = segmentAiGate[activeSegment.id];
   const canOpenAnswerCheck =
     canShowAnswerCheck &&
     hasRequestedFeedback[activeSegment.id] &&
-    (
-      feedbackSnapshot[activeSegment.id] !== selected[activeSegment.id] ||
-      isAlreadyCorrect ||
-      feedbackAllowsDirectCheck[activeSegment.id]
-    );
+    gate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: gate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: gate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: gate.responseAtFeedback,
+      currentResponse: selected[activeSegment.id]
+    });
   const handleRequestFeedback = async () => {
     if (loadingFeedback) return;
     const segmentId = activeSegment.id;
     const currentSelected = selected[segmentId];
+    const wasCorrect = currentSelected === activeSegment.answer;
     setHasRequestedFeedback((prev) => ({ ...prev, [segmentId]: true }));
-    setFeedbackSnapshot((prev) => ({ ...prev, [segmentId]: currentSelected }));
-    setFeedbackAllowsDirectCheck((prev) => ({ ...prev, [segmentId]: false }));
+    setSegmentAiGate((prev) => ({
+      ...prev,
+      [segmentId]: {
+        feedbackCompleted: false,
+        responseAtFeedback: currentSelected,
+        wasCorrectWhenFeedbackRequested: wasCorrect
+      }
+    }));
     setLoadingFeedback(true);
     try {
       const text = await requestToneFeedback();
       const nextText = typeof text === 'string' ? text : '';
       setAiFeedback((prev) => ({ ...prev, [segmentId]: nextText }));
-      setFeedbackAllowsDirectCheck((prev) => ({
-        ...prev,
-        [segmentId]: feedbackAllowsProceedAfterAi(nextText)
-      }));
     } catch (error) {
       const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
       setAiFeedback((prev) => ({
@@ -226,6 +223,11 @@ function TonePaintingHandel({ go }) {
       }));
     } finally {
       setLoadingFeedback(false);
+      setSegmentAiGate((prev) => {
+        const g = prev[segmentId];
+        if (!g) return prev;
+        return { ...prev, [segmentId]: { ...g, feedbackCompleted: true } };
+      });
     }
   };
 
@@ -293,7 +295,16 @@ function TonePaintingHandel({ go }) {
                   key={opt}
                   type="button"
                   className={`vd-opt ${selected[activeSegment.id] === i ? 'sel' : ''}`}
-                  onClick={() => setSelected((prev) => ({ ...prev, [activeSegment.id]: i }))}
+                  onClick={() => {
+                    if (selected[activeSegment.id] === i) return;
+                    setSegmentAiGate((prev) => {
+                      const next = { ...prev };
+                      delete next[activeSegment.id];
+                      return next;
+                    });
+                    setHasRequestedFeedback((prev) => ({ ...prev, [activeSegment.id]: false }));
+                    setSelected((prev) => ({ ...prev, [activeSegment.id]: i }));
+                  }}
                 >
                   {selected[activeSegment.id] === i ? '● ' : '○ '}
                   {opt}
@@ -328,9 +339,11 @@ function TonePaintingHandel({ go }) {
             </button>
           ) : null}
           {hasRequestedFeedback[activeSegment.id] &&
-          (isAlreadyCorrect || feedbackAllowsDirectCheck[activeSegment.id]) ? (
+          gate?.feedbackCompleted &&
+          gate.wasCorrectWhenFeedbackRequested &&
+          selected[activeSegment.id] === gate.responseAtFeedback ? (
             <div className="small-note" style={{ marginTop: 8 }}>
-              좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
+              좋아요! 현재 선택이 정답과 일치해서 바로 확인할 수 있어요.
             </div>
           ) : null}
 

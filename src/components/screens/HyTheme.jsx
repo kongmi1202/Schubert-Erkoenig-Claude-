@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateHyThemePart2Feedback, generateHyThemePart3Feedback } from '../../lib/compareFeedback';
+import {
+  canOpenAnswerAfterFormativeAiGate,
+  generateHyThemePart2Feedback,
+  generateHyThemePart3Feedback
+} from '../../lib/compareFeedback';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
 const HY_THEME1_START_SEC = 0;
@@ -110,14 +114,13 @@ function HyTheme({ go }) {
   const [toneByGroup, setToneByGroup] = useState(() => hyThemeState?.toneByGroup || { 'hy-tone-t1': '', 'hy-tone-t2': '' });
   const [toneChecked, setToneChecked] = useState(false);
   const [toneOpen, setToneOpen] = useState(false);
-  const [hasRequestedToneFeedback, setHasRequestedToneFeedback] = useState(false);
-  const [toneFeedbackSnapshot, setToneFeedbackSnapshot] = useState('');
+  /** AI 맞춤형 피드백 완료 후 정답 확인 게이트 — { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } */
+  const [toneAiGate, setToneAiGate] = useState(null);
 
   const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
   const [degChecked, setDegChecked] = useState(false);
   const [degOpen, setDegOpen] = useState(false);
-  const [hasRequestedDegFeedback, setHasRequestedDegFeedback] = useState(false);
-  const [degFeedbackSnapshot, setDegFeedbackSnapshot] = useState('');
+  const [degAiGate, setDegAiGate] = useState(null);
 
   useEffect(() => {
     const cleanups = [];
@@ -353,11 +356,25 @@ function HyTheme({ go }) {
       }),
     [feelT1, feelT2, toneByGroup]
   );
-  const toneEditedAfterFeedback = hasRequestedToneFeedback && toneFeedbackSnapshot !== toneSnapshot;
-  const canOpenToneAnswerCheck = canCheckTone && hasRequestedToneFeedback && toneEditedAfterFeedback;
   const degSnapshot = useMemo(() => JSON.stringify({ selectedDeg: selectedDeg || '' }), [selectedDeg]);
-  const degEditedAfterFeedback = hasRequestedDegFeedback && degFeedbackSnapshot !== degSnapshot;
-  const canOpenDegAnswerCheck = canCheckDeg && hasRequestedDegFeedback && degEditedAfterFeedback;
+  const canOpenToneAnswerCheck =
+    canCheckTone &&
+    toneAiGate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: toneAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: toneAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: toneAiGate.responseAtFeedback,
+      currentResponse: toneSnapshot
+    });
+  const canOpenDegAnswerCheck =
+    canCheckDeg &&
+    degAiGate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: degAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: degAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: degAiGate.responseAtFeedback,
+      currentResponse: degSnapshot
+    });
 
   useEffect(() => {
     setHyThemeState({ myPreview, feelT1, feelT2, toneByGroup, selectedDeg });
@@ -542,9 +559,15 @@ function HyTheme({ go }) {
             })
           }
           onRequested={() => {
-            setHasRequestedToneFeedback(true);
-            setToneFeedbackSnapshot(toneSnapshot);
+            setToneAiGate({
+              feedbackCompleted: false,
+              responseAtFeedback: toneSnapshot,
+              wasCorrectWhenFeedbackRequested: toneCorrect
+            });
             setToneOpen(false);
+          }}
+          onResult={() => {
+            setToneAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
           }}
         />
         <button
@@ -556,7 +579,9 @@ function HyTheme({ go }) {
           style={!canOpenToneAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           aria-expanded={toneOpen}
         >
-          <span className="answer-check-toggle-label">피드백 반영 후 정답 확인하기</span>
+          <span className="answer-check-toggle-label">
+            {canOpenToneAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+          </span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{toneOpen ? '▲' : '▼'}</span>
         </button>
         <div id="hy-ans-tone-body" className={`answer-compare-slide ${toneOpen ? 'open' : ''}`}>
@@ -622,9 +647,15 @@ function HyTheme({ go }) {
             })
           }
           onRequested={() => {
-            setHasRequestedDegFeedback(true);
-            setDegFeedbackSnapshot(degSnapshot);
+            setDegAiGate({
+              feedbackCompleted: false,
+              responseAtFeedback: degSnapshot,
+              wasCorrectWhenFeedbackRequested: degCorrect
+            });
             setDegOpen(false);
+          }}
+          onResult={() => {
+            setDegAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
           }}
         />
         <button
@@ -636,7 +667,9 @@ function HyTheme({ go }) {
           style={!canOpenDegAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           aria-expanded={degOpen}
         >
-          <span className="answer-check-toggle-label">피드백 반영 후 정답 확인하기</span>
+          <span className="answer-check-toggle-label">
+            {canOpenDegAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+          </span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{degOpen ? '▲' : '▼'}</span>
         </button>
         <div id="hy-ans-deg-body" className={`answer-compare-slide ${degOpen ? 'open' : ''}`}>
