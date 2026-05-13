@@ -126,11 +126,14 @@ function MelodyCanvasHandel({ go }) {
     <div className="screen active">
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-C · 분석적 감상 (할렐루야)</div>
-        <div className="s-title">가락선 악보 그리기</div>
-        <div className="s-desc">화성음악·다성음악의 움직임을 선으로 표현해보세요.</div>
+        <div className="s-title">화성·다성음악</div>
+        <div className="s-desc">음악 요소: 다양한 소리의 어울림</div>
       </div>
       <div className="body voice-body">
         <div className="sec">A 구간</div>
+        <div className="segment-guide-text">
+          A구간을 듣고 가락의 움직임을 선으로 표현해보세요.
+        </div>
         <div className="audio-bar voice-audio-bar">
           <div className="voice-audio-main">
             <div className="voice-audio-yt">
@@ -212,8 +215,8 @@ function MelodyCanvasHandel({ go }) {
                 </div>
               </div>
               <div className="fb show info">
-                1. 내가 그린 가락선 악보에서 베이스→테너→알토→소프라노처럼 성부가 번갈아 움직이는지 확인해 보세요.<br />
-                2. 이렇게 모든 성부가 같은 선율을 번갈아 노래하는 부분을 '다성음악'이라고 해요!<br />
+                1. 내가 그린 가락선 악보에서 네 성부가 동시에 함께 움직이는 확인해 보세요.<br />
+                2. 이렇게 모든 성부가 화음을 맞춰 함께 노래하는 부분을 '화성음악'이라고 해요!<br />
                 3. 내가 그린 가락선 악보가 마음에 들지 않으면 지우고 다시 그려 보세요.
               </div>
             </div>
@@ -221,6 +224,9 @@ function MelodyCanvasHandel({ go }) {
         ) : null}
 
         <div className="sec">B 구간</div>
+        <div className="segment-guide-text">
+          B구간을 듣고 성부가 번갈아 움직이는 흐름을 선으로 표현해보세요.
+        </div>
         <div className="audio-bar voice-audio-bar">
           <div className="voice-audio-main">
             <div className="voice-audio-yt">
@@ -299,12 +305,10 @@ function MelodyCanvasHandel({ go }) {
                   </div>
                 </div>
               </div>
-              <div className="fb show info">핵심 개념(다성음악): 베이스→테너→알토→소프라노처럼 성부가 번갈아 움직이는지(교대 진행)만 확인하면 돼요. 선 모양은 다양해도 괜찮아요.</div>
               <div className="fb show info">
-                1. 내가 그린 가락선 악보에서 네 성부가 동시에 함께 움직이는 확인해 보세요.<br />
-                2. 베이스(Bass)부터 소프라노(Soprano)까지 가락선이 순서에 맞게 위치해있는지 확인해 보세요.<br />
-                3. 이렇게 모든 성부가 화음을 맞춰 함께 노래하는 부분을 '화성음악'이라고 해요!<br />
-                4. 내가 그린 가락선 악보가 마음에 들지 않으면 지우고 다시 그려 보세요.
+                1. 베이스(Bass)부터 소프라노(Soprano)까지 가락선이 순서에 맞게 위치해있는지 확인해 보세요.<br />
+                2. 이렇게 같은 선율을 각 성부가 번갈아가며 노래하는 부분을 '다성음악'이라고 해요!<br />
+                3. 내가 그린 가락선 악보가 마음에 들지 않으면 지우고 다시 그려 보세요.
               </div>
             </div>
           </div>

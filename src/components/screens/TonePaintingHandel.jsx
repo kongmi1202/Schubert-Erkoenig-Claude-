@@ -240,6 +240,7 @@ function TonePaintingHandel({ go }) {
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-B · 분석적 감상 (할렐루야)</div>
         <div className="s-title">음화법(Tone Painting) 찾기</div>
+        <div className="s-desc">음악 요소: 음색, 가락</div>
       </div>
 
       <div className="body voice-body">
@@ -265,8 +266,8 @@ function TonePaintingHandel({ go }) {
         <section style={{ marginBottom: 18 }}>
           <div className="sec">{activeSegment.title}</div>
           <div className="review-card" style={{ marginBottom: 10 }}>
-            <div className="review-section-title">가사</div>
-            <div className="review-item" style={{ marginBottom: 10 }}>{activeSegment.lyric}</div>
+            <div className="tone-lyric-label">가사</div>
+            <div className="tone-lyric-text" style={{ marginBottom: 10 }}>{activeSegment.lyric}</div>
 
             <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
@@ -288,13 +289,14 @@ function TonePaintingHandel({ go }) {
               />
             </div>
 
-            <div className="review-section-title">{activeSegment.question}</div>
-            <div className="vd-opts" style={{ marginTop: 10 }}>
+            <div className="tone-q-label">질문</div>
+            <div className="tone-q-text">{activeSegment.question}</div>
+            <div className="vd-opts tone-options" style={{ marginTop: 10 }}>
               {activeSegment.options.map((opt, i) => (
                 <button
                   key={opt}
                   type="button"
-                  className={`vd-opt ${selected[activeSegment.id] === i ? 'sel' : ''}`}
+                  className={`vd-opt tone-option ${selected[activeSegment.id] === i ? 'sel' : ''}`}
                   onClick={() => {
                     if (selected[activeSegment.id] === i) return;
                     setSegmentAiGate((prev) => {
@@ -311,8 +313,8 @@ function TonePaintingHandel({ go }) {
                 </button>
               ))}
             </div>
-            <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-              <button type="button" className="btn-s" onClick={handleRequestFeedback} disabled={loadingFeedback}>
+            <div className="compare-ai-feedback tone-ai-feedback" style={{ marginTop: 12 }}>
+              <button type="button" className="btn-s tone-ai-btn" onClick={handleRequestFeedback} disabled={loadingFeedback}>
                 {loadingFeedback ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
               </button>
               {aiFeedback[activeSegment.id] ? (
