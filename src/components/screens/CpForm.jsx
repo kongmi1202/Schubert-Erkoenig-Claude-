@@ -332,13 +332,12 @@ function CpForm({ go }) {
         <div className="fb show info">
           💡 음악은 여러 구간으로 나뉘어요.
           <br />
-          각 구간을 듣고 어떤 이름을
-          <br />
-          붙여야 할지 맞춰보세요!
+          각 구간을 듣고 A, B, A&apos; 중 어떤 이름을 붙여야 할지 맞춰보세요!
         </div>
 
         <div className="form-puzzle-grid">
-          {FORM_CARDS.map((card) => {
+          {FORM_CARDS.map((card, zoneIndex) => {
+            const zone = zoneIndex + 1;
             const picked = formAnswers[card.id];
             const featPick = featureById[card.id];
             const ui = segmentUiById[card.id] || { revealed: false, open: false };
@@ -348,10 +347,16 @@ function CpForm({ go }) {
             const segReady = Boolean(picked && featPick);
 
             return (
-              <div key={card.id} className="form-puzzle-card">
-                <div className="form-puzzle-top">
-                  <div className="form-puzzle-num">{card.num}</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
+              <div key={card.id} className={`form-puzzle-card cp-form-zone cp-form-zone--${zone}`}>
+                <div className="cp-form-zone-header">
+                  <span className="cp-form-zone-num">{card.num}</span>
+                  <span className="cp-form-zone-part">{card.subtitle}</span>
+                </div>
+                <div className="cp-form-zone-body">
+                <div className="cp-form-segment-block cp-form-segment-play">
+                  <div className="cp-form-segment-block-title">① 구간 듣기</div>
+                  <div className="cp-form-segment-play-row">
+                  <div className="cp-form-segment-play-btns">
                     <button id={card.id} type="button" className="btn-s" onClick={() => playSegment(card.id)}>
                       {currentSegmentId === card.id && isPlaying ? '❚❚ 일시정지' : '▶ 재생'}
                     </button>
@@ -359,9 +364,12 @@ function CpForm({ go }) {
                       ■ 정지
                     </button>
                   </div>
-                  <div className="small-note">{card.subtitle}</div>
+                  </div>
                 </div>
-                <div className="form-puzzle-label-opts">
+
+                <div className="cp-form-segment-block cp-form-segment-labels">
+                  <div className="cp-form-segment-block-title">② A · B · A&apos; 이름 맞추기</div>
+                  <div className="form-puzzle-label-opts">
                   {['A', 'B', "A'"].map((label) => {
                     const isSelected = picked === label;
                     const selClass = isSelected ? (label === 'A' ? 'sel-A' : label === 'B' ? 'sel-B' : 'sel-Ap') : '';
@@ -379,11 +387,11 @@ function CpForm({ go }) {
                     );
                   })}
                 </div>
-
-                <div className="small-note" style={{ marginTop: 12, lineHeight: 1.55 }}>
-                  이 구간의 특징은 무엇인가요?
                 </div>
-                <div className="cp-form-feature-opts">
+
+                <div className="cp-form-segment-block cp-form-segment-features">
+                  <div className="cp-form-segment-block-title">③ 이 구간의 특징은 무엇인가요?</div>
+                  <div className="cp-form-feature-opts">
                   {FEATURE_OPTS.map((opt) => {
                     const isSel = featPick === opt;
                     let cls = 'choice-btn';
@@ -401,10 +409,11 @@ function CpForm({ go }) {
                     );
                   })}
                 </div>
+                </div>
 
                 {!segReady ? (
-                  <div className="small-note" style={{ marginTop: 10, color: 'var(--text-dim)' }}>
-                    라벨과 특징을 모두 선택해주세요
+                  <div className="cp-form-segment-required" role="status">
+                    라벨과 특징을 모두 선택해 주세요
                   </div>
                 ) : null}
 
@@ -433,6 +442,7 @@ function CpForm({ go }) {
                       </div>
                     ) : null}
                   </div>
+                </div>
                 </div>
               </div>
             );

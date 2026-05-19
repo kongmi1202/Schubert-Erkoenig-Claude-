@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateCpRhythmPolyMoodFeedback } from '../../lib/compareFeedback';
 
 const AUDIO_SRC = {
   'cp-rh': '/audio/cp-rh.mp3',
@@ -8,8 +10,8 @@ const AUDIO_SRC = {
 };
 
 const CHOICES = {
-  'cp-rh-q': ['2개씩', '3개씩', '4개씩', '6개씩'],
-  'cp-lh-q': ['2개씩', '3개씩', '4개씩', '6개씩'],
+  'cp-rh-q': ['2개씩', '3개씩', '4개씩'],
+  'cp-lh-q': ['2개씩', '3개씩', '4개씩'],
   'cp-poly-q': ['단순하고 편안하다', '복잡하고 긴장감이 있다', '느리고 서정적이다', '규칙적이고 반복된다']
 };
 
@@ -22,7 +24,6 @@ function CpRhythm({ go }) {
   const [openByBodyId, setOpenByBodyId] = useState({});
   const [playingId, setPlayingId] = useState('');
   const [polyDesc, setPolyDesc] = useState(() => cpRhythmState?.polyDesc || '');
-  const [showHint, setShowHint] = useState(false);
   const audioRefs = useRef({
     'cp-rh': null,
     'cp-lh': null,
@@ -72,9 +73,7 @@ function CpRhythm({ go }) {
     [resultByGroup]
   );
   const canProceed = allChecked && polyDesc.trim().length > 0;
-  const hintText = `오른손과 왼손 리듬이 같게 들리나요, 다르게 들리나요?
-두 리듬이 겹칠 때 편한 느낌인가요, 긴장되는 느낌인가요?
-왜 그렇게 느꼈는지 한 줄로 써볼까요?`;
+  const canRequestPolyAi = polyDesc.trim().length >= 5;
 
   useEffect(() => {
     setCpRhythmState({ selectedByGroup, polyDesc });
@@ -332,13 +331,27 @@ function CpRhythm({ go }) {
           className="txt"
           value={polyDesc}
           onChange={(e) => setPolyDesc(e.target.value)}
-          placeholder="긴장감, 추진력, 불안정한 느낌 등을 중심으로 써보세요."
+          placeholder="폴리리듬을 들으며 느껴진 분위기를 한두 문장으로 써보세요."
         />
-        <button type="button" className="ai-btn" onClick={() => setShowHint((prev) => !prev)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showHint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {hintText}
+        <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 8 }}>
+          <CompareAiFeedbackBlock
+            key={`cp-poly-mood-${polyDesc.trim().slice(0, 80)}`}
+            disabled={!canRequestPolyAi}
+            requestFn={() =>
+              generateCpRhythmPolyMoodFeedback({
+                userText: polyDesc,
+                selectedRhGrouping: selectedByGroup['cp-rh-q'] || '',
+                selectedLhGrouping: selectedByGroup['cp-lh-q'] || '',
+                selectedBothFeel: selectedByGroup['cp-poly-q'] || ''
+              })
+            }
+          />
         </div>
+        {!canRequestPolyAi ? (
+          <div className="small-note" style={{ marginBottom: 10 }}>
+            한두 문장 이상 쓴 뒤 AI 맞춤형 피드백을 받을 수 있어요.
+          </div>
+        ) : null}
 
         {canProceed ? (
           <div className="feat-card">

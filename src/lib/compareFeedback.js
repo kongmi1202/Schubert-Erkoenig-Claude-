@@ -827,3 +827,64 @@ export async function generateCpFormAbaDiscoveryFeedback({
     isCorrect
   );
 }
+
+function isCpRhythmPolyMoodNonAttempt(text) {
+  const t = String(text ?? '').trim();
+  if (t.length < 8) return true;
+  if (/^(몰라|모르겠|잘\s*모르|글쎄|모름|pass|\.+)$/i.test(t.replace(/\s/g, ''))) return true;
+  if (/^(몰라|모르겠|잘\s*모르|글쎄)/i.test(t) && t.length <= 24) return true;
+  return false;
+}
+
+function buildCpRhythmPolyMoodFallback({ hasInput, isNonAttempt = false }) {
+  if (!hasInput) {
+    return '먼저 폴리리듬이 이 곡의 분위기에 어떤 영향을 주는지 한두 문장으로 써본 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요.';
+  }
+  if (isNonAttempt) {
+    return `검증: ✗
+오른손만, 왼손만, 양손을 합친 소리를 차례로 다시 들어보세요. 손마다 리듬이 같게 들리는지 다른지 귀에 집중한 뒤, 그 차이가 곡 분위기에 어떤 느낌을 주는지 한 문장으로 써보세요. 다시 생각해보세요.`;
+  }
+  return `검증: ✗
+앞에서 고른 양손 느낌과 지금 쓴 문장이 이어지는지 확인해 보세요. «폴리리듬»과 «분위기»를 연결하는 말을 네 생각으로 한 문장 더 써 보세요. 다시 들어보세요.`;
+}
+
+/**
+ * 쇼팽 2-C 폴리리듬 — 분위기 영향 서술형 형성적 피드백
+ */
+export async function generateCpRhythmPolyMoodFeedback({
+  userText,
+  selectedRhGrouping = '',
+  selectedLhGrouping = '',
+  selectedBothFeel = ''
+}) {
+  const trimmed = String(userText ?? '').trim();
+  if (trimmed.length < 5) {
+    return buildCpRhythmPolyMoodFallback({ hasInput: false });
+  }
+  if (isCpRhythmPolyMoodNonAttempt(trimmed)) {
+    return buildCpRhythmPolyMoodFallback({ hasInput: true, isNonAttempt: true });
+  }
+
+  const fallback = buildCpRhythmPolyMoodFallback({ hasInput: true });
+  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 쇼팽 <환상 즉흥곡> 2-C 폴리리듬 활동의 마지막 서술 질문이다.
+
+질문: 폴리리듬이 이 곡의 분위기에 어떤 영향을 준다고 생각하나요?
+
+학생이 앞에서 고른 내용(참고):
+· 오른손 음표 묶음: ${selectedRhGrouping || '(아직 없음)'}
+· 왼손 음표 묶음: ${selectedLhGrouping || '(아직 없음)'}
+· 양손이 함께 연주될 때 느낌: ${selectedBothFeel || '(아직 없음)'}
+
+내부 참고(학생에게 절대 그대로 쓰지 말 것 — 판정용만): 폴리리듬은 두 손의 박자가 겹치며 복잡·긴장·추진·불안정 같은 분위기와 연결될 수 있다. 학생이 스스로 그 연결을 1문장 이상 썼으면 ✓.
+
+학생 서술:
+${trimmed}
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 폴리리듬과 분위기(느낌)를 학생 말로 연결했으면 ✓, 거의 없거나 «몰라»류면 ✗.
+· 검증 ✓(정교화): 학생이 쓴 표현을 짧게 인용·반영한 뒤, 폴리리듬·리듬꼴·분위기 등 음악 요소명으로 2~3문장 정교화해도 된다. 학생이 쓰지 않은 느낌 단어(긴장감·추진력·불안정·복잡 등)나 폴리리듬이 두 손의 박자가 겹친다는 설명을 덧붙여도 된다. 다만 모범 해설 문장을 통째로 베끼지 말 것. 개인 칭찬 금지.
+· 검증 ✗(매우 중요 — 답 유도, 정답 풀이 금지): 폴리리듬이 무엇인지 정의하거나 설명하지 말 것. 4박·3박·셋잇단·16분음표 등 구체 수치·박자 설명 금지. «긴장감», «추진력», «불안정», «복잡» 등 기대 분위기 단어를 본문에 넣지 말 것. «~때문에 ~가 생긴다»처럼 정답 결론을 대신 말하지 말 것.
+· 검증 ✗에서 할 일: (1) 다시 들을 포인트 질문 1개 — 예: 손마다 리듬이 같게 들리는지, 겹칠 때 분위기가 어떻게 느껴지는지 (정답 단어 없이). (2) 앞에서 고른 양손 느낌과 이어 쓰라는 짧은 안내 1문장. 마지막은 반드시 «다시 들어보세요.» 또는 «다시 생각해보세요.»`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+}

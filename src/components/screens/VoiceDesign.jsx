@@ -172,7 +172,7 @@ function VoiceDesign({ go }) {
   }, [selectedChars, voiceDesign, setVoiceDesignState]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물을 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.' : '성부를 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.'}<br /><strong>서로 다른 두 대상</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)<br />음악 요소: <strong>음색</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물 2명을 골라 해당 인물이 등장하는 부분을 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.' : <>성부를 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.<br /><strong>서로 다른 두 대상</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)</>}<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
         <div className="sec">{isErlkonig ? '등장인물 선택 · 설계할 인물로 전환' : '성부 선택 · 설계할 대상 전환'}</div>
         <div className="char-tabs">

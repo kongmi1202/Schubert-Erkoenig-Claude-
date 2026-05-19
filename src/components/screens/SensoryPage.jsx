@@ -287,12 +287,9 @@ function SensoryPage({ go }) {
         <div className="palette">{colors.map((c) => <button key={c.name} title={c.name} className={`pal-btn ${selectedColors.includes(c.name) ? 'on' : ''}`} style={{ background: c.value }} onClick={() => toggleColor(c.name)} />)}</div>
         <div className="pal-note">선택된 색상: {selectedColors.length}개 (2~4개 선택)</div>
         <div className="pal-selected-names">{selectedColors.length ? selectedColors.join(', ') : '선택한 색상 이름이 여기에 표시됩니다.'}</div>
-        <div
-          className="sec"
-          style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 6 }}
-        >
-          <span style={{ flexShrink: 0 }}>느낌·분위기 서술</span>
-          <span className="small-note" style={{ flex: '1 1 200px', margin: 0, lineHeight: 1.55 }}>
+        <div className="sec sensory-desc-sec">
+          <span className="sensory-desc-sec-title">느낌·분위기 서술</span>
+          <span className="small-note sensory-desc-tip">
             <span style={{ fontWeight: 600 }}>작성 TIP:</span> {SENSORY_DESC_WRITING_TIP}
           </span>
         </div>

@@ -200,7 +200,7 @@ function PianoAnalysis({ go }) {
           }}
           onEnded={() => setRhPlaying(false)}
         />
-        <div className="audio-bar voice-audio-bar piano-audio-bar">
+        <div className="audio-bar piano-audio-bar">
           <button type="button" className="aud-btn" aria-label={rhPlaying ? '오른손 반주 일시정지' : '오른손 반주 재생'} onClick={() => setRhPlaying((p) => !p)}>
             {rhPlaying ? '❚❚' : '▶'}
           </button>
@@ -274,7 +274,7 @@ function PianoAnalysis({ go }) {
           }}
           onEnded={() => setLhPlaying(false)}
         />
-        <div className="audio-bar voice-audio-bar piano-audio-bar">
+        <div className="audio-bar piano-audio-bar">
           <button type="button" className="aud-btn" aria-label={lhPlaying ? '왼손 반주 일시정지' : '왼손 반주 재생'} onClick={() => setLhPlaying((p) => !p)}>
             {lhPlaying ? '❚❚' : '▶'}
           </button>

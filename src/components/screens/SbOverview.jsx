@@ -3,28 +3,17 @@ import { useAppStore } from '../../store/useAppStore';
 import SensoryStage1Review from '../SensoryStage1Review';
 
 const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
-const helperHints = [
-  '들리는 악기 이름을 생각나는 만큼 써보세요.',
-  '목소리가 노래처럼 들리는지 말처럼 들리는지 써보세요.',
-  '음악 분위기를 단어 2개로 써보세요. (예: 불안, 신비)'
-];
+const SB_OVERVIEW_Q1_WRITING_TIP =
+  '음악에서 들리는 악기 이름(또는 연주 형태)과 성악가의 목소리 파트를 써보세요.';
+
 function SbOverview({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const [q1, setQ1] = useState('');
-  const [showQ1Hint, setShowQ1Hint] = useState(false);
   const [q1Open, setQ1Open] = useState(false);
-  const [q1Hint, setQ1Hint] = useState(helperHints[0]);
 
   const canProceed = useMemo(() => q1.trim(), [q1]);
   const canOpenAnswer = canProceed;
 
-  const showHint = (forQ1) => {
-    const next = helperHints[Math.floor(Math.random() * helperHints.length)];
-    if (forQ1) {
-      setQ1Hint(next);
-      setShowQ1Hint(true);
-    }
-  };
   return (
     <div className="screen active" id="sb-overview">
       <div className="stage-header">
@@ -44,17 +33,15 @@ function SbOverview({ go }) {
           />
         </div>
 
-        <div className="sec">Q1. 이 음악을 연주하는 악기와 목소리 형태는?</div>
+        <div className="sec">Q1. 이 음악을 연주하는 악기들(또는 연주 형태)과 성악가의 성종(성부)은?</div>
         <textarea
           className="txt"
           value={q1}
           onChange={(e) => setQ1(e.target.value)}
           placeholder="악기 편성과 목소리 형태를 적어보세요."
         />
-        <button type="button" className="ai-btn" onClick={() => showHint(true)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showQ1Hint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          {q1Hint}
+        <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
+          작성 TIP: {SB_OVERVIEW_Q1_WRITING_TIP}
         </div>
         <button
           type="button"

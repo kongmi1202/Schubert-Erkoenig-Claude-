@@ -76,6 +76,10 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 }
 .sec::after{content:'';flex:1;height:1px;background:var(--border)}
 .body .sec:first-of-type{margin-top:0}
+.sensory-desc-sec{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.sensory-desc-sec::after{flex:1 0 24px;min-width:24px}
+.sensory-desc-sec-title{flex-shrink:0;white-space:nowrap}
+.sensory-desc-tip{flex-shrink:0;margin:0;line-height:1.55;white-space:nowrap;font-weight:400;color:var(--text-dim);font-size:13px}
 
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
 .field input,.txt,.dropdown{padding:13px 16px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:16px;line-height:1.6}
@@ -491,7 +495,7 @@ canvas{display:block;width:100%;touch-action:none}
 .feat-body{font-size:12px;line-height:1.9;color:var(--text-dim);font-weight:300}
 .audio-bar{background:var(--bg3);border:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:12px}
 /* 가락선 활동: 반주 듣기 바 — 재생 버튼·제목 영역 약 2배 */
-.piano-audio-bar{padding:22px 26px;gap:22px;margin-bottom:18px;align-items:center}
+.piano-audio-bar{padding:22px 26px;gap:16px;margin-bottom:18px;align-items:center;justify-content:flex-start}
 .piano-audio-bar .aud-btn{width:120px;height:120px;font-size:38px;flex-shrink:0}
 .piano-audio-bar .aud-title-sm{font-size:20px}
 .piano-audio-bar .aud-sub{font-size:15px;margin-top:6px;line-height:1.45}
@@ -1163,14 +1167,75 @@ canvas{display:block;width:100%;touch-action:none}
 .form-puzzle-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 28px;
   margin-bottom: 16px;
 }
 .form-puzzle-card {
   border: 1px solid var(--border);
   background: var(--surface);
-  padding: 16px 18px;
+  padding: 0;
   transition: all .2s;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cp-form-zone {
+  border-width: 1px;
+  border-style: solid;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.cp-form-zone--1 {
+  border-color: rgba(139, 92, 246, 0.55);
+  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.12);
+}
+.cp-form-zone--2 {
+  border-color: rgba(184, 150, 62, 0.55);
+  box-shadow: 0 8px 28px rgba(184, 150, 62, 0.1);
+}
+.cp-form-zone--3 {
+  border-color: rgba(94, 207, 190, 0.5);
+  box-shadow: 0 8px 28px rgba(94, 207, 190, 0.1);
+}
+.cp-form-zone-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border2);
+}
+.cp-form-zone--1 .cp-form-zone-header {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.28), rgba(139, 92, 246, 0.06));
+}
+.cp-form-zone--2 .cp-form-zone-header {
+  background: linear-gradient(90deg, rgba(184, 150, 62, 0.28), rgba(184, 150, 62, 0.06));
+}
+.cp-form-zone--3 .cp-form-zone-header {
+  background: linear-gradient(90deg, rgba(94, 207, 190, 0.22), rgba(94, 207, 190, 0.05));
+}
+.cp-form-zone-num {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  line-height: 1.2;
+}
+.cp-form-zone--1 .cp-form-zone-num { color: #e9d5ff; }
+.cp-form-zone--2 .cp-form-zone-num { color: #f5e6c8; }
+.cp-form-zone--3 .cp-form-zone-num { color: #c8faf0; }
+.cp-form-zone-part {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+.cp-form-zone-body {
+  padding: 16px 18px 18px;
+}
+.cp-form-segment-play-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .form-puzzle-top {
   display: flex;
@@ -1188,6 +1253,63 @@ canvas{display:block;width:100%;touch-action:none}
 .form-puzzle-label-opts {
   display: flex;
   gap: 8px;
+}
+.cp-form-segment-block {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.cp-form-segment-block:first-child {
+  margin-top: 0;
+}
+.cp-form-segment-play {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+}
+.cp-form-segment-labels {
+  border-color: rgba(184, 150, 62, 0.45);
+  background: rgba(184, 150, 62, 0.07);
+}
+.cp-form-segment-features {
+  border-color: rgba(94, 207, 190, 0.35);
+  background: rgba(94, 207, 190, 0.06);
+}
+.cp-form-segment-block-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0e8ff;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+.cp-form-segment-play .cp-form-segment-play-row {
+  margin-bottom: 0;
+}
+.cp-form-segment-play-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cp-form-segment-duration {
+  font-size: 13px;
+  color: var(--gold-light);
+  font-weight: 500;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.cp-form-segment-features .cp-form-feature-opts {
+  margin-top: 0;
+}
+.cp-form-segment-required {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--gold);
+  background: rgba(184, 150, 62, 0.12);
+  color: #f5e6c8;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 .form-label-opt {
   padding: 7px 16px;

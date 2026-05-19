@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import SensoryStage1Review from '../SensoryStage1Review';
 
@@ -15,7 +15,14 @@ function CpOverview({ go }) {
   const [q1Open, setQ1Open] = useState(false);
   const [q2Open, setQ2Open] = useState(false);
 
-  const canProceed = useMemo(() => q1.trim() && q2.trim(), [q1, q2]);
+  const isAllFilled = useMemo(() => Boolean(q1.trim() && q2.trim()), [q1, q2]);
+
+  useEffect(() => {
+    if (!isAllFilled) {
+      setQ1Open(false);
+      setQ2Open(false);
+    }
+  }, [isAllFilled]);
 
   return (
     <div className="screen active" id="cp-overview">
@@ -44,18 +51,18 @@ function CpOverview({ go }) {
           onChange={(e) => setAnalyticalCharacter(0, e.target.value)}
           placeholder="악기 편성을 적어보세요."
         />
-        <button
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => setQ1Open((prev) => !prev)}
-          aria-expanded={q1Open}
-          disabled={!q1.trim()}
-          style={!q1.trim() ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
-        </button>
-        <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
+        {isAllFilled ? (
+          <button
+            type="button"
+            className="answer-check-toggle"
+            onClick={() => setQ1Open((prev) => !prev)}
+            aria-expanded={q1Open}
+          >
+            <span className="answer-check-toggle-label">정답 확인하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
+          </button>
+        ) : null}
+        <div className={`answer-compare-slide ${isAllFilled && q1Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
             <div className="fb show info">
               피아노 독주예요.
@@ -78,18 +85,18 @@ function CpOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 힌트: {CP_OVERVIEW_Q2_HINT}
         </div>
-        <button
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => setQ2Open((prev) => !prev)}
-          aria-expanded={q2Open}
-          disabled={!q2.trim()}
-          style={!q2.trim() ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
-        </button>
-        <div className={`answer-compare-slide ${q2Open ? 'open' : ''}`}>
+        {isAllFilled ? (
+          <button
+            type="button"
+            className="answer-check-toggle"
+            onClick={() => setQ2Open((prev) => !prev)}
+            aria-expanded={q2Open}
+          >
+            <span className="answer-check-toggle-label">정답 확인하기</span>
+            <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
+          </button>
+        ) : null}
+        <div className={`answer-compare-slide ${isAllFilled && q2Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
             <div className="fb show info">
               이 곡은 빠르고 격렬한 부분과
@@ -107,8 +114,8 @@ function CpOverview({ go }) {
           <button className="btn-s" onClick={() => go('sensoryPage')}>← 이전</button>
           <button
             className="btn-p"
-            disabled={!canProceed}
-            style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            disabled={!isAllFilled}
+            style={!isAllFilled ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => {
               setStageCompletion('analytical', true);
               go('voiceDesign');

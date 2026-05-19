@@ -6,13 +6,7 @@ const correctCharactersErlkonig = ['해설자', '아버지', '아들', '마왕']
 const correctStoryErlkonig = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
 const correctCharactersHallelujah = ['후렴(Hallelujah) 반복', '합창의 층위', '장조 화성', '점층적 전개'];
 const correctStoryHallelujah = '할렐루야는 후렴이 반복되며 합창 성부가 점층적으로 쌓이고, 장조 화성과 오케스트라가 장엄한 예배적 분위기를 만든다.';
-const storyPromptHints = [
-  '줄거리를 "처음-중간-끝" 순서로 짧게 써보세요.',
-  '등장인물이 누구이고 무슨 일이 일어났는지 써보세요.',
-  '가장 무서웠던 장면 1가지를 써보세요.',
-  '아버지, 아들, 마왕 중 마음이 가장 느껴진 인물을 써보세요.',
-  '결말에서 무슨 일이 있었는지 한 문장으로 써보세요.'
-];
+const ERLKONIG_OVERVIEW_Q2_HINT = '등장인물과 사건을 "처음-중간-끝" 순서로 짧게 써 보세요.';
 const hallelujahPromptHints = [
   '"할렐루야"가 몇 번 반복되는지 느낌대로 써보세요.',
   '노래가 작게 시작해서 크게 커지는 부분을 써보세요.',
@@ -34,14 +28,14 @@ function AnalyticalOverview({ go }) {
 
   const answerCheckOpen = useAppStore((s) => s.answerCheckOpen);
   const setAnswerCheckOpen = useAppStore((s) => s.setAnswerCheckOpen);
-  const [storyHint, setStoryHint] = useState(storyPromptHints[0]);
+  const [storyHint, setStoryHint] = useState(hallelujahPromptHints[0]);
   const correctCharacters = isHaydn
     ? ['제1바이올린', '제2바이올린', '비올라', '첼로']
     : (isErlkonig ? correctCharactersErlkonig : correctCharactersHallelujah);
   const correctStory = isHaydn
     ? '종달새. 제1바이올린의 높고 가벼운 선율이 새의 지저귐처럼 들리기 때문이다.'
     : (isErlkonig ? correctStoryErlkonig : correctStoryHallelujah);
-  const promptHints = isErlkonig ? storyPromptHints : hallelujahPromptHints;
+  const promptHints = hallelujahPromptHints;
   const overviewTitle = isHaydn ? '종달새 개요 파악' : (isErlkonig ? '전체적인 개요 파악' : '할렐루야 구조 파악');
   const overviewVideoSrc = isHaydn
     ? 'https://www.youtube.com/embed/BGX6u2NJxuM?start=0&end=28'
@@ -189,7 +183,12 @@ function AnalyticalOverview({ go }) {
           onChange={(e) => setAnalyticalStory(e.target.value)}
           placeholder={q2Placeholder}
         />
-        {!isHaydn ? (
+        {isErlkonig ? (
+          <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
+            작성 힌트: {ERLKONIG_OVERVIEW_Q2_HINT}
+          </div>
+        ) : null}
+        {!isHaydn && !isErlkonig ? (
           <>
             <button className="ai-btn" onClick={showRandomStoryHint}>✨ 참고 예시 보기</button>
             <div className="small-note">버튼을 다시 누르면 질문이 랜덤으로 바뀝니다.</div>
