@@ -29,7 +29,11 @@ function Intro({ go }) {
         ))}
       </div>
       <div className="intro-badge">MUSIC · APPRECIATION · LEARNING</div>
-      <div className="intro-title">음악 감상 학습 지원 프로그램</div>
+      <div className="intro-title">
+        음악 감상 학습
+        <br />
+        지원 프로그램
+      </div>
       <div className="intro-stages">
         <div className="intro-stage">① 감각적 감상</div><div className="intro-stage">② 분석적 감상</div><div className="intro-stage">③ 심미적 감상</div>
       </div>

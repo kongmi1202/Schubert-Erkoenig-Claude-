@@ -1,13 +1,14 @@
 import { useAppStore } from '../../store/useAppStore';
 
-const SONG_CONFIG = {
+export const SONG_CONFIG = {
   mawang: {
     videoUrl: 'https://www.youtube.com/embed/BXeE7rIAiTM',
     videoTitle: "슈베르트의 '마왕'을 감상해보세요",
     firstPage: 'sensoryPage',
     subtabs: [],
     cardAnalysis: '음색 대비, 인물별 선율과 리듬, 이야기 전개',
-    cardSongTitle: "✦ 나의 마왕 감상문 · Erlkonig, Schubert 1815"
+    cardSongTitle: "✦ 나의 마왕 감상문 · Erlkonig, Schubert 1815",
+    essayTitle: "슈베르트 '마왕' 감상문"
   },
   handel: {
     videoUrl: 'https://www.youtube.com/embed/XBSBBXFmHSE',
@@ -15,7 +16,8 @@ const SONG_CONFIG = {
     firstPage: 'sensoryPage',
     subtabs: [],
     cardAnalysis: '합창의 화성, 반복되는 할렐루야 동기, 장엄한 종교적 분위기',
-    cardSongTitle: "✦ 나의 할렐루야 감상문 · Messiah, Handel 1741"
+    cardSongTitle: "✦ 나의 할렐루야 감상문 · Messiah, Handel 1741",
+    essayTitle: "헨델 '할렐루야' 감상문"
   },
   haydn: {
     videoUrl: 'https://www.youtube.com/embed/kqnjVNKhWnc',
@@ -28,7 +30,8 @@ const SONG_CONFIG = {
       { id: 'hy-history', label: '역사 맥락', page: 'hy-history' }
     ],
     cardAnalysis: '현악 4중주 음색, 두 주제 가락·리듬꼴·음계 비교, 소나타 형식',
-    cardSongTitle: '✦ 나의 종달새 감상문 · String Quartet No.67, Haydn 1790'
+    cardSongTitle: '✦ 나의 종달새 감상문 · String Quartet No.67, Haydn 1790',
+    essayTitle: "하이든 '종달새' 감상문"
   },
   schoenberg: {
     videoUrl: 'https://www.youtube.com/embed/-FUySRVF75k',
@@ -41,7 +44,8 @@ const SONG_CONFIG = {
       { id: 'sb-history', label: '역사 맥락', page: 'sb-history' }
     ],
     cardAnalysis: '슈프레흐슈팀메, 무조성, 표현주의 예술과의 연결',
-    cardSongTitle: "✦ 나의 달에 취하여 감상문 · Mondestrunken, Schoenberg 1912"
+    cardSongTitle: "✦ 나의 달에 취하여 감상문 · Mondestrunken, Schoenberg 1912",
+    essayTitle: "쇤베르크 '달에 홀린 피에로' 감상문"
   },
   vivaldi: {
     videoUrl: 'https://www.youtube.com/embed/wVAq3CzHf9E',
@@ -54,7 +58,8 @@ const SONG_CONFIG = {
       { id: 'vv-history', label: '역사 맥락', page: 'vv-history' }
     ],
     cardAnalysis: '소네트와 음악 연결, 바이올린 협주곡 독주·총주 구분',
-    cardSongTitle: "✦ 나의 여름 감상문 · Summer Op.8 No.2, Vivaldi 1725"
+    cardSongTitle: "✦ 나의 여름 감상문 · Summer Op.8 No.2, Vivaldi 1725",
+    essayTitle: "비발디 '사계 中 여름 3악장' 감상문"
   },
   chopin: {
     videoUrl: 'https://www.youtube.com/embed/dHwhfpN--Bk',
@@ -67,7 +72,8 @@ const SONG_CONFIG = {
       { id: 'cp-history', label: '역사 맥락', page: 'cp-history' }
     ],
     cardAnalysis: 'ABA 형식 구간 분류, 폴리리듬(오른손 4박·왼손 3박)',
-    cardSongTitle: '✦ 나의 환상 즉흥곡 감상문 · Fantasie Impromptu Op.66, Chopin 1835'
+    cardSongTitle: '✦ 나의 환상 즉흥곡 감상문 · Fantasie Impromptu Op.66, Chopin 1835',
+    essayTitle: "쇼팽 '환상 즉흥곡' 감상문"
   }
 };
 

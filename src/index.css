@@ -554,6 +554,56 @@ canvas{display:block;width:100%;touch-action:none}
 .final-actions{justify-content:center;gap:14px}
 .btn-send{background:linear-gradient(135deg,var(--crimson),var(--gold))}
 
+.final-essay-card{
+  padding:28px 24px;
+  background:var(--surface);
+  border:1px solid var(--border2);
+}
+.final-essay-title{
+  text-align:center;
+  font-family:'Noto Serif KR', serif;
+  font-size:clamp(16px, 4vw, 22px);
+  font-weight:600;
+  color:var(--text);
+  margin-bottom:16px;
+  letter-spacing:.05em;
+}
+.final-essay-student{
+  text-align:right;
+  font-size:12px;
+  font-weight:300;
+  color:var(--text-dim);
+  margin-bottom:0;
+}
+.final-essay-divider{
+  height:1px;
+  background:var(--border2);
+  margin:16px 0;
+}
+.final-essay-body{
+  font-family:'Noto Serif KR', serif;
+  font-size:13px;
+  line-height:2.2;
+  color:var(--text);
+  font-weight:300;
+  white-space:pre-wrap;
+}
+.final-essay-body p{
+  margin:0 0 16px;
+}
+.final-essay-body p:last-child{
+  margin-bottom:0;
+}
+
+@media print {
+  .final-essay-card{
+    background:white;
+    color:black;
+    border:1px solid #ccc;
+    padding:40px;
+  }
+}
+
 /* HAYDN EXTRAS */
 .tone-opts-h{display:flex;gap:8px;margin-bottom:12px;}
 .tone-opt-h{flex:1;padding:9px;border:1px solid var(--border);

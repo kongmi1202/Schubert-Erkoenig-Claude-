@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { generateFinalEssay } from '../../lib/finalEssayGenerator';
+import { SONG_CONFIG } from './VideoPage';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -89,9 +90,14 @@ function FinalCard({ go }) {
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
-  const studentLine = useMemo(() => `${student.className || '—'} ${student.id || ''} ${student.name || ''}`.trim(), [student]);
+  const studentLine = useMemo(() => `${student?.id || ''} ${student?.name || ''}`.trim(), [student]);
+  const essayTitle = (SONG_CONFIG[selectedSong] || SONG_CONFIG.mawang)?.essayTitle || "슈베르트 '마왕' 감상문";
   const [essayText, setEssayText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const essayParagraphs = useMemo(
+    () => (essayText ? essayText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []),
+    [essayText]
+  );
   const evaluation = useMemo(() => {
     const t = (v) => (v || '').trim();
     const activityAnswers = [sensoryArtifacts?.peAnswer, sensoryArtifacts?.scienceAnswer, sensoryArtifacts?.mapAnswer, sensoryArtifacts?.mathAnswer]
@@ -504,8 +510,19 @@ function FinalCard({ go }) {
             </button>
           </div>
           <div className="summary-div"></div>
-          <div className="fb show info">
-            {essayText || '버튼을 누르면 학생 입력만을 바탕으로 최종 감상문이 생성됩니다.'}
+          <div className="final-essay-card">
+            <div className="final-essay-title">{essayTitle}</div>
+            <div className="final-essay-student">{studentLine || '학번 이름 미입력'}</div>
+            <div className="final-essay-divider" />
+            <div className="final-essay-body">
+              {essayParagraphs.length ? (
+                essayParagraphs.map((paragraph, idx) => (
+                  <p key={`essay-p-${idx}`}>{paragraph}</p>
+                ))
+              ) : (
+                <p>버튼을 누르면 학생 입력만을 바탕으로 최종 감상문이 생성됩니다.</p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -513,7 +530,6 @@ function FinalCard({ go }) {
           <button className="btn-s" onClick={() => go('aestheticPage')}>← 다시 수정</button>
           <button className="btn-s" onClick={() => go('studentInfo')}>처음으로</button>
           <button className="btn-p" onClick={() => window.print()}>📄 PDF 저장</button>
-          <button className="btn-p btn-send">📤 교사에게 전송</button>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const AUDIO_SRC = {
@@ -6,35 +6,64 @@ const AUDIO_SRC = {
   atonal: '/audio/sb-atonal-aud.mp3'
 };
 
-const CHOICES = [
-  '편안하고 안정적이다',
-  '불안하고 예측할 수 없다',
-  '밝고 경쾌하다',
-  '슬프지만 아름답다'
+const MATCH_CARDS = [
+  '조성 음악',
+  '무조성 음악',
+  '편안하고 안정적',
+  '낯설고 긴장감',
+  '음들이 따로 논다.',
+  '음들이 서로 잘 어울린다.'
 ];
-const CORRECT_CHOICE = '불안하고 예측할 수 없다';
+
+const TONAL_ANSWERS = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+const ATONAL_ANSWERS = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
 
 function SbAtonal({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const sbAtonalState = useAppStore((s) => s.sbAtonalState);
   const setSbAtonalState = useAppStore((s) => s.setSbAtonalState);
   const [playing, setPlaying] = useState('');
-  const [feelTonal, setFeelTonal] = useState(() => sbAtonalState?.feelTonal || '');
-  const [feelAtonal, setFeelAtonal] = useState(() => sbAtonalState?.feelAtonal || '');
-  const [selectedChoice, setSelectedChoice] = useState(() => sbAtonalState?.selectedChoice || '');
+  const [selectedCard, setSelectedCard] = useState('');
+  const [placedCards, setPlacedCards] = useState(() => (
+    sbAtonalState?.placedCards || { tonal: [], atonal: [] }
+  ));
   const [answerOpen, setAnswerOpen] = useState(false);
   const tonalRef = useRef(null);
   const atonalRef = useRef(null);
 
-  const canCheck = useMemo(
-    () => !!selectedChoice && feelTonal.trim() && feelAtonal.trim(),
-    [selectedChoice, feelTonal, feelAtonal]
-  );
-  const isCorrect = selectedChoice === CORRECT_CHOICE;
+  const usedCards = [...placedCards.tonal, ...placedCards.atonal];
+  const canCheck = usedCards.length === MATCH_CARDS.length;
+  const isCorrect = (() => {
+    if (!canCheck) return false;
+    const tonalSet = new Set(placedCards.tonal);
+    const atonalSet = new Set(placedCards.atonal);
+    return (
+      TONAL_ANSWERS.size === tonalSet.size
+      && [...TONAL_ANSWERS].every((card) => tonalSet.has(card))
+      && ATONAL_ANSWERS.size === atonalSet.size
+      && [...ATONAL_ANSWERS].every((card) => atonalSet.has(card))
+    );
+  })();
 
   useEffect(() => {
-    setSbAtonalState({ selectedChoice, feelTonal, feelAtonal });
-  }, [selectedChoice, feelTonal, feelAtonal, setSbAtonalState]);
+    const summary = canCheck
+      ? `송어: ${placedCards.tonal.join(', ')} / 피에로: ${placedCards.atonal.join(', ')}`
+      : '';
+    setSbAtonalState({ placedCards, selectedChoice: summary });
+  }, [placedCards, canCheck, setSbAtonalState]);
+
+  const placeCard = (slot) => {
+    if (!selectedCard) return;
+    if (usedCards.includes(selectedCard)) return;
+    setPlacedCards((prev) => ({ ...prev, [slot]: [...prev[slot], selectedCard] }));
+    setSelectedCard('');
+    setAnswerOpen(false);
+  };
+
+  const removeCard = (slot, card) => {
+    setPlacedCards((prev) => ({ ...prev, [slot]: prev[slot].filter((item) => item !== card) }));
+    setAnswerOpen(false);
+  };
 
   const playAudio = async (kind) => {
     const current = kind === 'tonal' ? tonalRef.current : atonalRef.current;
@@ -65,62 +94,167 @@ function SbAtonal({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="sec">비교 듣기</div>
+        <div className="sec">1) 비교 듣기</div>
         <audio id="sb-tonal-source" ref={tonalRef} src={AUDIO_SRC.tonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'tonal' ? '' : p))} />
         <audio id="sb-atonal-source" ref={atonalRef} src={AUDIO_SRC.atonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'atonal' ? '' : p))} />
-        <div className="compare-listen">
+        <div className="compare-listen" style={{ marginBottom: 18 }}>
           <div className="cl-card tonal">
-            <div className="cl-label">마왕 첫 구간</div>
+            <div className="cl-label" style={{ fontSize: 16, fontWeight: 700, color: '#9fd0ff' }}>슈베르트 "송어"</div>
             <button id="sb-tonal-aud" type="button" className="btn-s" onClick={() => playAudio('tonal')}>
               {playing === 'tonal' ? '❚❚ 일시정지' : '▶ 재생'}
             </button>
           </div>
           <div className="cl-card atonal">
-            <div className="cl-label">달에 홀린 피에로 중 "달에 취하여"</div>
+            <div className="cl-label" style={{ fontSize: 16, fontWeight: 700, color: '#f5c76a' }}>달에 홀린 피에로 중 "달에 취하여"</div>
             <button id="sb-atonal-aud" type="button" className="btn-s" onClick={() => playAudio('atonal')}>
               {playing === 'atonal' ? '❚❚ 일시정지' : '▶ 재생'}
             </button>
           </div>
         </div>
 
-        <div className="sec">각각 느낌 서술</div>
-        <div className="feel-grid-h">
-          <div className="feel-card-h fc1">
-            <div className="feel-title-h">마왕을 들은 느낌</div>
-            <textarea
-              id="sb-feel-tonal"
-              className="txt"
-              value={feelTonal}
-              onChange={(e) => setFeelTonal(e.target.value)}
-              placeholder="마왕 구간을 들은 느낌을 써보세요..."
-            />
-          </div>
-          <div className="feel-card-h fc2">
-            <div className="feel-title-h">달에 홀린 피에로를 들은 느낌</div>
-            <textarea
-              id="sb-feel-atonal"
-              className="txt"
-              value={feelAtonal}
-              onChange={(e) => setFeelAtonal(e.target.value)}
-              placeholder="달에 홀린 피에로를 들은 느낌을 써보세요..."
-            />
-          </div>
+        <div className="sec">2) 카드 선택</div>
+        <div className="fb show info" style={{ marginBottom: 12, whiteSpace: 'pre-line', borderLeft: '4px solid #8b5cf6' }}>
+          {`💡 두 곡을 들으며 아래 카드 중 알맞은 것을
+각 곡 칸에 넣어보세요.`}
         </div>
 
-        <div className="sec">차이점 객관식</div>
-        <div className="review-card">
-          <div style={{ marginBottom: 12 }}>달에 홀린 피에로는 마왕과 비교해 어떤 느낌인가요?</div>
-          <div className="choice-list">
-            {CHOICES.map((choice) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+          {MATCH_CARDS.map((card) => {
+            const exhausted = usedCards.includes(card);
+            const isSel = selectedCard === card;
+            return (
               <button
-                key={choice}
+                key={card}
                 type="button"
-                className={`choice-item ${selectedChoice === choice ? 'selected' : ''}`}
-                onClick={() => setSelectedChoice(choice)}
+                onClick={() => setSelectedCard(card)}
+                disabled={exhausted}
+                style={{
+                  border: '1px solid var(--border)',
+                  background: isSel ? 'rgba(139, 92, 246, 0.25)' : 'rgba(16, 16, 30, 0.9)',
+                  padding: '14px 14px',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  cursor: exhausted ? 'not-allowed' : 'pointer',
+                  opacity: exhausted ? 0.45 : 1,
+                  color: isSel ? '#d8c0ff' : '#f3f4ff',
+                  borderColor: isSel ? '#8b5cf6' : 'var(--border)'
+                }}
               >
-                {selectedChoice === choice ? '●' : '○'} {choice}
+                {card}
               </button>
-            ))}
+            );
+          })}
+        </div>
+
+        <div className="sec" style={{ marginTop: 4 }}>3) 곡 칸에 배치</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => placeCard('tonal')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                placeCard('tonal');
+              }
+            }}
+            style={{
+              minHeight: 120,
+              border: '1px solid var(--border)',
+              borderLeft: '4px solid #4a7fc1',
+              borderRadius: 8,
+              background: 'rgba(74, 127, 193, 0.08)',
+              padding: 12,
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{ fontWeight: 700, color: '#9fd0ff', fontSize: 16, marginBottom: 8 }}>슈베르트 "송어"</div>
+            {placedCards.tonal.length === 0 ? (
+              <div style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 28 }}>
+                카드를 선택한 후 탭하세요
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {placedCards.tonal.map((card) => (
+                  <button
+                    key={`tonal-${card}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCard('tonal', card);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 10px',
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border2)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      fontSize: 11
+                    }}
+                  >
+                    {card} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => placeCard('atonal')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                placeCard('atonal');
+              }
+            }}
+            style={{
+              minHeight: 120,
+              border: '1px solid var(--border)',
+              borderLeft: '4px solid #c4922a',
+              borderRadius: 8,
+              background: 'rgba(196, 146, 42, 0.08)',
+              padding: 12,
+              cursor: 'pointer'
+            }}
+          >
+            <div style={{ fontWeight: 700, color: '#f5c76a', fontSize: 16, marginBottom: 8 }}>달에 홀린 피에로</div>
+            {placedCards.atonal.length === 0 ? (
+              <div style={{ color: 'var(--text-faint)', fontSize: 12, textAlign: 'center', marginTop: 28 }}>
+                카드를 선택한 후 탭하세요
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {placedCards.atonal.map((card) => (
+                  <button
+                    key={`atonal-${card}`}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCard('atonal', card);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 10px',
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border2)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      fontSize: 11
+                    }}
+                  >
+                    {card} ✕
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -141,19 +275,25 @@ function SbAtonal({ go }) {
         </button>
         <div className={`answer-compare-slide ${answerOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
-            <div className={`fb show ${isCorrect ? 'ok' : 'info'}`}>
-              정답: 불안하고 예측할 수 없다
-              <br />
-              달에 홀린 피에로는 무조성 음악이예요. 무조성 음악은 으뜸음이 없어서 다음 음이 어디로 향할지 예측할 수 없어요.
-              <br />
-              이 불안정함이 바로 표현주의 음악이
-              <br />
-              추구하는 감정 표현이에요.
-            </div>
+            {isCorrect ? (
+              <div className="fb show ok">
+                ✓ 맞아요! 송어는 조성 음악이라 음들이 서로 어울리고 안정적으로 들려요.
+                <br />
+                달에 홀린 피에로는 무조성 음악이라 낯설고 긴장감 있는 느낌이 나타나요.
+              </div>
+            ) : (
+              <div className="fb show ng">
+                ✗ 아직 일부 카드가 맞지 않아요.
+                <br />
+                두 곡을 다시 듣고, 안정적으로 어울리는 느낌인지
+                <br />
+                낯설고 긴장된 느낌인지 기준으로 다시 배치해 보세요.
+              </div>
+            )}
           </div>
         </div>
 
-        {canCheck ? (
+        {canCheck && isCorrect ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">표현주의 음악의 특징</div>
