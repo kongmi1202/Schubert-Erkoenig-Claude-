@@ -16,7 +16,7 @@ function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type,
     selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
-    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState,
+    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState, stageCompletion,
     tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
     vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState
   } = useAppStore();
@@ -26,6 +26,12 @@ function AestheticPage({ go }) {
   const isVivaldi = selectedSong === 'vivaldi';
   const isChopin = selectedSong === 'chopin';
   const isMawang = !isHandel && !isHaydn && !isSchoenberg && !isVivaldi && !isChopin;
+  const canRevealStep2Answers = Boolean(
+    stageCompletion?.analytical
+    && stageCompletion?.voice
+    && stageCompletion?.piano
+    && stageCompletion?.history
+  );
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
   const schoenbergAnswerQ1 = ['소프라노(또는 메조소프라노)', '플루트', '클라리넷', '바이올린', '첼로', '피아노'];
@@ -70,6 +76,7 @@ function AestheticPage({ go }) {
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
+  const sensoryKeywordText = selectedKeywords.length ? selectedKeywords.join(', ') : '키워드 없음';
   const q1WritingHint = '처음 느낌과 분석 후 느낌이 어떻게 달라졌는지 한 문장으로 써보세요.';
   const q2WritingHint = '고른 분석 요소가 왜 이 곡을 특별하게 만드는지 이유를 한 문장으로 써보세요.';
   const analyticalQ1Label = isHandel
@@ -181,6 +188,13 @@ function AestheticPage({ go }) {
 
             <div className="journey-block">
               <div className="review-section-title">② 분석적 감상 (내 답변 + 정답)</div>
+              {!canRevealStep2Answers ? (
+                <div className="fb show info" style={{ marginBottom: 12 }}>
+                  2단계 응답을 모두 완료하면 정답 비교가 공개됩니다.
+                </div>
+              ) : null}
+              {canRevealStep2Answers ? (
+                <>
               <div className="review-item">{analyticalQ1Label}</div>
               <div className="cmp-mini-grid">
                 <div>
@@ -518,6 +532,8 @@ function AestheticPage({ go }) {
                   </div>
                 </>
               ) : null}
+                </>
+              ) : null}
             </div>
           </div>
           {emotionResult ? (
@@ -537,8 +553,8 @@ function AestheticPage({ go }) {
 
         <div className="sec">Q1. 분석 후 느낌의 변화</div>
         <div className="fill-box">
-          처음엔 <span style={{ color: 'var(--purple-light)', fontStyle: 'italic' }}>[감각적 감상 키워드]</span>고 느꼈는데,<br />
-          분석해 보니 <input className="fill-input" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="___________" /> 라고 느꼈다.
+          처음엔 <span style={{ color: 'var(--purple-light)', fontStyle: 'italic' }}>{sensoryKeywordText}</span>(이)라고 느꼈는데,<br />
+          분석해 보니 <input className="fill-input" value={q1} onChange={(e) => setQ1(e.target.value)} placeholder="___________" /> (이)라고 느꼈다.
         </div>
         <div className="small-note">작성 힌트: {q1WritingHint}</div>
 

@@ -14,9 +14,9 @@ function buildFallbackEssay(data) {
           ? '비발디의 <사계: 여름 3악장>'
           : (isChopin ? '쇼팽의 <환상 즉흥곡>' : '슈베르트의 <마왕>'))));
   const clean = (v) => (typeof v === 'string' ? v.trim() : '');
-  const toLine = (v) => (clean(v) ? clean(v) : '입력 없음');
-  const kw = data.selectedKeywords?.length ? data.selectedKeywords.join(', ') : '입력 없음';
-  const colors = data.selectedColors?.length ? data.selectedColors.join(', ') : '입력 없음';
+  const toLine = (v) => clean(v);
+  const kw = data.selectedKeywords?.length ? data.selectedKeywords.join(', ') : '';
+  const colors = data.selectedColors?.length ? data.selectedColors.join(', ') : '';
   const charsRaw = isChopin
     ? clean(data.analyticalCharacters?.[0] || '')
     : (data.analyticalCharacters?.filter((v) => clean(v)).join(', ') || '');
@@ -27,14 +27,38 @@ function buildFallbackEssay(data) {
   const q3 = toLine(data.q3);
   const sensory = toLine(data.sensoryDesc);
 
-  return `【감각적 감상】
-나는 ${songTitle}을 들으며 ${kw}의 감정을 느꼈다고 기록했다. 선택한 색은 ${colors}이며, 감각적 감상 서술은 다음과 같다. ${sensory}.
+  const p1Parts = [
+    `나는 ${songTitle}을 들으며`,
+    kw ? `${kw} 같은 느낌이 들었다.` : '느낌을 기록했다.',
+    colors ? `색은 ${colors}로 떠올랐다.` : '',
+    sensory ? `${sensory}` : ''
+  ].filter(Boolean);
 
-【분석적 감상】
-분석적 감상 Q1에 대해 나는 다음과 같이 기록했다. ${analyticalQ1}. 분석적 감상 Q2에 대해 나는 다음과 같이 기록했다. ${analyticalQ2}.
+  const p2Parts = [
+    '음악을 더 자세히 들어보니',
+    analyticalQ1 ? `${analyticalQ1}` : '',
+    analyticalQ2 ? `${analyticalQ2}` : '',
+    (analyticalQ1 || analyticalQ2) ? '라는 점을 알게 되었다.' : ''
+  ].filter(Boolean);
 
-【심미적 감상】
-분석 후 느낌의 변화는 다음과 같이 기록했다. ${q1}. 이 곡의 가치를 판단한 이유는 다음과 같이 기록했다. ${q2}. 오늘날 삶과의 연결은 다음과 같이 기록했다. ${q3}.`;
+  const p3Parts = [
+    '이렇게 분석하고 나서',
+    q1 ? `${q1}` : '',
+    q2 ? `${q2}` : '',
+    q3 ? `${q3}` : '',
+    (q1 || q2 || q3) ? '라고 생각했다.' : '내 생각을 더 정리해 보려고 했다.'
+  ].filter(Boolean);
+
+  return `${p1Parts.join(' ')}\n\n${p2Parts.join(' ')}\n\n${p3Parts.join(' ')}`.trim();
+}
+
+function normalizeEssayOutput(text) {
+  const clean = (text || '')
+    .replace(/^\s*[\[\【](감각적 감상|분석적 감상|심미적 감상)[\]\】]\s*$/gim, '')
+    .replace(/^\s*(감각적 감상|분석적 감상|심미적 감상)\s*[:：]\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return clean;
 }
 
 function hasMeaningfulStudentInput(data) {
@@ -104,50 +128,20 @@ export async function generateFinalEssay(data) {
           : (data.selectedSong === 'chopin'
             ? '피아노 독주, A/B 구간 분위기 대비'
             : '등장인물, 줄거리, 음색/반주/맥락 이해'))));
-  const prompt = `당신은 중학생의 음악 감상문 작성을 도와주는 보조 도구입니다.
-다음 학습 기록(JSON)만 근거로 한국어 최종 감상문을 작성하세요.
+  const systemPrompt = `당신은 중학생의 음악 감상 내용을 바탕으로 
+자연스러운 감상문을 작성하는 도우미입니다.
+다음 규칙을 반드시 지켜주세요.
+- 1인칭(나는)으로 작성
+- 중학생 수준의 자연스러운 문체
+- 감각적→분석적→심미적 순서로 내용을 녹여내되
+  단락 제목(감각적 감상, 분석적 감상 등)은 절대 표시하지 않음
+- 전체 3단락, 200~300자 내외
+- 학생이 입력하지 않은 항목은 언급하지 않음
+- 오답이 있었던 경우 '~인 줄 알았는데 ~였다' 형태로 자연스럽게 녹임
+- 데이터를 나열하지 말고 하나의 흐르는 글로 완성할 것`;
+
+  const userPrompt = `다음 학습 기록(JSON)만 근거로 최종 감상문을 작성해 주세요.
 곡/활동 맥락 참고: ${analyticalFocus}
-
-[문체 규칙]
-- 중학생이 직접 쓴 것처럼 자연스럽고 쉬운 문장으로 쓴다.
-- 음악 용어를 쓰더라도 쉬운 말로 풀어 쓴다.
-- 문장은 짧고 명확하게 쓴다. (한 문장에 한 가지 내용)
-- "~느껴졌다", "~생각했다", "~알게 되었다", "~들렸다" 같은 1인칭 표현을 사용한다.
-
-[구조 규칙]
-- 총 3단락으로 쓴다.
-- 1단락은 감각적 감상, 2단락은 분석적 감상, 3단락은 심미적 감상 내용을 담는다.
-- 단락 제목(예: "감각적 감상:")은 쓰지 않는다.
-- 단락 사이에는 자연스러운 연결어를 사용한다.
-  예: "음악을 더 자세히 들어보니", "이렇게 분석하고 나서"
-- 단순 나열이 아니라 흐름 있게 서술한다.
-
-[내용 규칙]
-- 학생이 입력한 내용만 반영한다.
-- JSON에 없는 내용은 추가하거나 과장하지 않는다.
-- 학생이 선택한 키워드, 색상, 분석 결과를 문장 속에 자연스럽게 녹인다.
-- 분석 결과를 쓸 때는 "~라는 것을 알게 되었다" 형태를 포함해 서술한다.
-- 값이 비어 있으면 그 항목은 억지로 보강하지 말고 자연스럽게 생략한다.
-
-[오답 처리 규칙]
-- 학생의 오답 응답이 확인되면 "처음에는 ~라고 생각했지만 실제로는 ~이다"처럼 쓴다.
-- "틀렸다", "오답이다" 같은 직접 표현은 쓰지 않는다.
-- 학생이 스스로 배움을 얻은 것처럼 자연스럽게 표현한다.
-- 정답 내용은 반드시 포함한다.
-- 예시 표현: "~인 줄 알았는데 ~였다", "~라고 생각했지만 분석해보니 ~라는 것을 알게 되었다", "~로 들렸는데 실제로는 ~을 표현한 것이었다"
-
-[정답 처리 규칙]
-- 정답인 내용은 "~라는 것을 알 수 있었다", "~임을 느꼈다" 형태로 서술한다.
-
-[금지사항]
-- 과도한 감탄사("정말!", "너무나!")를 쓰지 않는다.
-- 어른스러운 문어체/과장된 표현을 쓰지 않는다.
-- 학생이 입력하지 않은 내용을 추가하지 않는다.
-- 단락 제목을 표시하지 않는다.
-
-출력 형식:
-- 감상문 본문만 출력한다.
-- 정확히 3단락으로 출력하고, 단락 사이에는 빈 줄 1개를 둔다.
 
 학습 기록(JSON):
 ${JSON.stringify(data, null, 2)}`;
@@ -161,13 +155,16 @@ ${JSON.stringify(data, null, 2)}`;
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        input: prompt
+        input: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ]
       })
     });
 
     if (!res.ok) throw new Error(`OpenAI API error: ${res.status}`);
     const json = await res.json();
-    const text = extractTextFromResponse(json);
+    const text = normalizeEssayOutput(extractTextFromResponse(json));
     return text || buildFallbackEssay(data);
   } catch (_err) {
     return buildFallbackEssay(data);

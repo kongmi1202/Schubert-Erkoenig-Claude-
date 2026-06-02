@@ -28,12 +28,42 @@ function formatHyThemePlacedFinal(ids) {
   return ids.map((id) => HY_THEME_MATCH_ID_TO_LABEL[id] || id).join(', ');
 }
 
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function includesAnyToken(value, tokens) {
+  const text = normalizeText(value);
+  return tokens.some((token) => text.includes(normalizeText(token)));
+}
+
+function hasAllItems(actual, expected) {
+  const actualSet = new Set((actual || []).filter(Boolean));
+  return expected.every((item) => actualSet.has(item));
+}
+
+function arraysEqualAsSet(actual, expected) {
+  if (!Array.isArray(actual) || actual.length !== expected.length) return false;
+  return hasAllItems(actual, expected);
+}
+
+function scoreFromAccuracy(correctCount, totalCount) {
+  if (!totalCount) return 0;
+  const ratio = (correctCount / totalCount) * 100;
+  if (ratio >= 80) return 5;
+  if (ratio >= 60) return 4;
+  if (ratio >= 40) return 3;
+  if (ratio >= 20) return 2;
+  if (ratio > 0) return 1;
+  return 0;
+}
+
 function FinalCard({ go }) {
   const {
     student, selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
     selectedSong, analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff, q1, q2, q3,
     tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
-    vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState
+    vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState, stageCompletion
   } = useAppStore();
   const isHandel = selectedSong === 'handel';
   const isHaydn = selectedSong === 'haydn';
@@ -90,6 +120,12 @@ function FinalCard({ go }) {
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
+  const canRevealStep2Answers = Boolean(
+    stageCompletion?.analytical
+    && stageCompletion?.voice
+    && stageCompletion?.piano
+    && stageCompletion?.history
+  );
   const studentLine = useMemo(() => `${student?.id || ''} ${student?.name || ''}`.trim(), [student]);
   const essayTitle = (SONG_CONFIG[selectedSong] || SONG_CONFIG.mawang)?.essayTitle || "슈베르트 '마왕' 감상문";
   const [essayText, setEssayText] = useState('');
@@ -109,15 +145,15 @@ function FinalCard({ go }) {
     const analyticalQ2 = isHandel ? handelOperaDiff : analyticalStory;
 
     const hasAnyInput = (
-      selectedKeywords.length > 0 ||
-      selectedColors.length > 0 ||
-      t(sensoryDesc).length > 0 ||
-      activityAnswers > 0 ||
-      t(analyticalQ1).length > 0 ||
-      t(analyticalQ2).length > 0 ||
-      t(q1).length > 0 ||
-      t(q2).length > 0 ||
-      t(q3).length > 0
+      selectedKeywords.length > 0
+      || selectedColors.length > 0
+      || t(sensoryDesc).length > 0
+      || activityAnswers > 0
+      || t(analyticalQ1).length > 0
+      || t(analyticalQ2).length > 0
+      || t(q1).length > 0
+      || t(q2).length > 0
+      || t(q3).length > 0
     );
 
     if (!hasAnyInput) {
@@ -129,19 +165,77 @@ function FinalCard({ go }) {
     }
 
     const stage1Score = Math.min(5,
-      (selectedKeywords.length > 0 ? 1 : 0) +
-      (selectedColors.length >= 2 ? 1 : 0) +
-      (t(sensoryDesc).length >= 20 ? 2 : t(sensoryDesc).length > 0 ? 1 : 0) +
-      (activityAnswers > 0 || activityArtifacts > 0 ? 1 : 0)
+      (selectedKeywords.length > 0 ? 1 : 0)
+      + (selectedColors.length >= 2 ? 1 : 0)
+      + (t(sensoryDesc).length >= 30 ? 2 : t(sensoryDesc).length > 0 ? 1 : 0)
+      + (activityAnswers > 0 ? 1 : 0)
     );
-    const stage2Score = Math.min(5,
-      (t(analyticalQ1).length >= (isHandel ? 20 : 8) ? 2 : t(analyticalQ1).length > 0 ? 1 : 0) +
-      (t(analyticalQ2).length >= 35 ? 3 : t(analyticalQ2).length > 0 ? 2 : 0)
-    );
+
+    const checks = [];
+    const addCheck = (isCorrect) => checks.push(Boolean(isCorrect));
+
+    if (isHandel) {
+      addCheck(includesAnyToken(handelLyricMeaning, ['성경', '종교', '할렐루야', 'king of kings']));
+      addCheck(includesAnyToken(handelOperaDiff, ['오라토리오', '오페라', '무대', '연기']));
+      addCheck((tonePaintingHandelState?.selected?.s1 ?? null) === 0);
+      addCheck((tonePaintingHandelState?.selected?.s2 ?? null) === 1);
+      addCheck((tonePaintingHandelState?.selected?.s3 ?? null) === 2);
+    } else if (isHaydn) {
+      addCheck(arraysEqualAsSet(analyticalCharacters.filter(Boolean), haydnAnswerQ1));
+      addCheck(normalizeText(analyticalStory) === normalizeText(haydnAnswerQ2));
+      addCheck(hyTimbreState?.selectedByGrid?.['ig-1'] === hyTimbreCorrectInstr['ig-1'] && hyTimbreState?.roleByGrid?.['ig-1'] === hyTimbreCorrectRole['ig-1']);
+      addCheck(hyTimbreState?.selectedByGrid?.['ig-2'] === hyTimbreCorrectInstr['ig-2'] && hyTimbreState?.roleByGrid?.['ig-2'] === hyTimbreCorrectRole['ig-2']);
+      addCheck(hyTimbreState?.selectedByGrid?.['ig-3'] === hyTimbreCorrectInstr['ig-3'] && hyTimbreState?.roleByGrid?.['ig-3'] === hyTimbreCorrectRole['ig-3']);
+      addCheck(arraysEqualAsSet(hyThemeState?.matchPlaced?.theme1 || [], ['o1', 'o3', 'o5']));
+      addCheck(arraysEqualAsSet(hyThemeState?.matchPlaced?.theme2 || [], ['o2', 'o4', 'o6']));
+      addCheck(normalizeText(hyThemeState?.selectedDeg) === '5도');
+    } else if (isVivaldi) {
+      addCheck(arraysEqualAsSet(analyticalCharacters.filter(Boolean), vivaldiAnswerQ1));
+      addCheck(includesAnyToken(analyticalStory, ['폭풍우', '긴박', '빠른 템포', '강한 셈여림']));
+      addCheck(vvSonnetState?.selectedById?.['vv-c1'] === vvSonnetCorrect['vv-c1']);
+      addCheck(vvSonnetState?.selectedById?.['vv-c2'] === vvSonnetCorrect['vv-c2']);
+      addCheck(vvConcertoState?.discoveryChoice === '독주와 총주가 번갈아 나온다');
+    } else if (isChopin) {
+      addCheck(includesAnyToken(analyticalCharacters?.[0], ['피아노', '독주']));
+      addCheck(includesAnyToken(analyticalStory, ['빠르고', '격렬', '느리고', '서정']));
+      addCheck(cpFormState?.formAnswers?.['cp-f1'] === cpFormCorrect['cp-f1']);
+      addCheck(cpFormState?.formAnswers?.['cp-f2'] === cpFormCorrect['cp-f2']);
+      addCheck(cpFormState?.formAnswers?.['cp-f3'] === cpFormCorrect['cp-f3']);
+      addCheck(cpFormState?.featureById?.['cp-f1'] === cpFeatureCorrect['cp-f1']);
+      addCheck(cpFormState?.featureById?.['cp-f2'] === cpFeatureCorrect['cp-f2']);
+      addCheck(cpFormState?.featureById?.['cp-f3'] === cpFeatureCorrect['cp-f3']);
+      addCheck(cpFormState?.discoveryChoice === '서로 다른 느낌을 대비시키기 위해');
+      addCheck(cpRhythmState?.selectedByGroup?.['cp-rh-q'] === cpRhythmCorrect['cp-rh-q']);
+      addCheck(cpRhythmState?.selectedByGroup?.['cp-lh-q'] === cpRhythmCorrect['cp-lh-q']);
+      addCheck(cpRhythmState?.selectedByGroup?.['cp-poly-q'] === cpRhythmCorrect['cp-poly-q']);
+    } else if (isSchoenberg) {
+      addCheck(arraysEqualAsSet(analyticalCharacters.filter(Boolean), schoenbergAnswerQ1));
+      addCheck(includesAnyToken(analyticalStory, ['불안', '몽환', '신비', '표현주의']));
+      addCheck(sbSprechState?.bothCorrect === true || Boolean(sbSprechState?.selectedChoice));
+      addCheck(arraysEqualAsSet(sbAtonalState?.placedCards?.tonal || [], ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']));
+      addCheck(arraysEqualAsSet(sbAtonalState?.placedCards?.atonal || [], ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']));
+    } else {
+      addCheck(arraysEqualAsSet(analyticalCharacters.filter(Boolean), analyticalAnswerCharacters));
+      addCheck(includesAnyToken(analyticalStory, ['아버지', '아들', '마왕', '죽']));
+      const voiceDesign = voiceDesignState?.voiceDesign || {};
+      addCheck(
+        ['해설자', '아버지', '아들', '마왕'].every((name) => (
+          voiceDesign[name]?.음높이 === ({ 해설자: '중간', 아버지: '낮음', 아들: '높음', 마왕: '중간' }[name])
+          && voiceDesign[name]?.음계 === ({ 해설자: '단조', 아버지: '단조', 아들: '단조', 마왕: '장조' }[name])
+          && voiceDesign[name]?.리듬꼴 === ({ 해설자: '김', 아버지: '김', 아들: '짧음', 마왕: '김' }[name])
+          && voiceDesign[name]?.음색 === ({ 해설자: '두꺼움', 아버지: '두꺼움', 아들: '얇음', 마왕: '중간' }[name])
+        ))
+      );
+      addCheck(includesAnyToken(pianoAnalysisState?.rhScene, ['말발굽', '질주', '긴장']));
+      addCheck(includesAnyToken(pianoAnalysisState?.lhScene, ['심장', '두근', '긴박', '쫓기']));
+    }
+
+    const stage2Score = scoreFromAccuracy(checks.filter(Boolean).length, checks.length);
+
     const stage3Score = Math.min(5,
-      (t(q1).length >= 10 ? 2 : t(q1).length > 0 ? 1 : 0) +
-      (t(q2).length >= 20 ? 2 : t(q2).length > 0 ? 1 : 0) +
-      (t(q3).length >= 25 ? 1 : 0)
+      (t(q1).length >= 20 ? 2 : t(q1).length > 0 ? 1 : 0)
+      + (t(q2).length >= 30 ? 2 : t(q2).length > 0 ? 1 : 0)
+      + (t(q3).length >= 30 ? 1 : 0)
     );
 
     const toGrade = (score) => (score >= 4 ? '상' : score >= 2 ? '중' : '하');
@@ -178,15 +272,34 @@ function FinalCard({ go }) {
             : '심미적 감상 문항의 작성 분량이 부족합니다. Q1~Q3를 채워 보세요.'
       }
     ];
-    const highCount = [gradeStage1, gradeStage2, gradeStage3].filter((g) => g === '상').length;
-    const feedback = highCount >= 2
-      ? '전반적으로 단계별 성취가 높습니다. 표현의 밀도를 유지하며 문장을 다듬어 보세요.'
-      : highCount === 1
-        ? '단계별 강점이 보입니다. 중/하 단계를 보강하면 감상문 완성도가 더 높아집니다.'
-        : '각 단계의 입력을 조금 더 채우면 평가 신뢰도와 감상문 완성도가 크게 올라갑니다.';
+    const stageLabelMap = {
+      '1단계 감각적 감상': '감각적 감상',
+      '2단계 분석적 감상': '분석적 감상',
+      '3단계 심미적 감상': '심미적 감상'
+    };
+    const highItems = items.filter((item) => item.grade === '상');
+    const nonHighItems = items.filter((item) => item.grade !== '상');
+
+    let feedback = '';
+    if (highItems.length === 3) {
+      feedback = '세 단계 모두 훌륭하게 완성했어요!';
+    } else if (highItems.length === 2) {
+      feedback = `${stageLabelMap[nonHighItems[0].label]} 부분을 조금 더 채워보면 완벽해요!`;
+    } else if (highItems.length === 1) {
+      feedback = `${stageLabelMap[highItems[0].label]}은 잘 됐어요. 나머지 단계도 더 자세히 써볼까요?`;
+    } else {
+      feedback = '각 단계에서 더 자세히 입력할수록 감상 실력이 쑥쑥 늘어요. 다시 도전해보세요!';
+    }
 
     return { ungraded: false, items, feedback };
-  }, [selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, isHandel, handelLyricMeaning, handelOperaDiff, analyticalCharacters, analyticalStory, q1, q2, q3]);
+  }, [
+    selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
+    isHandel, isHaydn, isSchoenberg, isVivaldi, isChopin,
+    handelLyricMeaning, handelOperaDiff, analyticalCharacters, analyticalStory,
+    tonePaintingHandelState, hyTimbreState, hyThemeState, vvSonnetState, vvConcertoState,
+    cpFormState, cpRhythmState, sbSprechState, sbAtonalState, voiceDesignState, pianoAnalysisState,
+    q1, q2, q3
+  ]);
 
   const onGenerateEssay = async () => {
     setIsGenerating(true);
@@ -283,6 +396,13 @@ function FinalCard({ go }) {
 
           <div className="summary-div"></div>
           <div className="summary-ey">② 분석적 감상</div>
+          {!canRevealStep2Answers ? (
+            <div className="fb show info" style={{ marginBottom: 12 }}>
+              2단계 응답을 모두 완료하면 정답 비교가 공개됩니다.
+            </div>
+          ) : null}
+          {canRevealStep2Answers ? (
+            <>
           <div className="cmp-mini-grid">
             <div>
               <div className="small-note">{analyticalQ1Label} · 내 답변</div>
@@ -490,10 +610,12 @@ function FinalCard({ go }) {
               </div>
             </>
           ) : null}
+            </>
+          ) : null}
 
           <div className="summary-div"></div>
           <div className="summary-ey">③ 심미적 감상 <span style={getGradeBadgeStyle(stageGrades.stage3)}>등급 {stageGrades.stage3}</span></div>
-          <div className="summary-row"><div className="summary-key">변화</div><div className="summary-val">{q1 ? `분석해 보니 ${q1}라고 느꼈다.` : '—'}</div></div>
+          <div className="summary-row"><div className="summary-key">변화</div><div className="summary-val">{q1 ? `분석해 보니 ${q1}(이)라고 느꼈다.` : '—'}</div></div>
           <div className="summary-row"><div className="summary-key">이유</div><div className="summary-val">{q2 || '—'}</div></div>
           <div className="summary-row"><div className="summary-key">삶 연결</div><div className="summary-val">{q3 || '—'}</div></div>
           <div className="fb show gold" style={{ marginTop: 10 }}>

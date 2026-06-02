@@ -31,6 +31,7 @@ import CpHistory from './components/screens/CpHistory';
 import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
+import HelpButton from './components/HelpButton';
 import { useAppStore } from './store/useAppStore';
 
 const screens = {
@@ -104,6 +105,15 @@ function App() {
     return screens[currentScreen];
   }, [currentScreen, selectedSong]);
 
+  const helpStep = useMemo(() => {
+    if (currentScreen === 'intro') return 'intro';
+    if (currentScreen === 'sensoryPage') return 'step1';
+    if (['analyticalOverview', 'voiceDesign', 'pianoAnalysis', 'historyCards'].includes(currentScreen)) return 'step2';
+    if (currentScreen === 'aestheticPage') return 'step3';
+    if (currentScreen === 'finalCard') return 'final';
+    return 'intro';
+  }, [currentScreen]);
+
   return (
     <>
       <div className="rain">
@@ -136,6 +146,7 @@ function App() {
       </div>
 
       <Current go={setCurrentScreen} />
+      <HelpButton currentStep={helpStep} />
 
       <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
     </>
