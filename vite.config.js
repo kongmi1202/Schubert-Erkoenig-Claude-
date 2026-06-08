@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { defineConfig } from 'vite';
+import { sendNetlifyHandler } from './api/_netlify.js';
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -50,21 +51,6 @@ function readJsonBody(req) {
   });
 }
 
-function createHandlerResponse(res) {
-  return {
-    status(code) {
-      res.statusCode = code;
-      return this;
-    },
-    json(data) {
-      if (!res.headersSent) {
-        res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      }
-      res.end(JSON.stringify(data));
-    }
-  };
-}
-
 function netlifyApiDevPlugin() {
   loadLocalEnv();
 
@@ -88,10 +74,11 @@ function netlifyApiDevPlugin() {
         try {
           const body = await readJsonBody(req);
           const mod = await import(`${pathToFileURL(handlerFile).href}?t=${Date.now()}`);
-          await mod.default(
-            { method: req.method, body },
-            createHandlerResponse(res)
-          );
+          if (typeof mod.handler !== 'function') {
+            next();
+            return;
+          }
+          await sendNetlifyHandler(mod.handler, req, res, body);
         } catch (err) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json; charset=utf-8');

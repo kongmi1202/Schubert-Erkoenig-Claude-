@@ -1,4 +1,5 @@
-import { callOpenAiResponses, extractTextFromResponse, parseBody } from './_shared.js';
+import { callOpenAiResponses, extractTextFromResponse } from './_shared.js';
+import { jsonResponse, parseEventBody } from './_netlify.js';
 
 const EMOTION_KEYS = ['happiness', 'sadness', 'anger', 'fear', 'disgust', 'surprise'];
 
@@ -37,15 +38,15 @@ function normalizeEmotionScores(raw) {
   return normalized;
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+export async function handler(event) {
+  if (event.httpMethod !== 'POST') {
+    return jsonResponse(405, { error: 'Method Not Allowed' });
   }
 
-  const body = parseBody(req);
+  const body = parseEventBody(event);
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
   if (text.length < 10) {
-    return res.status(400).json({ error: '더 자세하게 써주세요.' });
+    return jsonResponse(400, { error: '더 자세하게 써주세요.' });
   }
 
   const systemPrompt = `당신은 음악 감상 텍스트를 분석하여 감정을 분류하는 전문가입니다.
@@ -81,13 +82,13 @@ export default async function handler(req, res) {
     const emotions = normalizeEmotionScores(parsed);
     const summary = typeof parsed?.summary === 'string' ? parsed.summary.trim() : '';
 
-    return res.status(200).json({
+    return jsonResponse(200, {
       emotions,
       summary
     });
   } catch (err) {
     const status = err?.statusCode || 500;
-    return res.status(status).json({
+    return jsonResponse(status, {
       error: err?.message || '감정 분석 중 오류가 발생했습니다.'
     });
   }

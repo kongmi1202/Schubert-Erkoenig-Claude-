@@ -1,15 +1,3 @@
-export function parseBody(req) {
-  if (req?.body && typeof req.body === 'object') return req.body;
-  if (typeof req?.body === 'string') {
-    try {
-      return JSON.parse(req.body);
-    } catch {
-      return {};
-    }
-  }
-  return {};
-}
-
 export function extractTextFromResponse(json) {
   if (typeof json?.output_text === 'string') return json.output_text;
   const texts = [];
