@@ -1,3 +1,5 @@
+import { requestOpenAiText } from './openaiClient';
+
 function buildFallbackEssay(data) {
   const isHandel = data.selectedSong === 'handel';
   const isHaydn = data.selectedSong === 'haydn';
@@ -96,26 +98,12 @@ function hasMeaningfulStudentInput(data) {
   );
 }
 
-export function extractTextFromResponse(json) {
-  if (json?.output_text) return json.output_text;
-  const texts = [];
-  (json?.output || []).forEach((item) => {
-    (item?.content || []).forEach((c) => {
-      if (typeof c?.text === 'string') texts.push(c.text);
-    });
-  });
-  return texts.join('\n').trim();
-}
+export { extractTextFromResponse } from './openaiUtils';
 
 export async function generateFinalEssay(data) {
   if (!hasMeaningfulStudentInput(data)) {
     return '아직 입력한 감상 내용이 없어서 최종 감상문을 만들 수 없었다.\n\n먼저 각 단계에서 느낌, 분석, 생각을 한 줄씩이라도 입력한 뒤 다시 만들어 보려고 생각했다.\n\n입력을 채운 다음에는 내가 쓴 내용을 바탕으로 최종 감상문을 완성할 수 있었다.';
   }
-
-  const apiKey = typeof import.meta.env.VITE_OPENAI_API_KEY === 'string'
-    ? import.meta.env.VITE_OPENAI_API_KEY.trim()
-    : '';
-  if (!apiKey) return buildFallbackEssay(data);
 
   const analyticalFocus = data.selectedSong === 'handel'
     ? '가사 의미, 오페라/오라토리오 차이'
@@ -147,24 +135,13 @@ export async function generateFinalEssay(data) {
 ${JSON.stringify(data, null, 2)}`;
 
   try {
-    const res = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ]
-      })
-    });
-
-    if (!res.ok) throw new Error(`OpenAI API error: ${res.status}`);
-    const json = await res.json();
-    const text = normalizeEssayOutput(extractTextFromResponse(json));
+    const text = normalizeEssayOutput(await requestOpenAiText({
+      model: 'gpt-4o-mini',
+      input: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    }));
     return text || buildFallbackEssay(data);
   } catch (_err) {
     return buildFallbackEssay(data);

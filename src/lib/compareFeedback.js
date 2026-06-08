@@ -1,16 +1,6 @@
-import { extractTextFromResponse } from './finalEssayGenerator';
+import { getApiKeySetupMessage, requestOpenAiText } from './openaiClient';
 
-function getViteOpenAiKey() {
-  const v = import.meta.env.VITE_OPENAI_API_KEY;
-  if (typeof v !== 'string') return '';
-  return v.trim();
-}
-
-const MSG_NO_KEY = `──
-맞춤 AI 피드백은 브라우저 안에 들어 있는 \`VITE_OPENAI_API_KEY\`로만 동작해요.
-
-· 로컬: 프로젝트 루트에 \`.env.local\`을 두고 \`VITE_OPENAI_API_KEY=sk-...\` 를 적은 뒤, 터미널에서 개발 서버를 완전히 끄고 다시 \`npm run dev\`로 실행하세요. (실행 중에 파일만 고치면 반영이 안 될 수 있어요.)
-· 배포 사이트: GitHub Pages·Netlify 등에는 \`.env.local\`이 올라가지 않습니다. 호스트의 “Build environment variables”에 같은 이름으로 키를 넣고 **다시 빌드·배포**해야 합니다.`;
+const MSG_NO_KEY = getApiKeySetupMessage();
 
 /**
  * Kulhavy & Stock(1989) 검증·정교화 + Shute(2008) 형성적 피드백 — 모든 맞춤형 AI 피드백 프롬프트에 공통 적용
@@ -136,67 +126,42 @@ function msgApiFailed(status) {
 OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「AI 맞춤형 피드백 보기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
   }
   return `──
-OpenAI 요청이 실패했습니다${status ? ` (HTTP ${status})` : ''}. API 키가 맞는지, 결제·크레딧이 있는지 확인해 보세요. 브라우저에서 F12 → 네트워크 탭에서 \`api.openai.com\` 응답 본문을 보면 원인 힌트가 나오는 경우가 많아요.`;
+OpenAI 요청이 실패했습니다${status ? ` (HTTP ${status})` : ''}. API 키가 맞는지, 결제·크레딧이 있는지 확인해 보세요.`;
 }
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function retryAfterMs(res) {
-  const raw = res.headers.get('retry-after');
-  if (!raw) return null;
-  const sec = parseInt(raw, 10);
-  if (Number.isFinite(sec)) return Math.min(Math.max(sec, 1), 60) * 1000;
-  const retryDate = Date.parse(raw);
-  if (Number.isFinite(retryDate)) return Math.min(Math.max(retryDate - Date.now(), 1000), 60_000);
-  return null;
-}
-
 async function requestCompareFeedback(prompt, fallbackBody) {
-  const apiKey = getViteOpenAiKey();
-  if (!apiKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
-
   const maxAttempts = 4;
   let lastStatus = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const res = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          input: prompt
-        })
+      const text = await requestOpenAiText({
+        model: 'gpt-4o-mini',
+        input: prompt
       });
+      const trimmed = text?.trim();
+      if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
+      return trimmed;
+    } catch (err) {
+      if (err?.noKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
 
-      if (res.ok) {
-        const json = await res.json();
-        const text = extractTextFromResponse(json);
-        const trimmed = text?.trim();
-        if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
-        return trimmed;
-      }
-
-      lastStatus = res.status;
-      const retryable = res.status === 429 || res.status === 503;
+      lastStatus = err?.status || null;
+      const retryable = lastStatus === 429 || lastStatus === 503;
       if (retryable && attempt < maxAttempts - 1) {
-        const fromHeader = retryAfterMs(res);
-        const backoff = fromHeader ?? Math.min(2500 * 2 ** attempt, 20_000);
+        const backoff = Math.min(2500 * 2 ** attempt, 20_000);
         await sleep(backoff);
         continue;
       }
 
-      return `${fallbackBody}\n\n${msgApiFailed(res.status)}`;
-    } catch {
-      if (attempt < maxAttempts - 1) {
+      if (attempt < maxAttempts - 1 && !lastStatus) {
         await sleep(Math.min(1500 * (attempt + 1), 8000));
         continue;
       }
+
       return `${fallbackBody}\n\n${msgApiFailed(lastStatus)}`;
     }
   }
@@ -205,49 +170,34 @@ async function requestCompareFeedback(prompt, fallbackBody) {
 }
 
 async function requestCompareFeedbackMultimodal(userContentParts, fallbackBody) {
-  const apiKey = getViteOpenAiKey();
-  if (!apiKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
-
   const maxAttempts = 4;
   let lastStatus = null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const res = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          input: [{ role: 'user', content: userContentParts }]
-        })
+      const text = await requestOpenAiText({
+        model: 'gpt-4o-mini',
+        input: [{ role: 'user', content: userContentParts }]
       });
+      const trimmed = text?.trim();
+      if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
+      return trimmed;
+    } catch (err) {
+      if (err?.noKey) return `${fallbackBody}\n\n${MSG_NO_KEY}`;
 
-      if (res.ok) {
-        const json = await res.json();
-        const text = extractTextFromResponse(json);
-        const trimmed = text?.trim();
-        if (!trimmed) return `${fallbackBody}\n\n${msgApiFailed()}`;
-        return trimmed;
-      }
-
-      lastStatus = res.status;
-      const retryable = res.status === 429 || res.status === 503;
+      lastStatus = err?.status || null;
+      const retryable = lastStatus === 429 || lastStatus === 503;
       if (retryable && attempt < maxAttempts - 1) {
-        const fromHeader = retryAfterMs(res);
-        const backoff = fromHeader ?? Math.min(2500 * 2 ** attempt, 20_000);
+        const backoff = Math.min(2500 * 2 ** attempt, 20_000);
         await sleep(backoff);
         continue;
       }
 
-      return `${fallbackBody}\n\n${msgApiFailed(res.status)}`;
-    } catch {
-      if (attempt < maxAttempts - 1) {
+      if (attempt < maxAttempts - 1 && !lastStatus) {
         await sleep(Math.min(1500 * (attempt + 1), 8000));
         continue;
       }
+
       return `${fallbackBody}\n\n${msgApiFailed(lastStatus)}`;
     }
   }
