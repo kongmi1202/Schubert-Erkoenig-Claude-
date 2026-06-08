@@ -413,7 +413,7 @@ function PianoAnalysis({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전</button>
-          <button className="btn-p" disabled={!canCheckAnswer} style={!canCheckAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => go('historyCards')}>다음 단계 →</button>
+          <button className="btn-p" disabled={!canCheckAnswer} style={!canCheckAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => { setStageCompletion('piano', true); go('historyCards'); }}>다음 단계 →</button>
         </div>
       </div>
     </div>

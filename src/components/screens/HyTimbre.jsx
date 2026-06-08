@@ -296,7 +296,7 @@ function HyTimbre({ go }) {
             className="btn-p"
             disabled={!allSelected}
             style={!allSelected ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            onClick={() => go('pianoAnalysis')}
+            onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}
           >
             다음 단계 →
           </button>

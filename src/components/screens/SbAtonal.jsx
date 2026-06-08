@@ -384,7 +384,7 @@ function SbAtonal({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전: sb-sprech</button>
-          <button className="btn-p" onClick={() => go('historyCards')}>다음: sb-history →</button>
+          <button className="btn-p" onClick={() => { setStageCompletion('piano', true); go('historyCards'); }}>다음: sb-history →</button>
         </div>
       </div>
     </div>

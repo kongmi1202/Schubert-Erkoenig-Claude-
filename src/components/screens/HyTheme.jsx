@@ -830,7 +830,7 @@ function HyTheme({ go }) {
             className="btn-p"
             disabled={!canProceed}
             style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            onClick={() => go('historyCards')}
+            onClick={() => { setStageCompletion('piano', true); go('historyCards'); }}
           >
             다음 단계 →
           </button>

@@ -1,5 +1,6 @@
 import { useAppStore } from '../../store/useAppStore';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { getStep2ResponseFlags, hasAnyStep2Response } from '../../lib/step2Review';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -16,7 +17,7 @@ function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type,
     selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
-    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState, stageCompletion,
+    selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState,
     tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
     vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState
   } = useAppStore();
@@ -26,11 +27,36 @@ function AestheticPage({ go }) {
   const isVivaldi = selectedSong === 'vivaldi';
   const isChopin = selectedSong === 'chopin';
   const isMawang = !isHandel && !isHaydn && !isSchoenberg && !isVivaldi && !isChopin;
-  const canRevealStep2Answers = Boolean(
-    stageCompletion?.analytical
-    && stageCompletion?.voice
-    && stageCompletion?.piano
-    && stageCompletion?.history
+  const step2State = useMemo(() => ({
+    analyticalCharacters,
+    analyticalStory,
+    handelLyricMeaning,
+    handelOperaDiff,
+    tonePaintingHandelState,
+    melodyCanvasHandelState,
+    hyTimbreState,
+    hyThemeState,
+    vvSonnetState,
+    vvConcertoState,
+    cpFormState,
+    cpRhythmState,
+    sbSprechState,
+    sbAtonalState,
+    voiceDesignState,
+    pianoAnalysisState
+  }), [
+    analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff,
+    tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
+    vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState,
+    voiceDesignState, pianoAnalysisState
+  ]);
+  const step2Flags = useMemo(
+    () => getStep2ResponseFlags(selectedSong, step2State),
+    [selectedSong, step2State]
+  );
+  const hasStep2Content = useMemo(
+    () => hasAnyStep2Response(selectedSong, step2State),
+    [selectedSong, step2State]
   );
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
@@ -188,13 +214,15 @@ function AestheticPage({ go }) {
 
             <div className="journey-block">
               <div className="review-section-title">② 분석적 감상 (내 답변 + 정답)</div>
-              {!canRevealStep2Answers ? (
+              {!hasStep2Content ? (
                 <div className="fb show info" style={{ marginBottom: 12 }}>
-                  2단계 응답을 모두 완료하면 정답 비교가 공개됩니다.
+                  2단계에서 완료한 활동이 있으면 여기에 표시됩니다.
                 </div>
               ) : null}
-              {canRevealStep2Answers ? (
+              {hasStep2Content ? (
                 <>
+              {step2Flags.overviewQ1 ? (
+              <>
               <div className="review-item">{analyticalQ1Label}</div>
               <div className="cmp-mini-grid">
                 <div>
@@ -254,8 +282,10 @@ function AestheticPage({ go }) {
                   )}
                 </div>
               </div>
+              </>
+              ) : null}
 
-              {showAnalyticalQ2 ? (
+              {showAnalyticalQ2 && step2Flags.overviewQ2 ? (
                 <>
                   <div className="review-item">{analyticalQ2Label}</div>
                   <div className="cmp-mini-grid">
@@ -285,9 +315,14 @@ function AestheticPage({ go }) {
 
               {isHandel ? (
                 <>
+                  {(step2Flags.toneS1 || step2Flags.toneS2 || step2Flags.toneS3) ? (
+                  <>
                   <div className="review-item">2-B 음화법 활동 (내 답변 + 정답)</div>
                   <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
-                    {handelToneSegments.map((seg) => (
+                    {handelToneSegments.map((seg) => {
+                      const toneAnswered = step2Flags[`tone${seg.id.charAt(0).toUpperCase()}${seg.id.slice(1)}`];
+                      if (!toneAnswered) return null;
+                      return (
                       <div key={seg.id} className="review-card" style={{ padding: 12 }}>
                         <div className="small-note" style={{ marginBottom: 6 }}>{seg.title} · {seg.question}</div>
                         <div className="cmp-mini-grid">
@@ -305,10 +340,15 @@ function AestheticPage({ go }) {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    );})}
                   </div>
+                  </>
+                  ) : null}
 
+                  {(step2Flags.melodyHarmony || step2Flags.melodyPoly) ? (
+                  <>
                   <div className="review-item">2-C 화성·다성 가락선 활동 (내 그림 + 개념 예시)</div>
+                  {step2Flags.melodyHarmony ? (
                   <div className="cmp-mini-grid">
                     <div>
                       <div className="small-note">화성음악 · 내 가락선</div>
@@ -321,6 +361,8 @@ function AestheticPage({ go }) {
                       <img src="/assets/handel-model-hallelujah.png" alt="화성음악 개념 예시 가락선" className="score-image-inline" />
                     </div>
                   </div>
+                  ) : null}
+                  {step2Flags.melodyPoly ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div>
                       <div className="small-note">다성음악 · 내 가락선</div>
@@ -333,138 +375,220 @@ function AestheticPage({ go }) {
                       <img src="/assets/handel-model-lord-reign.png" alt="다성음악 개념 예시 가락선" className="score-image-inline" />
                     </div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
                 </>
               ) : null}
               {isHaydn ? (
                 <>
+                  {(step2Flags.timbreIg1 || step2Flags.timbreIg2 || step2Flags.timbreIg3) ? (
+                  <>
                   <div className="review-item">2-B 현악 4중주 음색 비교 (내 답변 + 정답)</div>
+                  {step2Flags.timbreIg1 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">
                       구간1 악기: {hyTimbreState?.selectedByGrid?.['ig-1'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-1'] || '없음'}
                     </div>
                     <div className="fb show gold">구간1 정답: {hyTimbreCorrectInstr['ig-1']} · {hyTimbreCorrectRole['ig-1']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.timbreIg2 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">
                       구간2 악기: {hyTimbreState?.selectedByGrid?.['ig-2'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-2'] || '없음'}
                     </div>
                     <div className="fb show gold">구간2 정답: {hyTimbreCorrectInstr['ig-2']} · {hyTimbreCorrectRole['ig-2']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.timbreIg3 ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">
                       구간3 악기: {hyTimbreState?.selectedByGrid?.['ig-3'] || '없음'} · 역할: {hyTimbreState?.roleByGrid?.['ig-3'] || '없음'}
                     </div>
                     <div className="fb show gold">구간3 정답: {hyTimbreCorrectInstr['ig-3']} · {hyTimbreCorrectRole['ig-3']}</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
+                  {(step2Flags.theme1 || step2Flags.theme2) ? (
+                  <>
                   <div className="review-item">2-C 주제 비교 — 두 주제 특징 배치</div>
+                  {step2Flags.theme1 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">제1주제 칸: {formatHyThemePlaced(hyThemeState?.matchPlaced?.theme1)}</div>
                     <div className="fb show gold">제1주제 정답 보기: 음이 크게 도약한다, 리듬이 짧게 끊어진다, 밝고 활기차다</div>
                   </div>
+                  ) : null}
+                  {step2Flags.theme2 ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">제2주제 칸: {formatHyThemePlaced(hyThemeState?.matchPlaced?.theme2)}</div>
                     <div className="fb show gold">제2주제 정답 보기: 음이 순차적으로 이어진다, 리듬이 길게 이어진다, 부드럽고 서정적이다</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
+                  {step2Flags.themeDeg ? (
+                  <>
                   <div className="review-item">2-C 도수 맞추기</div>
                   <div className="cmp-mini-grid">
                     <div className="review-item">도수 선택: {hyThemeState?.selectedDeg || '없음'} (정답: 5도)</div>
                   </div>
+                  </>
+                  ) : null}
                 </>
               ) : null}
               {isVivaldi ? (
                 <>
+                  {(step2Flags.sonnetC1 || step2Flags.sonnetC2) ? (
+                  <>
                   <div className="review-item">2-B 소네트 활동 (내 답변 + 정답)</div>
+                  {step2Flags.sonnetC1 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">구간1: {vvSonnetState?.selectedById?.['vv-c1'] || '없음'}</div>
                     <div className="fb show gold">구간1 정답: {vvSonnetCorrect['vv-c1']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.sonnetC2 ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">구간2: {vvSonnetState?.selectedById?.['vv-c2'] || '없음'}</div>
                     <div className="fb show gold">구간2 정답: {vvSonnetCorrect['vv-c2']}</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
+                  {(step2Flags.concertoTally || step2Flags.concertoDiscovery) ? (
+                  <>
                   <div className="review-item">2-C 바이올린 협주곡 활동 (독주·총주 체크 / 발견 질문)</div>
+                  {step2Flags.concertoTally ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">
                       독주 탭 {vvConcertoState?.soloCount ?? 0}회 · 총주 탭 {vvConcertoState?.tuttiCount ?? 0}회
                     </div>
                   </div>
+                  ) : null}
+                  {step2Flags.concertoDiscovery ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">발견 질문 선택: {vvConcertoState?.discoveryChoice || '없음'}</div>
                     <div className="fb show gold">정답: 독주와 총주가 번갈아 나온다</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
                 </>
               ) : null}
               {isChopin ? (
                 <>
+                  {(step2Flags.formF1 || step2Flags.formF2 || step2Flags.formF3 || step2Flags.featureF1 || step2Flags.featureF2 || step2Flags.featureF3 || step2Flags.formDiscovery) ? (
+                  <>
                   <div className="review-item">2-B ABA 형식 활동 (내 답변 + 정답)</div>
+                  {step2Flags.formF1 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">구간1: {cpFormState?.formAnswers?.['cp-f1'] || '없음'}</div>
                     <div className="fb show gold">구간1 정답: {cpFormCorrect['cp-f1']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.formF2 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">구간2: {cpFormState?.formAnswers?.['cp-f2'] || '없음'}</div>
                     <div className="fb show gold">구간2 정답: {cpFormCorrect['cp-f2']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.formF3 ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">구간3: {cpFormState?.formAnswers?.['cp-f3'] || '없음'}</div>
                     <div className="fb show gold">구간3 정답: {cpFormCorrect['cp-f3']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.featureF1 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">구간1 특징: {cpFormState?.featureById?.['cp-f1'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpFeatureCorrect['cp-f1']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.featureF2 ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">구간2 특징: {cpFormState?.featureById?.['cp-f2'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpFeatureCorrect['cp-f2']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.featureF3 ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">구간3 특징: {cpFormState?.featureById?.['cp-f3'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpFeatureCorrect['cp-f3']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.formDiscovery ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">ABA 발견 질문: {cpFormState?.discoveryChoice || '없음'}</div>
                     <div className="fb show gold">정답: 서로 다른 느낌을 대비시키기 위해</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
+                  {(step2Flags.rhythmRh || step2Flags.rhythmLh || step2Flags.rhythmPoly) ? (
+                  <>
                   <div className="review-item">2-C 폴리리듬 활동 (내 답변 + 정답)</div>
+                  {step2Flags.rhythmRh ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">오른손 묶음: {cpRhythmState?.selectedByGroup?.['cp-rh-q'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpRhythmCorrect['cp-rh-q']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.rhythmLh ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">왼손 묶음: {cpRhythmState?.selectedByGroup?.['cp-lh-q'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpRhythmCorrect['cp-lh-q']}</div>
                   </div>
+                  ) : null}
+                  {step2Flags.rhythmPoly ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">양손 느낌: {cpRhythmState?.selectedByGroup?.['cp-poly-q'] || '없음'}</div>
                     <div className="fb show gold">정답: {cpRhythmCorrect['cp-poly-q']}</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
                 </>
               ) : null}
               {isSchoenberg ? (
                 <>
+                  {step2Flags.sprech ? (
+                  <>
                   <div className="review-item">2-B 슈프레흐슈팀메 활동 (내 답변 + 정답)</div>
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">{sbSprechState?.selectedChoice || '없음'}</div>
                     <div className="fb show gold">정답: 음에 도달한 직후 바로 올라가거나 내려간다</div>
                   </div>
+                  </>
+                  ) : null}
+                  {(step2Flags.atonalCards || step2Flags.atonalChoice || step2Flags.atonalFeel) ? (
+                  <>
                   <div className="review-item">2-C 무조성 활동 (내 답변 + 정답)</div>
+                  {step2Flags.atonalChoice ? (
                   <div className="cmp-mini-grid">
                     <div className="fb show info">선택: {sbAtonalState?.selectedChoice || '없음'}</div>
                     <div className="fb show gold">정답: 불안하고 예측할 수 없다</div>
                   </div>
+                  ) : null}
+                  {step2Flags.atonalFeel ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">마왕 느낌: {sbAtonalState?.feelTonal || '없음'}</div>
                     <div className="fb show info">피에로 느낌: {sbAtonalState?.feelAtonal || '없음'}</div>
                   </div>
+                  ) : null}
+                  </>
+                  ) : null}
                 </>
               ) : null}
 
               {isMawang ? (
                 <>
+                  {(['해설자', '아버지', '아들', '마왕'].some((n) => step2Flags[`voice${n}`])) ? (
+                  <>
                   <div className="review-item">2-B 음색 설계 (내 답변 + 정답)</div>
-                  {voiceRows.length ? (
-                    <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
-                      {voiceRows.map(([name, row]) => (
+                  <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+                      {voiceRows.filter(([name]) => step2Flags[`voice${name}`]).map(([name, row]) => (
                         <div key={name} className="review-card" style={{ padding: 12 }}>
                           <div className="small-note" style={{ marginBottom: 6 }}>{name}</div>
                           <div className="cmp-mini-grid">
@@ -484,52 +608,67 @@ function AestheticPage({ go }) {
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="review-empty" style={{ marginBottom: 10 }}>입력 없음</div>
-                  )}
+                  </>
+                  ) : null}
 
+                  {(step2Flags.pianoRhScene || step2Flags.pianoLhScene) ? (
+                  <>
                   <div className="review-item">2-C 피아노 반주 (내 답변 + 정답)</div>
                   <div className="cmp-mini-grid">
                     <div>
                       <div className="small-note">내 답변</div>
                       <div className="review-item">
-                        오른손 장면: {pianoAnalysisState?.rhScene || '없음'}<br />
-                        왼손 장면: {pianoAnalysisState?.lhScene || '없음'}
+                        {step2Flags.pianoRhScene ? <>오른손 장면: {pianoAnalysisState?.rhScene || '없음'}<br /></> : null}
+                        {step2Flags.pianoLhScene ? <>왼손 장면: {pianoAnalysisState?.lhScene || '없음'}</> : null}
                       </div>
                     </div>
                     <div>
                       <div className="small-note">정답(모범 해설)</div>
                       <div className="review-item">
-                        오른손: 말발굽/질주 같은 긴장감<br />
-                        왼손: 심장 박동/쫓기는 긴박감
+                        {step2Flags.pianoRhScene ? <>오른손: 말발굽/질주 같은 긴장감<br /></> : null}
+                        {step2Flags.pianoLhScene ? <>왼손: 심장 박동/쫓기는 긴박감</> : null}
                       </div>
                     </div>
                   </div>
+                  </>
+                  ) : null}
+                  {(step2Flags.pianoRhDrawing || step2Flags.pianoLhDrawing) ? (
+                  <>
                   <div className="review-item">분석 활동 정답 자료(원형)</div>
                   <div className="cmp-mini-grid">
+                    {step2Flags.pianoRhDrawing ? (
                     <div>
                       <div className="small-note">오른손 모범 악보</div>
                       <img src="/assets/rh-score.png" alt="오른손 모범 악보" className="score-image-inline" />
                     </div>
+                    ) : null}
+                    {step2Flags.pianoLhDrawing ? (
                     <div>
                       <div className="small-note">왼손 모범 악보</div>
                       <img src="/assets/lh-score.png" alt="왼손 모범 악보" className="score-image-inline" />
                     </div>
+                    ) : null}
                   </div>
                   <div className="cmp-mini-grid">
+                    {step2Flags.pianoRhDrawing ? (
                     <div>
                       <div className="small-note">내 오른손 그림</div>
                       {pianoAnalysisState?.savedPreview?.rh
                         ? <img src={pianoAnalysisState.savedPreview.rh} alt="내 오른손 가락선" className="score-image-inline" />
                         : <div className="review-empty">없음</div>}
                     </div>
+                    ) : null}
+                    {step2Flags.pianoLhDrawing ? (
                     <div>
                       <div className="small-note">내 왼손 그림</div>
                       {pianoAnalysisState?.savedPreview?.lh
                         ? <img src={pianoAnalysisState.savedPreview.lh} alt="내 왼손 가락선" className="score-image-inline" />
                         : <div className="review-empty">없음</div>}
                     </div>
+                    ) : null}
                   </div>
+                  </>
+                  ) : null}
                 </>
               ) : null}
                 </>

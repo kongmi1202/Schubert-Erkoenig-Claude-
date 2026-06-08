@@ -474,7 +474,7 @@ function SbSprech({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전: sb-overview</button>
-          <button className="btn-p" onClick={() => go('pianoAnalysis')}>다음: sb-atonal →</button>
+          <button className="btn-p" onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}>다음: sb-atonal →</button>
         </div>
       </div>
     </div>

@@ -140,7 +140,7 @@ function SbHistory({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('pianoAnalysis')}>← 이전: sb-atonal</button>
-          <button className="btn-p" onClick={() => go('aestheticPage')}>다음: 3단계(s3) →</button>
+          <button className="btn-p" onClick={() => { setStageCompletion('history', true); go('aestheticPage'); }}>다음: 3단계(s3) →</button>
         </div>
       </div>
     </div>

@@ -4,7 +4,9 @@ import SensoryStage1Review from '../SensoryStage1Review';
 
 function VvOverview({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [q1, setQ1] = useState('');
+  const setAnalyticalCharacter = useAppStore((s) => s.setAnalyticalCharacter);
+  const storedQ1 = useAppStore((s) => s.analyticalCharacters?.[0] || '');
+  const [q1, setQ1] = useState(storedQ1);
   /** 마지막으로 「내 응답 저장」한 텍스트(트림). 이것과 현재 입력이 같을 때만 정답 확인 가능 */
   const [q1Saved, setQ1Saved] = useState('');
   const [q1Open, setQ1Open] = useState(false);
@@ -22,8 +24,11 @@ function VvOverview({ go }) {
   const saveMyResponse = () => {
     const t = q1.trim();
     if (!t) return;
+    setAnalyticalCharacter(0, t);
     setQ1Saved(t);
-  };  return (
+  };
+
+  return (
     <div className="screen active" id="vv-overview">
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2-A · 분석적 감상 (비발디)</div>
@@ -99,6 +104,8 @@ function VvOverview({ go }) {
             disabled={!canProceed}
             style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => {
+              const t = q1.trim();
+              if (t) setAnalyticalCharacter(0, t);
               setStageCompletion('analytical', true);
               go('voiceDesign');
             }}

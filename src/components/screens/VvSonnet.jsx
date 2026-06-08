@@ -289,7 +289,7 @@ function VvSonnet({ go }) {
             className="btn-p"
             disabled={!canProceed}
             style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            onClick={() => go('pianoAnalysis')}
+            onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}
           >
             다음: vv-concerto →
           </button>
