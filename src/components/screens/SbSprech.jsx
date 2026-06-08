@@ -108,15 +108,24 @@ const getSprechWrongHint = (value) => {
 };
 
 const SLIDER_DEFAULT = 50;
+const SPRECH_CORRECT_SUMMARY = '송어(일반 성악): 완전히 노래하기 / 피에로(슈프레흐슈팀메): 말하기에 가까워요';
+
+function buildSprechStudentSummary(normalValue, sprechValue, normalChecked, sprechChecked) {
+  const parts = [];
+  if (normalChecked) parts.push(`송어(일반 성악): ${getSliderToneText(normalValue)}`);
+  if (sprechChecked) parts.push(`피에로(슈프레흐슈팀메): ${getSliderToneText(sprechValue)}`);
+  return parts.join(' / ');
+}
 
 function SbSprech({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const savedSprech = useAppStore((s) => s.sbSprechState);
   const setSbSprechState = useAppStore((s) => s.setSbSprechState);
   const [playing, setPlaying] = useState('');
-  const [normalValue, setNormalValue] = useState(50);
-  const [sprechValue, setSprechValue] = useState(50);
-  const [normalChecked, setNormalChecked] = useState(false);
-  const [sprechChecked, setSprechChecked] = useState(false);
+  const [normalValue, setNormalValue] = useState(() => savedSprech?.normalValue ?? SLIDER_DEFAULT);
+  const [sprechValue, setSprechValue] = useState(() => savedSprech?.sprechValue ?? SLIDER_DEFAULT);
+  const [normalChecked, setNormalChecked] = useState(() => Boolean(savedSprech?.normalChecked));
+  const [sprechChecked, setSprechChecked] = useState(() => Boolean(savedSprech?.sprechChecked));
   const [bothCorrect, setBothCorrect] = useState(false);
   const [normalOpen, setNormalOpen] = useState(false);
   const [sprechOpen, setSprechOpen] = useState(false);
@@ -136,16 +145,18 @@ function SbSprech({ go }) {
   }, [normalChecked, sprechChecked, normalIsCorrect, sprechIsCorrect]);
 
   useEffect(() => {
-    const summary = bothCorrect
-      ? '일반 성악은 노래하기, 슈프레흐슈팀메는 말하기에 가깝다'
-      : '';
+    const studentSummary = buildSprechStudentSummary(
+      normalValue, sprechValue, normalChecked, sprechChecked
+    );
     setSbSprechState({
       normalValue,
       sprechValue,
+      normalTone: getSliderToneText(normalValue),
+      sprechTone: getSliderToneText(sprechValue),
       normalChecked,
       sprechChecked,
       bothCorrect,
-      selectedChoice: summary
+      selectedChoice: studentSummary || (bothCorrect ? SPRECH_CORRECT_SUMMARY : '')
     });
   }, [normalValue, sprechValue, normalChecked, sprechChecked, bothCorrect, setSbSprechState]);
 

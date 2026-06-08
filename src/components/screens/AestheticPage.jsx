@@ -1,6 +1,11 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useEffect, useMemo } from 'react';
-import { getStep2ResponseFlags, hasAnyStep2Response } from '../../lib/step2Review';
+import {
+  formatSbAtonalStudentResponse,
+  getStep2ResponseFlags,
+  hasAnyStep2Response,
+  SB_ATONAL_CARD_GOLD
+} from '../../lib/step2Review';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -558,25 +563,17 @@ function AestheticPage({ go }) {
                   <div className="review-item">2-B 슈프레흐슈팀메 활동 (내 답변 + 정답)</div>
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
                     <div className="fb show info">{sbSprechState?.selectedChoice || '없음'}</div>
-                    <div className="fb show gold">정답: 음에 도달한 직후 바로 올라가거나 내려간다</div>
+                    <div className="fb show gold">정답: 송어(일반 성악) 완전히 노래하기 / 피에로(슈프레흐슈팀메) 말하기에 가까워요</div>
                   </div>
                   </>
                   ) : null}
-                  {(step2Flags.atonalCards || step2Flags.atonalChoice || step2Flags.atonalFeel) ? (
+                  {(step2Flags.atonalCards || step2Flags.atonalChoice) ? (
                   <>
                   <div className="review-item">2-C 무조성 활동 (내 답변 + 정답)</div>
-                  {step2Flags.atonalChoice ? (
-                  <div className="cmp-mini-grid">
-                    <div className="fb show info">선택: {sbAtonalState?.selectedChoice || '없음'}</div>
-                    <div className="fb show gold">정답: 불안하고 예측할 수 없다</div>
-                  </div>
-                  ) : null}
-                  {step2Flags.atonalFeel ? (
                   <div className="cmp-mini-grid" style={{ marginBottom: 10 }}>
-                    <div className="fb show info">마왕 느낌: {sbAtonalState?.feelTonal || '없음'}</div>
-                    <div className="fb show info">피에로 느낌: {sbAtonalState?.feelAtonal || '없음'}</div>
+                    <div className="fb show info">카드 배치: {formatSbAtonalStudentResponse(sbAtonalState) || '없음'}</div>
+                    <div className="fb show gold">정답: {SB_ATONAL_CARD_GOLD}</div>
                   </div>
-                  ) : null}
                   </>
                   ) : null}
                 </>

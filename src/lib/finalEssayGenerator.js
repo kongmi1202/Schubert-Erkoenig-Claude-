@@ -1,8 +1,15 @@
 import { requestOpenAiText } from './openaiClient';
-import { getStep2ResponseFlags } from './step2Review';
+import { formatSbAtonalStudentResponse, getStep2ResponseFlags, SB_ATONAL_CARD_GOLD } from './step2Review';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() : '');
 const hasText = (v) => clean(v).length > 0;
+
+function buildSprechEssayFallback(normalTone, sprechTone, normalChecked, sprechChecked) {
+  const parts = [];
+  if (normalChecked && normalTone) parts.push(`송어(일반 성악): ${normalTone}`);
+  if (sprechChecked && sprechTone) parts.push(`피에로(슈프레흐슈팀메): ${sprechTone}`);
+  return parts.join(' / ');
+}
 
 const hyThemeLabels = {
   o1: '음이 크게 도약한다',
@@ -112,17 +119,30 @@ export function buildStep2EssayEntries(data) {
   if (song === 'schoenberg') {
     push('overviewQ1', '개요 Q1 편성', data.analyticalCharacters?.[0]);
     push('overviewQ2', '개요 Q2 분위기', data.analyticalStory);
-    push('sprech', '슈프레흐슈팀메 활동', data.sbSprechState?.selectedChoice);
-    push('atonalChoice', '무조성 선택', data.sbAtonalState?.selectedChoice, '불안하고 예측할 수 없다',
-      clean(data.sbAtonalState?.selectedChoice) === '불안하고 예측할 수 없다');
-    if (flags.atonalCards) {
-      const placed = data.sbAtonalState?.placedCards;
-      entries.push(makeEntry('무조성 카드 배치',
-        `조성: ${(placed?.tonal || []).join(', ')} / 무조: ${(placed?.atonal || []).join(', ')}`));
+    const sprech = data.sbSprechState || {};
+    if (sprech.normalChecked || sprech.sprechChecked || hasText(sprech.selectedChoice)) {
+      const studentText = sprech.selectedChoice
+        || buildSprechEssayFallback(sprech.normalTone, sprech.sprechTone, sprech.normalChecked, sprech.sprechChecked);
+      entries.push(makeEntry(
+        '슈프레흐슈팀메 활동',
+        studentText,
+        '송어(일반 성악): 완전히 노래하기 / 피에로(슈프레흐슈팀메): 말하기에 가까워요',
+        Boolean(sprech.bothCorrect)
+      ));
     }
-    if (flags.atonalFeel) {
-      entries.push(makeEntry('무조성 느낌 비교',
-        `송어: ${data.sbAtonalState?.feelTonal || '—'}, 피에로: ${data.sbAtonalState?.feelAtonal || '—'}`));
+    if (flags.atonalCards || flags.atonalChoice) {
+      const studentText = formatSbAtonalStudentResponse(data.sbAtonalState);
+      const placed = data.sbAtonalState?.placedCards;
+      const tonalOk = ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'].every((c) =>
+        (placed?.tonal || []).includes(c));
+      const atonalOk = ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'].every((c) =>
+        (placed?.atonal || []).includes(c));
+      entries.push(makeEntry(
+        '무조성 카드 배치',
+        studentText,
+        SB_ATONAL_CARD_GOLD,
+        tonalOk && atonalOk
+      ));
     }
     return entries;
   }

@@ -1,5 +1,18 @@
 const hasText = (v) => typeof v === 'string' && v.trim().length > 0;
 
+export const SB_ATONAL_CARD_GOLD =
+  '송어: 조성 음악, 편안하고 안정적, 음들이 서로 잘 어울린다. / 피에로: 무조성 음악, 낯설고 긴장감, 음들이 따로 논다.';
+
+export function formatSbAtonalStudentResponse(atonalState) {
+  if (hasText(atonalState?.selectedChoice)) return atonalState.selectedChoice;
+  const placed = atonalState?.placedCards;
+  if (!placed) return '';
+  const tonal = (placed.tonal || []).join(', ');
+  const atonal = (placed.atonal || []).join(', ');
+  if (!tonal && !atonal) return '';
+  return `송어: ${tonal || '—'} / 피에로: ${atonal || '—'}`;
+}
+
 export const STEP2_LOCKED_ANSWER_MSG = '2단계에서 이 활동을 완료하면 정답이 공개됩니다.';
 
 function hasVoiceCharResponse(voiceDesign, name) {
@@ -47,7 +60,11 @@ export function getStep2ResponseFlags(selectedSong, state) {
     return {
       overviewQ1: hasText(chars[0]),
       overviewQ2: hasText(state.analyticalStory),
-      sprech: hasText(state.sbSprechState?.selectedChoice),
+      sprech: Boolean(
+        state.sbSprechState?.normalChecked
+        || state.sbSprechState?.sprechChecked
+        || hasText(state.sbSprechState?.selectedChoice)
+      ),
       atonalCards: (atonal?.tonal?.length ?? 0) > 0 || (atonal?.atonal?.length ?? 0) > 0,
       atonalChoice: hasText(state.sbAtonalState?.selectedChoice),
       atonalFeel: hasText(state.sbAtonalState?.feelTonal) || hasText(state.sbAtonalState?.feelAtonal)

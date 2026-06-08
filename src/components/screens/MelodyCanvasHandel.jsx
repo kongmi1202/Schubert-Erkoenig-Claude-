@@ -110,13 +110,30 @@ function MelodyCanvasHandel({ go }) {
     setSavedPreview((prev) => ({ ...prev, [key]: '' }));
   };
 
-  const saveCanvasPreview = (canvasRef, key) => {
+  const captureCanvasPreview = (canvasRef) => {
     const c = canvasRef.current;
-    if (!c) return;
-    setSavedPreview((prev) => ({ ...prev, [key]: c.toDataURL('image/png') }));
+    if (!c) return '';
+    return c.toDataURL('image/png');
+  };
+
+  const saveCanvasPreview = (canvasRef, key) => {
+    const dataUrl = captureCanvasPreview(canvasRef);
+    if (!dataUrl) return;
+    setSavedPreview((prev) => ({ ...prev, [key]: dataUrl }));
   };
 
   const allDone = useMemo(() => harmonyDirty && polyDirty, [harmonyDirty, polyDirty]);
+
+  const goNext = () => {
+    const nextPreview = {
+      harmony: harmonyDirty ? captureCanvasPreview(harmonyRef) : savedPreview.harmony,
+      poly: polyDirty ? captureCanvasPreview(polyRef) : savedPreview.poly
+    };
+    setSavedPreview(nextPreview);
+    setMelodyCanvasHandelState({ savedPreview: nextPreview });
+    setStageCompletion('piano', true);
+    go('historyCards');
+  };
 
   useEffect(() => {
     setMelodyCanvasHandelState({ savedPreview });
@@ -340,10 +357,7 @@ function MelodyCanvasHandel({ go }) {
             className="btn-p"
             disabled={!allDone}
             style={!allDone ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            onClick={() => {
-              setStageCompletion('piano', true);
-              go('historyCards');
-            }}
+            onClick={goNext}
           >
             다음 단계 →
           </button>

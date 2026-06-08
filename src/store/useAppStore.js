@@ -97,6 +97,13 @@ export const useAppStore = create((set) => ({
     polyDesc: ''
   },
   sbSprechState: {
+    normalValue: 50,
+    sprechValue: 50,
+    normalTone: '',
+    sprechTone: '',
+    normalChecked: false,
+    sprechChecked: false,
+    bothCorrect: false,
     selectedChoice: ''
   },
   sbAtonalState: {
