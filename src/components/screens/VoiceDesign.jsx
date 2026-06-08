@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { canOpenAnswerAfterFormativeAiGate, generateVoiceDesignCompareFeedback } from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
+import { getVoiceDesignFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -121,8 +122,8 @@ function VoiceDesign({ go }) {
     [selectedCharacter, voiceDesign]
   );
 
-  const requestVoiceFeedback = useCallback(
-    () => generateVoiceDesignCompareFeedback([selectedCharacter], voiceDesign, answerKey),
+  const getVoiceFeedback = useCallback(
+    () => getVoiceDesignFixedFeedback([selectedCharacter], voiceDesign, answerKey),
     [selectedCharacter, voiceDesign]
   );
   const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
@@ -245,8 +246,9 @@ function VoiceDesign({ go }) {
 
         {canShowAnswerCheck ? (
           <>
-            <CompareAiFeedbackBlock
-              requestFn={requestVoiceFeedback}
+            <FormativeFeedbackBlock
+              key={`voice-fb-${currentSnapshot}`}
+              getFeedback={getVoiceFeedback}
               onRequested={onFeedbackRequested}
               onResult={() => {
                 setVoiceAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));

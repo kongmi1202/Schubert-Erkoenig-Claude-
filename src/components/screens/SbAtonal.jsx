@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { canOpenAnswerAfterFormativeAiGate, generateSbAtonalMatchFeedback } from '../../lib/compareFeedback';
 
 const AUDIO_SRC = {
   tonal: '/audio/sb-tonal-aud.mp3',
@@ -18,6 +20,13 @@ const MATCH_CARDS = [
 const TONAL_ANSWERS = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
 const ATONAL_ANSWERS = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
 
+function columnOk(placed, correctSet, wrongSet) {
+  if (!Array.isArray(placed) || placed.length === 0) return false;
+  const hasCorrect = placed.some((card) => correctSet.has(card));
+  const hasWrong = placed.some((card) => wrongSet.has(card));
+  return hasCorrect && !hasWrong;
+}
+
 function SbAtonal({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const sbAtonalState = useAppStore((s) => s.sbAtonalState);
@@ -28,22 +37,35 @@ function SbAtonal({ go }) {
     sbAtonalState?.placedCards || { tonal: [], atonal: [] }
   ));
   const [answerOpen, setAnswerOpen] = useState(false);
+  const [answerChecked, setAnswerChecked] = useState(false);
+  const [matchAiGate, setMatchAiGate] = useState(null);
   const tonalRef = useRef(null);
   const atonalRef = useRef(null);
 
   const usedCards = [...placedCards.tonal, ...placedCards.atonal];
   const canCheck = usedCards.length === MATCH_CARDS.length;
-  const isCorrect = (() => {
-    if (!canCheck) return false;
-    const tonalSet = new Set(placedCards.tonal);
-    const atonalSet = new Set(placedCards.atonal);
-    return (
-      TONAL_ANSWERS.size === tonalSet.size
-      && [...TONAL_ANSWERS].every((card) => tonalSet.has(card))
-      && ATONAL_ANSWERS.size === atonalSet.size
-      && [...ATONAL_ANSWERS].every((card) => atonalSet.has(card))
-    );
-  })();
+  const tonalColOk = columnOk(placedCards.tonal, TONAL_ANSWERS, ATONAL_ANSWERS);
+  const atonalColOk = columnOk(placedCards.atonal, ATONAL_ANSWERS, TONAL_ANSWERS);
+  const isCorrect = canCheck && tonalColOk && atonalColOk;
+
+  const matchSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        tonal: [...placedCards.tonal].sort(),
+        atonal: [...placedCards.atonal].sort()
+      }),
+    [placedCards]
+  );
+
+  const canOpenAnswerCheck =
+    canCheck &&
+    matchAiGate?.feedbackCompleted &&
+    canOpenAnswerAfterFormativeAiGate({
+      feedbackCompleted: matchAiGate.feedbackCompleted,
+      wasCorrectWhenFeedbackRequested: matchAiGate.wasCorrectWhenFeedbackRequested,
+      responseAtFeedback: matchAiGate.responseAtFeedback,
+      currentResponse: matchSnapshot
+    });
 
   useEffect(() => {
     const summary = canCheck
@@ -52,17 +74,23 @@ function SbAtonal({ go }) {
     setSbAtonalState({ placedCards, selectedChoice: summary });
   }, [placedCards, canCheck, setSbAtonalState]);
 
+  const resetAfterPlacementChange = () => {
+    setMatchAiGate(null);
+    setAnswerOpen(false);
+    setAnswerChecked(false);
+  };
+
   const placeCard = (slot) => {
     if (!selectedCard) return;
     if (usedCards.includes(selectedCard)) return;
     setPlacedCards((prev) => ({ ...prev, [slot]: [...prev[slot], selectedCard] }));
     setSelectedCard('');
-    setAnswerOpen(false);
+    resetAfterPlacementChange();
   };
 
   const removeCard = (slot, card) => {
     setPlacedCards((prev) => ({ ...prev, [slot]: prev[slot].filter((item) => item !== card) }));
-    setAnswerOpen(false);
+    resetAfterPlacementChange();
   };
 
   const playAudio = async (kind) => {
@@ -83,6 +111,13 @@ function SbAtonal({ go }) {
     } catch {
       setPlaying('');
     }
+  };
+
+  const checkAnswer = () => {
+    if (!canOpenAnswerCheck) return;
+    setAnswerChecked(true);
+    setAnswerOpen((prev) => !prev);
+    setStageCompletion('piano', true);
   };
 
   return (
@@ -258,30 +293,62 @@ function SbAtonal({ go }) {
           </div>
         </div>
 
+        <CompareAiFeedbackBlock
+          key={`sb-atonal-ai-${matchSnapshot}`}
+          disabled={!canCheck}
+          requestFn={() =>
+            generateSbAtonalMatchFeedback({
+              tonalCards: placedCards.tonal,
+              atonalCards: placedCards.atonal
+            })
+          }
+          onRequested={() => {
+            setMatchAiGate({
+              feedbackCompleted: false,
+              responseAtFeedback: matchSnapshot,
+              wasCorrectWhenFeedbackRequested: isCorrect
+            });
+            setAnswerOpen(false);
+          }}
+          onResult={() => {
+            setMatchAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+          }}
+        />
+        {!canCheck ? (
+          <div className="small-note" style={{ marginTop: 8, marginBottom: 8 }}>
+            여섯 장의 카드를 모두 칸에 넣어 주세요.
+          </div>
+        ) : null}
+
         <button
           type="button"
           className="answer-check-toggle"
-          onClick={() => {
-            if (!canCheck) return;
-            setAnswerOpen((prev) => !prev);
-            setStageCompletion('piano', true);
-          }}
+          onClick={checkAnswer}
           aria-expanded={answerOpen}
-          disabled={!canCheck}
-          style={!canCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+          disabled={!canOpenAnswerCheck}
+          style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
         >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
+          <span className="answer-check-toggle-label">
+            {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
+          </span>
           <span className="answer-check-toggle-chevron" aria-hidden="true">{answerOpen ? '▲' : '▼'}</span>
         </button>
+        {matchAiGate?.feedbackCompleted &&
+        matchAiGate.wasCorrectWhenFeedbackRequested &&
+        matchSnapshot === matchAiGate.responseAtFeedback ? (
+          <div className="small-note" style={{ marginTop: 8 }}>
+            좋아요! 현재 배치가 정답과 일치해서 바로 확인할 수 있어요.
+          </div>
+        ) : null}
         <div className={`answer-compare-slide ${answerOpen ? 'open' : ''}`}>
           <div className="answer-compare-inner">
-            {isCorrect ? (
+            {answerChecked && isCorrect ? (
               <div className="fb show ok">
                 ✓ 맞아요! 송어는 조성 음악이라 음들이 서로 어울리고 안정적으로 들려요.
                 <br />
                 달에 홀린 피에로는 무조성 음악이라 낯설고 긴장감 있는 느낌이 나타나요.
               </div>
-            ) : (
+            ) : answerChecked ? (
               <div className="fb show ng">
                 ✗ 아직 일부 카드가 맞지 않아요.
                 <br />
@@ -289,7 +356,7 @@ function SbAtonal({ go }) {
                 <br />
                 낯설고 긴장된 느낌인지 기준으로 다시 배치해 보세요.
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import {
   canOpenAnswerAfterFormativeAiGate,
-  generateCpFormAbaDiscoveryFeedback,
   normalizeFormativeChoice
 } from '../../lib/compareFeedback';
+import { getCpFormAbaDiscoveryFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const FORM_CARDS = [
   { id: 'cp-f1', num: '구간 1', subtitle: '처음 30초' },
@@ -232,7 +232,6 @@ function CpForm({ go }) {
   const canProceed =
     allSegmentsRevealed && discoveryCorrect && discoveryQuizResult === 'ok';
 
-  const choiceListText = CP_FORM_DISCOVERY_CHOICES.join(' / ');
 
   useEffect(() => {
     setCpFormState({
@@ -473,15 +472,13 @@ function CpForm({ go }) {
             </div>
 
             <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-              <CompareAiFeedbackBlock
-                key={`cp-form-aba-ai-${discoveryChoice || 'none'}`}
+              <FormativeFeedbackBlock
+                key={`cp-form-aba-fb-${discoveryChoice || 'none'}`}
                 disabled={!discoveryChoice}
-                requestFn={() =>
-                  generateCpFormAbaDiscoveryFeedback({
-                    question: 'ABA 형식에서 B구간은 왜 존재할까요?',
+                getFeedback={() =>
+                  getCpFormAbaDiscoveryFixedFeedback({
                     userChoice: discoveryChoice || '',
-                    correctAnswer: CP_FORM_DISCOVERY_CORRECT,
-                    choiceListText
+                    correctAnswer: CP_FORM_DISCOVERY_CORRECT
                   })
                 }
                 onRequested={() => {

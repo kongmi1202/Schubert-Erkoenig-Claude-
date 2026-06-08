@@ -617,6 +617,59 @@ export async function generateHyThemeMatchFeedback({ theme1Ids, theme2Ids }) {
   return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
 }
 
+function sbAtonalColumnOk(placedCards, correctSet, wrongSet) {
+  if (!Array.isArray(placedCards) || placedCards.length === 0) return false;
+  const hasCorrect = placedCards.some((card) => correctSet.has(card));
+  const hasWrong = placedCards.some((card) => wrongSet.has(card));
+  return hasCorrect && !hasWrong;
+}
+
+function buildSbAtonalMatchFallback({ tonalCards, atonalCards }) {
+  const t1 = (tonalCards || []).join(', ') || '미배치';
+  const t2 = (atonalCards || []).join(', ') || '미배치';
+  return `송어 칸: ${t1}. 피에로 칸: ${t2}. 조성·무조성, 안정감·긴장감, 음의 어울림에 귀를 두고 두 곡을 번갈아 들으며 각 칸에 넣은 문구가 맞는 듣기에서 모였는지 점검해 보세요. 마지막은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+}
+
+/**
+ * 쇤베르크 — 조성 vs 무조성 카드 매칭 형성적 피드백
+ */
+export async function generateSbAtonalMatchFeedback({ tonalCards, atonalCards }) {
+  const fallback = buildSbAtonalMatchFallback({ tonalCards, atonalCards });
+  const tonalCorrect = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const tonalWrong = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalCorrect = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalWrong = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const colTonalOk = sbAtonalColumnOk(tonalCards, tonalCorrect, tonalWrong);
+  const colAtonalOk = sbAtonalColumnOk(atonalCards, atonalCorrect, atonalWrong);
+  const bothOk = colTonalOk && colAtonalOk;
+
+  const listTonal = (tonalCards || []).join(' / ') || '(없음)';
+  const listAtonal = (atonalCards || []).join(' / ') || '(없음)';
+
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 쇤베르크 <달에 홀린 피에로> 무조성 활동 — 슈베르트 "송어"(조성)와 피에로(무조성) 비교 카드 매칭에 대한 형성적 피드백이다.
+
+바로 위에 붙은 공통 블록 [피드백 설계 원칙](Kulhavy & Stock 1989의 검증·정교화, Shute 2008의 형성적 피드백)을 **반드시** 따른다.
+
+학생 배치(참고):
+· 송어(조성) 칸: ${listTonal}
+· 피에로(무조성) 칸: ${listAtonal}
+
+내부 판정용(학생에게 출력·암시 금지): 과제 기준 충족 = ${bothOk ? '일치' : '불일치'}.
+
+[이 과제만의 추가 제한]
+· 정교화에서 **화면의 보기 여섯 문장**을 인용·복붙하지 말 것. (학생이 칸에 넣은 문구도 본문에서 반복하지 말 것.)
+· "어느 보기가 어느 곡" "이 칸에는 ~가 와야" 식의 정답·조합 암시 금지.
+· 두 곡의 차이를 **보기 카드와 같은 말로** 한 번에 짝지어 설명하지 말 것.
+· **음계·조성·무조성·안정감·긴장감·음의 어울림** 같은 **음악 요소 이름**으로만 짚을 것. "어디에 귀를 둘지" "칸과 듣기를 어떻게 맞출지" 같은 **듣기·과제 행동**을 정교화에 담을 것.
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 판정과 일치.
+· 검증 ✓: 검증 줄 포함 총 2~3문장. 위 [추가 제한]을 지킬 것.
+· 검증 ✗: 검증 다음 본문 1~2문장. 위 [추가 제한]을 지킬 것. 마지막 문장은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  return requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+}
+
 function buildHyThemePart3Fallback(selectedDeg) {
   return `선택한 도수는 ${selectedDeg || '미선택'}이에요. 시작음과 목표음을 모두 포함해서 한 칸씩 손으로 짚어 보세요. 먼저 "몇 칸인지"를 적고, 그다음 보기 중 어떤 도수와 대응되는지 다시 고르면 훨씬 정확해져요.`;
 }

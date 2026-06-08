@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { canOpenAnswerAfterFormativeAiGate, generateVvConcertoCompareFeedback, normalizeFormativeChoice } from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { canOpenAnswerAfterFormativeAiGate, normalizeFormativeChoice } from '../../lib/compareFeedback';
+import { getVvConcertoFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 
 const VV_CONCERTO_Q = 'vv-concerto-q';
@@ -162,14 +163,11 @@ function VvConcerto({ go }) {
         </div>
 
         <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-          <CompareAiFeedbackBlock
-            key={`vv-concerto-ai-${picked || 'none'}`}
+          <FormativeFeedbackBlock
+            key={`vv-concerto-fb-${picked || 'none'}`}
             disabled={!picked}
-            requestFn={() =>
-              generateVvConcertoCompareFeedback({
-                soloCount,
-                tuttiCount,
-                question: VV_CONCERTO_DISCOVERY_QUESTION,
+            getFeedback={() =>
+              getVvConcertoFixedFeedback({
                 userChoice: picked || '',
                 correctAnswer: VV_CONCERTO_CORRECT
               })

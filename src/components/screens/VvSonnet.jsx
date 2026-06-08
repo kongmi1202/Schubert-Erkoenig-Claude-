@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import {
-  canOpenAnswerAfterFormativeAiGate,
-  generateVvSonnetCompareFeedback,
-  normalizeFormativeChoice
-} from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { canOpenAnswerAfterFormativeAiGate, normalizeFormativeChoice } from '../../lib/compareFeedback';
+import { getVvSonnetFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 
 /** 비발디 사계 여름 — 표제음악(소네트) 구간: https://youtu.be/wVAq3CzHf9E */
@@ -207,16 +204,14 @@ function VvSonnet({ go }) {
               </div>
 
               <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-                <CompareAiFeedbackBlock
-                  key={`vv-sonnet-ai-${segment.id}-${picked || 'none'}`}
+                <FormativeFeedbackBlock
+                  key={`vv-sonnet-fb-${segment.id}-${picked || 'none'}`}
                   disabled={!picked}
-                  requestFn={() =>
-                    generateVvSonnetCompareFeedback({
-                      quoteKr: segment.quoteKr,
-                      question: segment.question,
-                      choices: segment.choices,
+                  getFeedback={() =>
+                    getVvSonnetFixedFeedback({
                       userChoice: picked || '',
-                      correctAnswer: segment.answer
+                      correctAnswer: segment.answer,
+                      correctElaboration: segment.feedback
                     })
                   }
                   onRequested={() => {

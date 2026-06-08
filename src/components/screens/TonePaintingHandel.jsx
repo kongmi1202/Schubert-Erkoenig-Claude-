@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { canOpenAnswerAfterFormativeAiGate, generateTonePaintingCompareFeedback } from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
+import { getTonePaintingFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -152,11 +154,6 @@ function TonePaintingHandel({ go }) {
     s2: false,
     s3: false
   });
-  const [aiFeedback, setAiFeedback] = useState({
-    s1: '',
-    s2: '',
-    s3: ''
-  });
   const [hasRequestedFeedback, setHasRequestedFeedback] = useState({
     s1: false,
     s2: false,
@@ -164,7 +161,6 @@ function TonePaintingHandel({ go }) {
   });
   /** { [segmentId]: { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } } */
   const [segmentAiGate, setSegmentAiGate] = useState({});
-  const [loadingFeedback, setLoadingFeedback] = useState(false);
   const activeSegment = SEGMENTS.find((s) => s.id === activeSegmentId) || SEGMENTS[0];
 
   const allAnswered = useMemo(
@@ -175,15 +171,6 @@ function TonePaintingHandel({ go }) {
     () => SEGMENTS.every((q) => selected[q.id] === q.answer),
     [selected]
   );
-  const requestToneFeedback = () =>
-    generateTonePaintingCompareFeedback({
-      segmentTitle: activeSegment.title,
-      lyric: activeSegment.lyric,
-      question: activeSegment.question,
-      options: activeSegment.options,
-      selectedIndex: selected[activeSegment.id],
-      correctIndex: activeSegment.answer
-    });
   const canShowAnswerCheck = selected[activeSegment.id] !== null;
   const gate = segmentAiGate[activeSegment.id];
   const canOpenAnswerCheck =
@@ -196,41 +183,6 @@ function TonePaintingHandel({ go }) {
       responseAtFeedback: gate.responseAtFeedback,
       currentResponse: selected[activeSegment.id]
     });
-  const handleRequestFeedback = async () => {
-    if (loadingFeedback) return;
-    const segmentId = activeSegment.id;
-    const currentSelected = selected[segmentId];
-    const wasCorrect = currentSelected === activeSegment.answer;
-    setHasRequestedFeedback((prev) => ({ ...prev, [segmentId]: true }));
-    setSegmentAiGate((prev) => ({
-      ...prev,
-      [segmentId]: {
-        feedbackCompleted: false,
-        responseAtFeedback: currentSelected,
-        wasCorrectWhenFeedbackRequested: wasCorrect
-      }
-    }));
-    setLoadingFeedback(true);
-    try {
-      const text = await requestToneFeedback();
-      const nextText = typeof text === 'string' ? text : '';
-      setAiFeedback((prev) => ({ ...prev, [segmentId]: nextText }));
-    } catch (error) {
-      const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
-      setAiFeedback((prev) => ({
-        ...prev,
-        [segmentId]: `피드백을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.${detail}`
-      }));
-    } finally {
-      setLoadingFeedback(false);
-      setSegmentAiGate((prev) => {
-        const g = prev[segmentId];
-        if (!g) return prev;
-        return { ...prev, [segmentId]: { ...g, feedbackCompleted: true } };
-      });
-    }
-  };
-
   useEffect(() => {
     setTonePaintingHandelState({ selected });
   }, [selected, setTonePaintingHandelState]);
@@ -314,12 +266,39 @@ function TonePaintingHandel({ go }) {
               ))}
             </div>
             <div className="compare-ai-feedback tone-ai-feedback" style={{ marginTop: 12 }}>
-              <button type="button" className="btn-s tone-ai-btn" onClick={handleRequestFeedback} disabled={loadingFeedback}>
-                {loadingFeedback ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
-              </button>
-              {aiFeedback[activeSegment.id] ? (
-                <div className="fb show info compare-ai-text">{aiFeedback[activeSegment.id]}</div>
-              ) : null}
+              <FormativeFeedbackBlock
+                key={`tone-fb-${activeSegment.id}-${selected[activeSegment.id] ?? 'none'}`}
+                disabled={selected[activeSegment.id] === null}
+                getFeedback={() =>
+                  getTonePaintingFixedFeedback({
+                    segmentTitle: activeSegment.title,
+                    selectedIndex: selected[activeSegment.id],
+                    correctIndex: activeSegment.answer,
+                    correctElaboration: activeSegment.feedback
+                  })
+                }
+                onRequested={() => {
+                  const segmentId = activeSegment.id;
+                  const currentSelected = selected[segmentId];
+                  setHasRequestedFeedback((prev) => ({ ...prev, [segmentId]: true }));
+                  setSegmentAiGate((prev) => ({
+                    ...prev,
+                    [segmentId]: {
+                      feedbackCompleted: false,
+                      responseAtFeedback: currentSelected,
+                      wasCorrectWhenFeedbackRequested: currentSelected === activeSegment.answer
+                    }
+                  }));
+                }}
+                onResult={() => {
+                  const segmentId = activeSegment.id;
+                  setSegmentAiGate((prev) => {
+                    const g = prev[segmentId];
+                    if (!g) return prev;
+                    return { ...prev, [segmentId]: { ...g, feedbackCompleted: true } };
+                  });
+                }}
+              />
             </div>
           </div>
 

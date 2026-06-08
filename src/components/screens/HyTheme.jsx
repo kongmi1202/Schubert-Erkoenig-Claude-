@@ -2,11 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import {
-  canOpenAnswerAfterFormativeAiGate,
-  generateHyThemeMatchFeedback,
-  generateHyThemePart3Feedback
-} from '../../lib/compareFeedback';
+import { canOpenAnswerAfterFormativeAiGate, generateHyThemeMatchFeedback } from '../../lib/compareFeedback';
+import { getHyThemePart3FixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
 const HY_THEME1_START_SEC = 0;
@@ -773,12 +771,9 @@ function HyTheme({ go }) {
           ))}
         </div>
 
-        <CompareAiFeedbackBlock
-          requestFn={() =>
-            generateHyThemePart3Feedback({
-              selectedDeg
-            })
-          }
+        <FormativeFeedbackBlock
+          key={`hy-deg-fb-${selectedDeg || 'none'}`}
+          getFeedback={() => getHyThemePart3FixedFeedback({ selectedDeg })}
           onRequested={() => {
             setDegAiGate({
               feedbackCompleted: false,

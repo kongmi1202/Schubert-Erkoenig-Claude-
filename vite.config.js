@@ -92,5 +92,9 @@ function netlifyApiDevPlugin() {
 }
 
 export default defineConfig({
-  plugins: [netlifyApiDevPlugin()]
+  plugins: [netlifyApiDevPlugin()],
+  server: {
+    port: 5173,
+    strictPort: true
+  }
 });
