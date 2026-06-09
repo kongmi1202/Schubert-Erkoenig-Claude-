@@ -29,9 +29,11 @@ const cards = [
 ];
 
 function HistoryCards({ go }) {
-  const flippedCards = useAppStore((s) => s.flippedCards);
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
   const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const flippedCards = flippedHistoryCardsBySong[selectedSong] || [];
   const [allDone, setAllDone] = useState(false);
 
   useEffect(() => {

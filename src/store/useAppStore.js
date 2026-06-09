@@ -112,6 +112,7 @@ export const useAppStore = create((set) => ({
     feelAtonal: ''
   },
   flippedCards: [],
+  flippedHistoryCardsBySong: {},
   emotionResult: null,
   emotionSummary: '',
   setStudentField: (field, value) => set((s) => ({ student: { ...s.student, [field]: value } })),
@@ -157,9 +158,15 @@ export const useAppStore = create((set) => ({
   setCpRhythmState: (partial) => set((s) => ({ cpRhythmState: { ...s.cpRhythmState, ...partial } })),
   setSbSprechState: (partial) => set((s) => ({ sbSprechState: { ...s.sbSprechState, ...partial } })),
   setSbAtonalState: (partial) => set((s) => ({ sbAtonalState: { ...s.sbAtonalState, ...partial } })),
-  flipHistoryCard: (id) => set((s) => ({
-    flippedCards: s.flippedCards.includes(id) ? s.flippedCards : [...s.flippedCards, id]
-  })),
+  flipHistoryCard: (id) => set((s) => {
+    const song = s.selectedSong || 'mawang';
+    const prev = s.flippedHistoryCardsBySong[song] || [];
+    if (prev.includes(id)) return s;
+    const next = [...prev, id];
+    const flippedHistoryCardsBySong = { ...s.flippedHistoryCardsBySong, [song]: next };
+    const flippedCards = song === 'mawang' ? next : s.flippedCards;
+    return { flippedHistoryCardsBySong, flippedCards };
+  }),
   setAnswerCheckOpen: (v) => set({ answerCheckOpen: v }),
   setEmotionAnalysis: (emotionResult, emotionSummary) => set({ emotionResult, emotionSummary })
 }));

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const cards = [
@@ -29,12 +29,11 @@ const cards = [
 ];
 
 function HistoryCardsHandel({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
+  const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [flipped, setFlipped] = useState([]);
-
-  const flip = (id) => {
-    setFlipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
-  };
+  const flipped = flippedHistoryCardsBySong[selectedSong] || [];
 
   const allChecked = useMemo(() => flipped.length === cards.length, [flipped]);
 
@@ -52,7 +51,7 @@ function HistoryCardsHandel({ go }) {
               key={card.id}
               type="button"
               className={`flip-card ${flipped.includes(card.id) ? 'flipped' : ''}`}
-              onClick={() => flip(card.id)}
+              onClick={() => flipHistoryCard(card.id)}
               aria-pressed={flipped.includes(card.id)}
             >
               <div className="flip-inner">

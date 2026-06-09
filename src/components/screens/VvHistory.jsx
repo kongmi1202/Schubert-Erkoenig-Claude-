@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const CARDS = [
   {
+    id: 'vv-c1',
     icon: '🎼',
     title: '바로크 시대',
     body: `17~18세기 바로크 시대는 화려하고
@@ -12,6 +13,7 @@ const CARDS = [
 이 시대에 꽃을 피웠습니다.`
   },
   {
+    id: 'vv-c2',
     icon: '🎻',
     title: '비발디',
     body: `비발디(1678~1741)는 이탈리아 베네치아 출신으로
@@ -20,6 +22,7 @@ const CARDS = [
 사계는 그의 대표작이에요.`
   },
   {
+    id: 'vv-c3',
     icon: '🌸',
     title: '사계',
     body: `사계(Le Quattro Stagioni)는
@@ -29,6 +32,7 @@ const CARDS = [
 표제음악의 걸작이에요.`
   },
   {
+    id: 'vv-c4',
     icon: '🎵',
     title: '바이올린 협주곡',
     body: `협주곡은 독주 악기와 오케스트라가
@@ -40,25 +44,16 @@ const CARDS = [
 ];
 
 function VvHistory({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
+  const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [flipped, setFlipped] = useState([false, false, false, false]);
-  const [vvFlipped, setVvFlipped] = useState(0);
+  const flippedIds = flippedHistoryCardsBySong[selectedSong] || [];
+  const allChecked = useMemo(() => flippedIds.length >= CARDS.length, [flippedIds]);
 
-  function flipVV(cardEl, idx) {
-    if (!cardEl.classList.contains('flipped')) {
-      cardEl.classList.add('flipped');
-      setFlipped((prev) => {
-        const next = [...prev];
-        next[idx] = true;
-        return next;
-      });
-      setVvFlipped((prev) => {
-        const nextCount = prev + 1;
-        if (nextCount >= 4) setStageCompletion('history', true);
-        return nextCount;
-      });
-    }
-  }
+  useEffect(() => {
+    if (allChecked) setStageCompletion('history', true);
+  }, [allChecked, setStageCompletion]);
 
   return (
     <div className="screen active" id="vv-history">
@@ -70,12 +65,12 @@ function VvHistory({ go }) {
       <div className="body voice-body">
         <div className="sec">바로크 핵심 카드</div>
         <div className="flip-grid">
-          {CARDS.map((card, idx) => (
+          {CARDS.map((card) => (
             <button
-              key={card.title}
+              key={card.id}
               type="button"
-              className={`flip-card ${flipped[idx] ? 'flipped' : ''}`}
-              onClick={(e) => flipVV(e.currentTarget, idx)}
+              className={`flip-card ${flippedIds.includes(card.id) ? 'flipped' : ''}`}
+              onClick={() => flipHistoryCard(card.id)}
             >
               <div className="flip-inner">
                 <div className="flip-front">
@@ -91,8 +86,8 @@ function VvHistory({ go }) {
           ))}
         </div>
 
-        <div id="fb-vv-cards" className={`fb ${vvFlipped >= 4 ? 'show ok' : ''}`}>
-          {vvFlipped >= 4 ? '✓ 4장을 모두 확인했어요!' : ''}
+        <div id="fb-vv-cards" className={`fb ${allChecked ? 'show ok' : ''}`}>
+          {allChecked ? '✓ 4장을 모두 확인했어요!' : ''}
         </div>
 
         <div className="btn-row">

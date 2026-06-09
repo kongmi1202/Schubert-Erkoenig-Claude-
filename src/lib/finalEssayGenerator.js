@@ -1,4 +1,16 @@
 import { requestOpenAiText } from './openaiClient';
+import { getFlippedHistoryCardIds, getHistoryCardTitlesForSong } from './historyCards';
+import {
+  arraysEqualAsSet,
+  getOverviewReferenceQ1,
+  getOverviewReferenceQ2,
+  getOverviewStudentQ1,
+  getOverviewStudentQ2,
+  gradeOverviewQ1,
+  gradeOverviewQ2,
+  hasOverviewQ2,
+  normalizeOverviewText
+} from './overviewGrading';
 import { formatSbAtonalStudentResponse, getStep2ResponseFlags, SB_ATONAL_CARD_GOLD } from './step2Review';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -36,6 +48,15 @@ const CP_FORM_CORRECT = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
 const CP_FEATURE_CORRECT = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
 const CP_RHYTHM_CORRECT = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
 
+const EMOTION_LABELS = {
+  sadness: '슬픔',
+  fear: '공포',
+  anger: '분노',
+  happiness: '기쁨',
+  surprise: '놀라움',
+  disgust: '혐오'
+};
+
 function makeEntry(label, studentResponse, correctAnswer = null, isCorrect = null) {
   const entry = {
     activity: label,
@@ -46,6 +67,36 @@ function makeEntry(label, studentResponse, correctAnswer = null, isCorrect = nul
     entry.isCorrect = Boolean(isCorrect);
   }
   return entry;
+}
+
+function trimEmotionAnalysis(emotionResult, emotionSummary) {
+  if (!emotionResult && !hasText(emotionSummary)) return null;
+  const out = {};
+  if (emotionResult && typeof emotionResult === 'object') {
+    const scores = Object.entries(EMOTION_LABELS)
+      .map(([key, label]) => {
+        const value = Number(emotionResult[key]);
+        return Number.isFinite(value) ? `${label} ${value}%` : '';
+      })
+      .filter(Boolean);
+    if (scores.length) out.scores = scores.join(', ');
+  }
+  if (hasText(emotionSummary)) out.summary = clean(emotionSummary);
+  return Object.keys(out).length ? out : null;
+}
+
+function buildHistoryEssayEntries(data) {
+  const song = data.selectedSong;
+  if (!song) return [];
+  const flipped = getFlippedHistoryCardIds(
+    song,
+    data.flippedHistoryCardsBySong,
+    data.flippedCards
+  );
+  if (!flipped.length) return [];
+  const titles = getHistoryCardTitlesForSong(song, flipped);
+  if (!titles.length) return [];
+  return [makeEntry('역사 맥락 카드', `살펴본 주제: ${titles.join(', ')}`)];
 }
 
 /** 2단계 활동별 학생 응답 + 정답 비교를 감상문 생성용으로 정리합니다. */
@@ -61,9 +112,35 @@ export function buildStep2EssayEntries(data) {
     entries.push(makeEntry(label, text, correctAnswer, isCorrect));
   };
 
+  const pushOverview = (q1Label, q2Label) => {
+    if (flags.overviewQ1) {
+      const studentQ1 = getOverviewStudentQ1(song, data);
+      if (studentQ1) {
+        const gradeQ1 = gradeOverviewQ1(song, data);
+        entries.push(makeEntry(
+          q1Label,
+          studentQ1,
+          getOverviewReferenceQ1(song),
+          gradeQ1 === null ? true : gradeQ1
+        ));
+      }
+    }
+    if (hasOverviewQ2(song) && flags.overviewQ2) {
+      const studentQ2 = getOverviewStudentQ2(song, data);
+      if (studentQ2) {
+        const gradeQ2 = gradeOverviewQ2(song, data);
+        entries.push(makeEntry(
+          q2Label,
+          studentQ2,
+          getOverviewReferenceQ2(song),
+          gradeQ2 === null ? true : gradeQ2
+        ));
+      }
+    }
+  };
+
   if (song === 'handel') {
-    push('overviewQ1', '개요 Q1 가사 내용', data.handelLyricMeaning);
-    push('overviewQ2', '개요 Q2 오페라와의 차이', data.handelOperaDiff);
+    pushOverview('개요 Q1 가사 내용', '개요 Q2 오페라와의 차이');
     const selected = data.tonePaintingHandelState?.selected || {};
     ['s1', 's2', 's3'].forEach((id, idx) => {
       const flagKey = `toneS${idx + 1}`;
@@ -84,8 +161,7 @@ export function buildStep2EssayEntries(data) {
   }
 
   if (song === 'haydn') {
-    push('overviewQ1', '개요 Q1 악기 구성', (data.analyticalCharacters || []).filter(hasText).join(', '));
-    push('overviewQ2', '개요 Q2 떠오르는 동물', data.analyticalStory, '종달새', normalizeText(data.analyticalStory) === '종달새');
+    pushOverview('개요 Q1 악기 구성', '개요 Q2 떠오르는 동물');
     const timbre = data.hyTimbreState || {};
     const hyTimbreCorrectInstr = { 'ig-1': '바이올린', 'ig-2': '비올라', 'ig-3': '첼로' };
     const hyTimbreCorrectRole = { 'ig-1': '주선율', 'ig-2': '중성부', 'ig-3': '베이스' };
@@ -112,13 +188,12 @@ export function buildStep2EssayEntries(data) {
       entries.push(makeEntry('제2주제 특징 배치', labels, theme2Correct,
         arraysEqualAsSet(theme.matchPlaced?.theme2, ['o2', 'o4', 'o6'])));
     }
-    push('themeDeg', '도수 맞추기', theme.selectedDeg, '5도', normalizeText(theme.selectedDeg) === '5도');
+    push('themeDeg', '도수 맞추기', theme.selectedDeg, '5도', normalizeOverviewText(theme.selectedDeg) === '5도');
     return entries;
   }
 
   if (song === 'schoenberg') {
-    push('overviewQ1', '개요 Q1 편성', data.analyticalCharacters?.[0]);
-    push('overviewQ2', '개요 Q2 분위기', data.analyticalStory);
+    pushOverview('개요 Q1 편성', '개요 Q2 분위기');
     const sprech = data.sbSprechState || {};
     if (sprech.normalChecked || sprech.sprechChecked || hasText(sprech.selectedChoice)) {
       const studentText = sprech.selectedChoice
@@ -148,7 +223,7 @@ export function buildStep2EssayEntries(data) {
   }
 
   if (song === 'vivaldi') {
-    push('overviewQ1', '개요 Q1 장면 묘사', data.analyticalCharacters?.[0] || (data.analyticalCharacters || []).filter(hasText).join(', '));
+    pushOverview('개요 Q1 장면 묘사', '개요 Q2 분위기');
     const sonnet = data.vvSonnetState?.selectedById || {};
     push('sonnetC1', '소네트 구간1', sonnet['vv-c1'], VV_SONNET_CORRECT['vv-c1'],
       clean(sonnet['vv-c1']) === VV_SONNET_CORRECT['vv-c1']);
@@ -165,8 +240,7 @@ export function buildStep2EssayEntries(data) {
   }
 
   if (song === 'chopin') {
-    push('overviewQ1', '개요 Q1 악기 편성', data.analyticalCharacters?.[0]);
-    push('overviewQ2', '개요 Q2 분위기 변화', data.analyticalStory);
+    pushOverview('개요 Q1 악기 편성', '개요 Q2 분위기 변화');
     const form = data.cpFormState || {};
     push('formF1', 'ABA 구간1 형식', form.formAnswers?.['cp-f1'], CP_FORM_CORRECT['cp-f1'],
       form.formAnswers?.['cp-f1'] === CP_FORM_CORRECT['cp-f1']);
@@ -195,8 +269,7 @@ export function buildStep2EssayEntries(data) {
     return entries;
   }
 
-  push('overviewQ1', '개요 Q1 등장인물', (data.analyticalCharacters || []).filter(hasText).join(', '));
-  push('overviewQ2', '개요 Q2 줄거리', data.analyticalStory);
+  pushOverview('개요 Q1 등장인물', '개요 Q2 줄거리');
   const voiceDesign = data.voiceDesignState?.voiceDesign || {};
   const voiceAnswerKey = {
     해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
@@ -228,66 +301,133 @@ export function buildStep2EssayEntries(data) {
   return entries;
 }
 
-function normalizeText(v) {
-  return clean(v).replace(/\s+/g, '');
+function trimSensoryArtifacts(artifacts) {
+  if (!artifacts) return null;
+  const out = {};
+  if (artifacts.selectedActivities?.length) out.selectedActivities = artifacts.selectedActivities;
+  if (artifacts.pePhoto) out.pePhoto = true;
+  if (hasText(artifacts.peAnswer)) out.peAnswer = clean(artifacts.peAnswer);
+  if (artifacts.scienceSelected?.length) out.scienceSelected = artifacts.scienceSelected;
+  if (hasText(artifacts.scienceAnswer)) out.scienceAnswer = clean(artifacts.scienceAnswer);
+  if (hasText(artifacts.mapAddress)) out.mapAddress = clean(artifacts.mapAddress);
+  if (hasText(artifacts.mapAnswer)) out.mapAnswer = clean(artifacts.mapAnswer);
+  if (artifacts.mathDrawing) out.mathDrawing = true;
+  if (hasText(artifacts.mathAnswer)) out.mathAnswer = clean(artifacts.mathAnswer);
+  return Object.keys(out).length ? out : null;
 }
 
-function arraysEqualAsSet(a, b) {
-  const sa = new Set((a || []).filter(Boolean));
-  const sb = new Set((b || []).filter(Boolean));
-  if (sa.size !== sb.size) return false;
-  for (const x of sa) if (!sb.has(x)) return false;
-  return true;
+function trimStage1(raw) {
+  const out = {};
+  if (raw.keywords?.length) out.keywords = raw.keywords;
+  if (raw.colors?.length) out.colors = raw.colors;
+  if (hasText(raw.sensoryDesc)) out.sensoryDesc = clean(raw.sensoryDesc);
+  const artifacts = trimSensoryArtifacts(raw.sensoryArtifacts);
+  if (artifacts) out.sensoryArtifacts = artifacts;
+  return Object.keys(out).length ? out : null;
 }
 
-function countInputLevel(payload) {
-  const s1 = Boolean(
-    payload.stage1.keywords.length
-    || payload.stage1.colors.length
-    || payload.stage1.sensoryDesc
-    || Object.values(payload.stage1.sensoryArtifacts || {}).some((v) => (
-      Array.isArray(v) ? v.length > 0 : hasText(v)
-    ))
-  );
-  const s2Count = payload.stage2.activities.length;
-  const s3 = Boolean(payload.stage3.q1 || payload.stage3.q2 || payload.stage3.q3);
-  const filledStages = (s1 ? 1 : 0) + (s2Count > 0 ? 1 : 0) + (s3 ? 1 : 0);
-  let suggestedMaxChars = 120;
-  let suggestedParagraphs = 1;
-  if (filledStages >= 2 || s2Count >= 3) {
-    suggestedMaxChars = 280;
-    suggestedParagraphs = 3;
-  } else if (filledStages >= 1 || s2Count >= 1) {
-    suggestedMaxChars = 180;
-    suggestedParagraphs = 2;
+function trimStage3(raw) {
+  const out = {};
+  if (hasText(raw.q1)) out.q1 = clean(raw.q1);
+  if (hasText(raw.q2)) out.q2 = clean(raw.q2);
+  if (hasText(raw.q3)) out.q3 = clean(raw.q3);
+  if (hasText(raw.q2Type)) out.q2Type = clean(raw.q2Type);
+  return Object.keys(out).length ? out : null;
+}
+
+function countParagraphItems(paragraphs) {
+  let paragraph1ItemCount = 0;
+  const sensory = paragraphs.sensory;
+  if (sensory) {
+    if (sensory.keywords?.length) paragraph1ItemCount += 1;
+    if (sensory.colors?.length) paragraph1ItemCount += 1;
+    if (sensory.sensoryDesc) paragraph1ItemCount += 1;
+    if (sensory.emotionAnalysis) paragraph1ItemCount += 1;
+    const a = sensory.sensoryArtifacts;
+    if (a) {
+      if (a.peAnswer || a.pePhoto) paragraph1ItemCount += 1;
+      if (a.scienceSelected?.length || a.scienceAnswer) paragraph1ItemCount += 1;
+      if (a.mapAddress || a.mapAnswer) paragraph1ItemCount += 1;
+      if (a.mathAnswer || a.mathDrawing) paragraph1ItemCount += 1;
+    }
   }
-  return { stage1Provided: s1, stage2ActivityCount: s2Count, stage3Provided: s3, filledStages, suggestedMaxChars, suggestedParagraphs };
+  const paragraph2ItemCount = paragraphs.analyticalMusicElements?.activities?.length ?? 0;
+  const paragraph3ItemCount = paragraphs.analyticalHistoryContext?.activities?.length ?? 0;
+  let paragraph4ItemCount = 0;
+  const aesthetic = paragraphs.aesthetic;
+  if (aesthetic) {
+    if (aesthetic.q1) paragraph4ItemCount += 1;
+    if (aesthetic.q2) paragraph4ItemCount += 1;
+    if (aesthetic.q3) paragraph4ItemCount += 1;
+  }
+  return {
+    paragraph1ItemCount,
+    paragraph2ItemCount,
+    paragraph3ItemCount,
+    paragraph4ItemCount,
+    responseCount: paragraph1ItemCount + paragraph2ItemCount + paragraph3ItemCount + paragraph4ItemCount
+  };
+}
+
+function countInputLevel(paragraphs) {
+  const activeParagraphs = [];
+  if (paragraphs.sensory) activeParagraphs.push(1);
+  if (paragraphs.analyticalMusicElements?.activities?.length) activeParagraphs.push(2);
+  if (paragraphs.analyticalHistoryContext?.activities?.length) activeParagraphs.push(3);
+  if (paragraphs.aesthetic) activeParagraphs.push(4);
+
+  const counts = countParagraphItems(paragraphs);
+
+  return {
+    ...counts,
+    activeParagraphs,
+    activeParagraphCount: activeParagraphs.length
+  };
+}
+
+function buildParagraph1Sensory(data) {
+  const base = trimStage1({
+    keywords: data.selectedKeywords || [],
+    colors: data.selectedColors || [],
+    sensoryDesc: data.sensoryDesc,
+    sensoryArtifacts: data.sensoryArtifacts
+  });
+  const emotionAnalysis = trimEmotionAnalysis(data.emotionResult, data.emotionSummary);
+  if (!base && !emotionAnalysis) return null;
+  return { ...(base || {}), ...(emotionAnalysis ? { emotionAnalysis } : {}) };
 }
 
 function prepareEssayPayload(data) {
-  const step2Activities = buildStep2EssayEntries(data);
+  const musicActivities = buildStep2EssayEntries(data);
+  const historyActivities = buildHistoryEssayEntries(data);
+
+  const paragraphs = {};
+  const sensory = buildParagraph1Sensory(data);
+  if (sensory) paragraphs.sensory = sensory;
+  if (musicActivities.length) {
+    paragraphs.analyticalMusicElements = { activities: musicActivities };
+  }
+  if (historyActivities.length) {
+    paragraphs.analyticalHistoryContext = { activities: historyActivities };
+  }
+  const aesthetic = trimStage3({
+    q1: data.q1,
+    q2: data.q2,
+    q3: data.q3,
+    q2Type: data.q2Type
+  });
+  if (aesthetic) paragraphs.aesthetic = aesthetic;
+
   const payload = {
     student: data.student,
     selectedSong: data.selectedSong,
-    stage1: {
-      keywords: data.selectedKeywords || [],
-      colors: data.selectedColors || [],
-      sensoryDesc: clean(data.sensoryDesc),
-      sensoryArtifacts: data.sensoryArtifacts
-    },
-    stage2: { activities: step2Activities },
-    stage3: {
-      q1: clean(data.q1),
-      q2: clean(data.q2),
-      q3: clean(data.q3),
-      q2Type: clean(data.q2Type)
-    }
+    paragraphs
   };
-  payload.inputLevel = countInputLevel(payload);
+  payload.inputLevel = countInputLevel(paragraphs);
   return payload;
 }
 
-const WRONG_ANSWER_ESSAY_EXAMPLE = `처음 마왕을 들었을 때 아버지의 목소리가 가장 높고 긴장감 있게 느껴졌다. 하지만 실제로는 마왕의 목소리가 부드럽고 낮은 음색으로 아이를 유혹하는 장면이었다는 것을 알게 되었다. 다시 들어보니 각 인물의 목소리가 전혀 다른 감정을 담고 있다는 것이 훨씬 선명하게 들렸다.`;
+const WRONG_ANSWER_ESSAY_EXAMPLE = `처음 마왕을 들었을 때 아버지의 목소리가 가장 높고 긴장감 있게 느껴졌다. 하지만 실제로는 마왕의 목소리가 부드럽고 낮은 음색으로 아이를 유혹하는 장면이었다는 것을 알게 되었다. 이를 통해 각 인물의 목소리가 전혀 다른 감정을 담고 있다는 것을 새롭게 이해하게 되었다.`;
 
 function formatWrongAnswerReflection(item) {
   const student = item.studentResponse;
@@ -295,7 +435,7 @@ function formatWrongAnswerReflection(item) {
   return [
     `처음에는 ${student}라고 느껴졌다.`,
     `하지만 실제로는 ${correct}라는 것을 알게 되었다.`,
-    '다시 들어보니 그 차이가 음악 속에서 훨씬 선명하게 들렸다.'
+    '이를 통해 그 차이가 음악 속에서 어떤 의미인지 새롭게 이해하게 되었다.'
   ].join(' ');
 }
 
@@ -306,45 +446,46 @@ function formatActivityForFallback(item) {
   return item.studentResponse;
 }
 
+function buildSensoryFallbackParagraph(sensory) {
+  const kw = (sensory.keywords || []).join(', ');
+  const colors = (sensory.colors || []).join(', ');
+  const artifactBits = [];
+  const a = sensory.sensoryArtifacts;
+  if (a?.scienceSelected?.length) artifactBits.push(a.scienceSelected.join(', '));
+  if (a?.scienceAnswer) artifactBits.push(a.scienceAnswer);
+  if (a?.peAnswer) artifactBits.push(a.peAnswer);
+  if (a?.mapAnswer) artifactBits.push(a.mapAnswer);
+  if (a?.mathAnswer) artifactBits.push(a.mathAnswer);
+  const emotionBits = [];
+  if (sensory.emotionAnalysis?.scores) emotionBits.push(sensory.emotionAnalysis.scores);
+  if (sensory.emotionAnalysis?.summary) emotionBits.push(sensory.emotionAnalysis.summary);
+  return [
+    kw ? `${kw} 같은 느낌이 들었다.` : '',
+    colors ? `색은 ${colors}로 떠올랐다.` : '',
+    sensory.sensoryDesc || '',
+    artifactBits.join(' '),
+    emotionBits.join(' ')
+  ].filter(Boolean).join(' ');
+}
+
 function buildFallbackEssay(data) {
   const payload = prepareEssayPayload(data);
-  const { inputLevel } = payload;
-  const song = data.selectedSong;
-  const songTitle = {
-    handel: '헨델의 <할렐루야>',
-    haydn: '하이든의 <종달새>',
-    schoenberg: '쇤베르크의 <달에 홀린 피에로>',
-    vivaldi: '비발디의 <사계: 여름 3악장>',
-    chopin: '쇼팽의 <환상 즉흥곡>'
-  }[song] || '슈베르트의 <마왕>';
-
+  const { paragraphs } = payload;
   const parts = [];
-  const s1 = payload.stage1;
-  if (inputLevel.stage1Provided) {
-    const kw = s1.keywords.join(', ');
-    const colors = s1.colors.join(', ');
-    parts.push([
-      `나는 ${songTitle}을 들으며`,
-      kw ? `${kw} 같은 느낌이 들었다.` : '',
-      colors ? `색은 ${colors}로 떠올랐다.` : '',
-      s1.sensoryDesc || ''
-    ].filter(Boolean).join(' '));
-  }
 
-  if (payload.stage2.activities.length) {
-    parts.push(payload.stage2.activities.map(formatActivityForFallback).join(' '));
+  if (paragraphs.sensory) {
+    const text = buildSensoryFallbackParagraph(paragraphs.sensory);
+    if (text) parts.push(text);
   }
-
-  const s3 = payload.stage3;
-  if (inputLevel.stage3Provided) {
-    parts.push([
-      '이렇게 분석하고 나서',
-      s3.q1 || '',
-      s3.q2 || '',
-      s3.q3 || ''
-    ].filter(Boolean).join(' '));
-  } else if (!inputLevel.stage1Provided && payload.stage2.activities.length) {
-    parts.push('앞으로 다른 활동도 더보면서 이 곡을 더 깊이 이해해 보고 싶다.');
+  if (paragraphs.analyticalMusicElements?.activities?.length) {
+    parts.push(paragraphs.analyticalMusicElements.activities.map(formatActivityForFallback).join(' '));
+  }
+  if (paragraphs.analyticalHistoryContext?.activities?.length) {
+    parts.push(paragraphs.analyticalHistoryContext.activities.map(formatActivityForFallback).join(' '));
+  }
+  if (paragraphs.aesthetic) {
+    const { q1, q2, q3 } = paragraphs.aesthetic;
+    parts.push([q1, q2, q3].filter(Boolean).join(' '));
   }
 
   if (!parts.length) {
@@ -362,13 +503,7 @@ function normalizeEssayOutput(text) {
 }
 
 function hasMeaningfulStudentInput(data) {
-  return buildStep2EssayEntries(data).length > 0
-    || (data.selectedKeywords || []).length > 0
-    || (data.selectedColors || []).length > 0
-    || hasText(data.sensoryDesc)
-    || hasText(data.q1)
-    || hasText(data.q2)
-    || hasText(data.q3);
+  return prepareEssayPayload(data).inputLevel.responseCount > 0;
 }
 
 export { extractTextFromResponse } from './openaiUtils';
@@ -381,45 +516,46 @@ export async function generateFinalEssay(data) {
   const payload = prepareEssayPayload(data);
   const { inputLevel } = payload;
 
-  const systemPrompt = `당신은 중학생의 음악 감상 내용만 바탕으로 짧은 감상문을 작성하는 도우미입니다.
+  const systemPrompt = `당신은 중학생의 음악 감상 내용만 바탕으로 최종 감상문을 작성하는 도우미입니다.
 
-[분량 — 반드시 준수]
-- inputLevel.suggestedMaxChars자 이내, 단락 ${inputLevel.suggestedParagraphs}개 이하
-- 입력이 적으면 짧게(80~150자). 입력이 많을 때만 250자 안팎까지
-- 학생이 쓰지 않은 단계·활동은 절대 지어내지 말 것
-- stage1이 비어 있으면 감각적 묘사(키워드·색·느낌)를 새로 만들지 말 것
-- stage3이 비어 있으면 심미적 평가 문단을 길게 쓰지 말 것
+[단락 구성 — 반드시 준수]
+아래 순서대로, JSON.paragraphs에 있는 단락만 작성. 없는 단락은 통째로 생략.
+1단락 paragraphs.sensory — 감각적 감상: 키워드·색상·서술·emotionAnalysis(감정분석)·sensoryArtifacts(연결 활동)
+2단락 paragraphs.analyticalMusicElements — 분석적 감상(음악 요소): activities (개요파악·음색·가락선·음화법·형식 등)
+3단락 paragraphs.analyticalHistoryContext — 분석적 감상(사회·역사 맥락): activities
+  (역사 맥락은 목록 형식이 아닌 자연스러운 문장으로 녹일 것)
+4단락 paragraphs.aesthetic — 심미적 감상: q1·q2·q3 (있는 문항만)
 
-[2단계 분석 활동 — 반드시 준수]
-- stage2.activities 배열에 있는 항목만 언급
-- isCorrect가 true이거나 isCorrect가 없으면: studentResponse를 그대로 자연스럽게 녹일 것
-  ('맞췄다', '정답이다', '옳게 짚었다' 등 정답 여부는 절대 언급하지 말 것)
-- isCorrect가 false이면: 아래 세 흐름을 자연스러운 산문으로 이어 쓸 것 (기계적 나열 금지)
-  ① 처음 느낌 — studentResponse를 학생의 첫인상처럼 서술
-  ② "하지만 실제로는 ~라는 것을 알게 되었다" — correctAnswer 반영
-  ③ "다시 들어보니 ~" — 음악을 다시 들으며 깨달은 구체적 발견
-  '틀렸다', '오답', '잘못', '맞췄다' 등 직접적 평가 표현 금지
-- correctAnswer는 isCorrect가 false일 때만 사용
+[핵심]
+- JSON에 없는 단락·필드·활동은 한 글자도 쓰지 말 것
+- 단락 제목(「감각적 감상」 등)을 본문에 쓰지 말 것
+- 각 단락 분량은 그 단락 안 항목 수에 맞게 자연스럽게 (항목 1개면 2~3문장, 많으면 길게)
+- 입력이 적을 때 불필요하게 늘이지 말 것
 
-[오답 서술 모범 예시 — 문체·흐름만 참고, 내용은 학생 데이터에 맞출 것]
+[2단계 activities — 2·3단락 공통]
+- activities 배열에 있는 항목만 다룰 것
+- isCorrect가 true이거나 없으면: studentResponse를 자연스럽게 녹일 것 ('맞췄다' 등 정답 여부 언급 금지)
+- isCorrect가 false이면 활동마다:
+  ① 처음 느낌(studentResponse) → ② "하지만 실제로는 ~알게 되었다"(correctAnswer) → ③ "이를 통해 ~를 새롭게 이해하게 되었다"
+  '틀렸다', '오답', '잘못', '맞췄다' 금지
+
+[오답 서술 모범 예시]
 ${WRONG_ANSWER_ESSAY_EXAMPLE}
 
 [문체]
 - 1인칭(나는), 중학생 수준, 자연스럽게
-- 단락 제목(감각적 감상 등) 금지
-- 나열·과장·추가 해석 금지. 주어진 JSON 밖 내용 금지`;
+- 주어진 JSON 밖 내용 금지`;
 
-  const userPrompt = `아래 JSON만 근거로 최종 감상문을 작성하세요.
-최대 ${inputLevel.suggestedMaxChars}자, ${inputLevel.suggestedParagraphs}단락 이하.
-- isCorrect=true: 학생 응답을 그대로 쓰되, 맞췄다는 말은 하지 마세요.
-- isCorrect=false: 모범 예시처럼 「처음 느낌 → 하지만 실제로는 ~알게 되었다 → 다시 들어보니 ~」 흐름의 자연스러운 산문으로 쓰세요.
-  '틀렸다', '오답', '잘못', '맞췄다' 표현은 금지입니다.
+  const userPrompt = `아래 JSON의 paragraphs에 있는 학생 응답만으로 최종 감상문을 작성하세요.
+작성할 단락: ${inputLevel.activeParagraphs.join('단락, ')}단락 (총 ${inputLevel.activeParagraphCount}개)
+- 1단락 항목 ${inputLevel.paragraph1ItemCount}개, 2단락 ${inputLevel.paragraph2ItemCount}개, 3단락 ${inputLevel.paragraph3ItemCount}개, 4단락 ${inputLevel.paragraph4ItemCount}개
+- 없는 단락은 생략. 있는 단락만 순서대로 이어 쓸 것.
 
 ${JSON.stringify(payload, null, 2)}`;
 
   try {
     const text = normalizeEssayOutput(await requestOpenAiText({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       input: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

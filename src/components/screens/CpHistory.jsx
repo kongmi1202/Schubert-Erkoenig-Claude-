@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const CARDS = [
   {
+    id: 'cp-c1',
     icon: '🎼',
     front: '낭만주의 시대',
     back: `19세기 낭만주의 시대는 개인의 감정과
@@ -11,6 +12,7 @@ const CARDS = [
 감정 표현이 발전한 시기예요.`
   },
   {
+    id: 'cp-c2',
     icon: '🎹',
     front: '쇼팽',
     back: `쇼팽(1810~1849)은 폴란드 출신으로
@@ -20,6 +22,7 @@ const CARDS = [
 다양한 장르를 남겼어요.`
   },
   {
+    id: 'cp-c3',
     icon: '🌟',
     front: '환상 즉흥곡',
     back: `쇼팽이 생전에 출판을 거부한 곡이에요.
@@ -29,6 +32,7 @@ const CARDS = [
 실제로는 ABA 형식의 엄격한 구조예요.`
   },
   {
+    id: 'cp-c4',
     icon: '🎵',
     front: '즉흥곡',
     back: `즉흥곡(Impromptu)은 즉흥적인 느낌을
@@ -40,25 +44,16 @@ const CARDS = [
 ];
 
 function CpHistory({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
+  const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [flipped, setFlipped] = useState([false, false, false, false]);
-  const [cpFlipped, setCpFlipped] = useState(0);
+  const flippedIds = flippedHistoryCardsBySong[selectedSong] || [];
+  const allChecked = useMemo(() => flippedIds.length >= CARDS.length, [flippedIds]);
 
-  function flipCP(card, idx) {
-    if (!card.classList.contains('flipped')) {
-      card.classList.add('flipped');
-      setFlipped((prev) => {
-        const next = [...prev];
-        next[idx] = true;
-        return next;
-      });
-      setCpFlipped((prev) => {
-        const nextCount = prev + 1;
-        if (nextCount >= 4) setStageCompletion('history', true);
-        return nextCount;
-      });
-    }
-  }
+  useEffect(() => {
+    if (allChecked) setStageCompletion('history', true);
+  }, [allChecked, setStageCompletion]);
 
   return (
     <div className="screen active" id="cp-history">
@@ -70,12 +65,12 @@ function CpHistory({ go }) {
       <div className="body voice-body">
         <div className="sec">표현 카드</div>
         <div className="flip-grid">
-          {CARDS.map((card, idx) => (
+          {CARDS.map((card) => (
             <button
-              key={card.front}
+              key={card.id}
               type="button"
-              className={`flip-card ${flipped[idx] ? 'flipped' : ''}`}
-              onClick={(e) => flipCP(e.currentTarget, idx)}
+              className={`flip-card ${flippedIds.includes(card.id) ? 'flipped' : ''}`}
+              onClick={() => flipHistoryCard(card.id)}
             >
               <div className="flip-inner">
                 <div className="flip-front">
@@ -91,8 +86,8 @@ function CpHistory({ go }) {
           ))}
         </div>
 
-        <div id="fb-cp-cards" className={`fb ${cpFlipped >= 4 ? 'show ok' : ''}`}>
-          {cpFlipped >= 4 ? '✓ 4장을 모두 확인했어요!' : ''}
+        <div id="fb-cp-cards" className={`fb ${allChecked ? 'show ok' : ''}`}>
+          {allChecked ? '✓ 4장을 모두 확인했어요!' : ''}
         </div>
 
         <div className="btn-row">

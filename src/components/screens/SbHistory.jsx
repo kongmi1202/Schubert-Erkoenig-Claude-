@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const CARDS = [
   {
+    id: 'sb-c1',
     icon: '🎨',
     title: '표현주의 시대',
     body: `20세기 초 표현주의는 사실적 묘사보다
@@ -11,6 +12,7 @@ const CARDS = [
 여러 분야에 걸쳐 나타났어요.`
   },
   {
+    id: 'sb-c2',
     icon: '🎵',
     title: '쇤베르크',
     body: `쇤베르크(1874~1951)는 오스트리아 출신으로
@@ -19,6 +21,7 @@ const CARDS = [
 달에 홀린 피에로는 그의 대표작이에요.`
   },
   {
+    id: 'sb-c3',
     icon: '🖼️',
     title: '뭉크와 칸딘스키',
     body: `노르웨이 화가 뭉크의 '절규'와
@@ -27,6 +30,7 @@ const CARDS = [
 같은 표현주의 정신을 공유해요.`
   },
   {
+    id: 'sb-c4',
     icon: '🌙',
     title: '달에 홀린 피에로',
     body: `1912년 발표된 이 작품은
@@ -38,27 +42,18 @@ const CARDS = [
 ];
 
 function SbHistory({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
+  const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
+  const flippedIds = flippedHistoryCardsBySong[selectedSong] || [];
+  const allChecked = useMemo(() => flippedIds.length >= CARDS.length, [flippedIds]);
   const [artCommon, setArtCommon] = useState('');
   const [showHint, setShowHint] = useState(false);
-  const [flipped, setFlipped] = useState([false, false, false, false]);
-  const [sbFlipped, setSbFlipped] = useState(0);
 
-  function flipSB(cardEl, idx) {
-    if (!cardEl.classList.contains('flipped')) {
-      cardEl.classList.add('flipped');
-      setFlipped((prev) => {
-        const next = [...prev];
-        next[idx] = true;
-        return next;
-      });
-      setSbFlipped((prev) => {
-        const nextCount = prev + 1;
-        if (nextCount >= 4) setStageCompletion('history', true);
-        return nextCount;
-      });
-    }
-  }
+  useEffect(() => {
+    if (allChecked) setStageCompletion('history', true);
+  }, [allChecked, setStageCompletion]);
 
   return (
     <div className="screen active" id="sb-history">
@@ -113,12 +108,12 @@ function SbHistory({ go }) {
 
         <div className="sec">표현주의 핵심 카드</div>
         <div className="flip-grid">
-          {CARDS.map((card, idx) => (
+          {CARDS.map((card) => (
             <button
-              key={card.title}
+              key={card.id}
               type="button"
-              className={`flip-card ${flipped[idx] ? 'flipped' : ''}`}
-              onClick={(e) => flipSB(e.currentTarget, idx)}
+              className={`flip-card ${flippedIds.includes(card.id) ? 'flipped' : ''}`}
+              onClick={() => flipHistoryCard(card.id)}
             >
               <div className="flip-inner">
                 <div className="flip-front">
@@ -134,8 +129,8 @@ function SbHistory({ go }) {
           ))}
         </div>
 
-        <div id="fb-sb-cards" className={`fb ${sbFlipped >= 4 ? 'show ok' : ''}`}>
-          {sbFlipped >= 4 ? '✓ 4장을 모두 확인했어요!' : ''}
+        <div id="fb-sb-cards" className={`fb ${allChecked ? 'show ok' : ''}`}>
+          {allChecked ? '✓ 4장을 모두 확인했어요!' : ''}
         </div>
 
         <div className="btn-row">

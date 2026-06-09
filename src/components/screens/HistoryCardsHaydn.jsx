@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const HY_CARDS = [
@@ -36,24 +36,15 @@ const HY_CARDS = [
 ];
 
 function HistoryCardsHaydn({ go }) {
+  const selectedSong = useAppStore((s) => s.selectedSong);
+  const flippedHistoryCardsBySong = useAppStore((s) => s.flippedHistoryCardsBySong);
+  const flipHistoryCard = useAppStore((s) => s.flipHistoryCard);
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
-  const [flipped, setFlipped] = useState([]);
-  const [fbText, setFbText] = useState('');
-  const [fbClassName, setFbClassName] = useState('fb');
-  const hyFlipped = useRef(0);
-
-  function flipHy(cardId) {
-    if (flipped.includes(cardId)) return;
-    const next = [...flipped, cardId];
-    setFlipped(next);
-    hyFlipped.current += 1;
-    if (hyFlipped.current >= 4) {
-      setFbText('✓ 4장을 모두 확인했어요!');
-      setFbClassName('fb show ok');
-    }
-  }
+  const flipped = flippedHistoryCardsBySong[selectedSong] || [];
 
   const allChecked = useMemo(() => flipped.length >= 4, [flipped]);
+  const fbText = allChecked ? '✓ 4장을 모두 확인했어요!' : '';
+  const fbClassName = allChecked ? 'fb show ok' : 'fb';
 
   return (
     <div className="screen active">
@@ -69,7 +60,7 @@ function HistoryCardsHaydn({ go }) {
               key={card.id}
               type="button"
               className={`flip-card ${flipped.includes(card.id) ? 'flipped' : ''}`}
-              onClick={() => flipHy(card.id)}
+              onClick={() => flipHistoryCard(card.id)}
               aria-pressed={flipped.includes(card.id)}
             >
               <div className="flip-inner">
