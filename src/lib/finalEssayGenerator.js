@@ -1,5 +1,5 @@
 import { requestOpenAiText } from './openaiClient';
-import { getFlippedHistoryCardIds, getHistoryCardTitlesForSong } from './historyCards';
+import { getFlippedHistoryCardIds, getFlippedHistoryCardsForSong } from './historyCards';
 import {
   arraysEqualAsSet,
   getOverviewReferenceQ1,
@@ -94,9 +94,9 @@ function buildHistoryEssayEntries(data) {
     data.flippedCards
   );
   if (!flipped.length) return [];
-  const titles = getHistoryCardTitlesForSong(song, flipped);
-  if (!titles.length) return [];
-  return [makeEntry('역사 맥락 카드', `살펴본 주제: ${titles.join(', ')}`)];
+  const cards = getFlippedHistoryCardsForSong(song, flipped);
+  if (!cards.length) return [];
+  return cards.map((card) => makeEntry(`역사 맥락: ${card.title}`, card.body));
 }
 
 /** 2단계 활동별 학생 응답 + 정답 비교를 감상문 생성용으로 정리합니다. */
@@ -523,7 +523,7 @@ export async function generateFinalEssay(data) {
 1단락 paragraphs.sensory — 감각적 감상: 키워드·색상·서술·emotionAnalysis(감정분석)·sensoryArtifacts(연결 활동)
 2단락 paragraphs.analyticalMusicElements — 분석적 감상(음악 요소): activities (개요파악·음색·가락선·음화법·형식 등)
 3단락 paragraphs.analyticalHistoryContext — 분석적 감상(사회·역사 맥락): activities
-  (역사 맥락은 목록 형식이 아닌 자연스러운 문장으로 녹일 것)
+  (각 activity의 studentResponse에 카드 본문이 담겨 있음. 제목·키워드만 나열하지 말고 본문 내용을 목록 형식이 아닌 자연스러운 문장으로 녹일 것)
 4단락 paragraphs.aesthetic — 심미적 감상: q1·q2·q3 (있는 문항만)
 
 [핵심]
