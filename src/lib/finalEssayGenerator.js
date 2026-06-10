@@ -11,6 +11,11 @@ import {
   hasOverviewQ2,
   normalizeOverviewText
 } from './overviewGrading';
+import {
+  formatPianoSceneCorrectAnswer,
+  gradePianoLhScene,
+  gradePianoRhScene
+} from './pianoSceneAnswers';
 import { formatSbAtonalStudentResponse, getStep2ResponseFlags, SB_ATONAL_CARD_GOLD } from './step2Review';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -288,12 +293,17 @@ export function buildStep2EssayEntries(data) {
   });
   const piano = data.pianoAnalysisState || {};
   if (flags.pianoRhScene || flags.pianoLhScene) {
-    entries.push(makeEntry('피아노 반주 장면 선택',
+    const rhOk = !flags.pianoRhScene || gradePianoRhScene(piano.rhScene);
+    const lhOk = !flags.pianoLhScene || gradePianoLhScene(piano.lhScene);
+    entries.push(makeEntry(
+      '피아노 반주 장면 선택',
       [
         flags.pianoRhScene ? `오른손: ${piano.rhScene}` : '',
         flags.pianoLhScene ? `왼손: ${piano.lhScene}` : ''
       ].filter(Boolean).join(' · '),
-      '오른손: 말발굽/질주 · 왼손: 심장 박동/긴박감'));
+      formatPianoSceneCorrectAnswer({ rh: flags.pianoRhScene, lh: flags.pianoLhScene }),
+      rhOk && lhOk
+    ));
   }
   if (flags.pianoRhDrawing || flags.pianoLhDrawing) {
     entries.push(makeEntry('피아노 가락선 그리기', '오른손·왼손 가락선을 직접 그려 보았다.'));

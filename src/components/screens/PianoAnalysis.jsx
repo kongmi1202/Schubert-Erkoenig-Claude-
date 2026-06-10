@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { useAppStore } from '../../store/useAppStore';
+import { PIANO_LH_SCENE_OPTIONS, PIANO_RH_SCENE_OPTIONS } from '../../lib/pianoSceneAnswers';
 
 const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
 const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
@@ -250,12 +251,7 @@ function PianoAnalysis({ go }) {
         {saved.rh ? <div className="small-note">오른손 가락선이 저장되었습니다.</div> : null}
         <div className="sec">오른손 반주와 어울리는 장면</div>
         <div className="scene-grid">
-          {[
-            { icon: '🐎', name: '말이 달림' },
-            { icon: '⛈️', name: '폭풍우' },
-            { icon: '🌊', name: '파도' },
-            { icon: '💨', name: '바람' }
-          ].map((item) => (
+          {PIANO_RH_SCENE_OPTIONS.map((item) => (
             <button key={item.name} className={`scene-btn ${rhScene === item.name ? 'sel' : ''}`} onClick={() => setRhScene(item.name)}>
               <div className="scene-icon">{item.icon}</div>
               <div className="scene-name">{item.name}</div>
@@ -324,12 +320,7 @@ function PianoAnalysis({ go }) {
         {saved.lh ? <div className="small-note">왼손 가락선이 저장되었습니다.</div> : null}
         <div className="sec">왼손 반주와 어울리는 장면</div>
         <div className="scene-grid">
-          {[
-            { icon: '💓', name: '심장이 두근거림' },
-            { icon: '🥁', name: '북소리' },
-            { icon: '👣', name: '무거운 발걸음' },
-            { icon: '🌊', name: '잔잔한 물결' }
-          ].map((item) => (
+          {PIANO_LH_SCENE_OPTIONS.map((item) => (
             <button key={item.name} className={`scene-btn ${lhScene === item.name ? 'sel' : ''}`} onClick={() => setLhScene(item.name)}>
               <div className="scene-icon">{item.icon}</div>
               <div className="scene-name">{item.name}</div>

@@ -9,6 +9,11 @@ import {
   SB_ATONAL_CARD_GOLD
 } from '../../lib/step2Review';
 import { gradeOverviewQ1, gradeOverviewQ2 } from '../../lib/overviewGrading';
+import {
+  formatPianoSceneCorrectAnswer,
+  gradePianoLhScene,
+  gradePianoRhScene
+} from '../../lib/pianoSceneAnswers';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -267,8 +272,8 @@ function FinalCard({ go }) {
           && voiceDesign[name]?.음색 === ({ 해설자: '두꺼움', 아버지: '두꺼움', 아들: '얇음', 마왕: '중간' }[name])
         ))
       );
-      addCheck(includesAnyToken(pianoAnalysisState?.rhScene, ['말발굽', '질주', '긴장']));
-      addCheck(includesAnyToken(pianoAnalysisState?.lhScene, ['심장', '두근', '긴박', '쫓기']));
+      addCheck(gradePianoRhScene(pianoAnalysisState?.rhScene));
+      addCheck(gradePianoLhScene(pianoAnalysisState?.lhScene));
     }
 
     const stage2Score = scoreFromAccuracy(checks.filter(Boolean).length, checks.length);
@@ -735,7 +740,10 @@ function FinalCard({ go }) {
                 <div className="fb show info">
                   2-C 피아노 반주: {step2Flags.pianoRhScene ? `오른손 ${pianoAnalysisState?.rhScene || '—'}` : ''}{step2Flags.pianoRhScene && step2Flags.pianoLhScene ? ' · ' : ''}{step2Flags.pianoLhScene ? `왼손 ${pianoAnalysisState?.lhScene || '—'}` : ''}
                 </div>
-                <div className="fb show gold">정답: 오른손 말발굽/질주 · 왼손 심장 박동/긴박감</div>
+                <div className="fb show gold">정답: {formatPianoSceneCorrectAnswer({
+                  rh: step2Flags.pianoRhScene,
+                  lh: step2Flags.pianoLhScene
+                })}</div>
               </div>
               ) : null}
             </>

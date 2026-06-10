@@ -1,6 +1,10 @@
 import { useAppStore } from '../../store/useAppStore';
 import { useEffect, useMemo } from 'react';
 import {
+  PIANO_LH_SCENE_CORRECT,
+  PIANO_RH_SCENE_CORRECT
+} from '../../lib/pianoSceneAnswers';
+import {
   formatSbAtonalStudentResponse,
   getStep2ResponseFlags,
   hasAnyStep2Response,
@@ -622,8 +626,8 @@ function AestheticPage({ go }) {
                     <div>
                       <div className="small-note">정답(모범 해설)</div>
                       <div className="review-item">
-                        {step2Flags.pianoRhScene ? <>오른손: 말발굽/질주 같은 긴장감<br /></> : null}
-                        {step2Flags.pianoLhScene ? <>왼손: 심장 박동/쫓기는 긴박감</> : null}
+                        {step2Flags.pianoRhScene ? <>오른손: {PIANO_RH_SCENE_CORRECT}<br /></> : null}
+                        {step2Flags.pianoLhScene ? <>왼손: {PIANO_LH_SCENE_CORRECT}</> : null}
                       </div>
                     </div>
                   </div>
