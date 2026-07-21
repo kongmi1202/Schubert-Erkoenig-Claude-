@@ -1,4 +1,5 @@
 import { normalizeFormativeChoice } from './compareFeedback';
+import { VOICE_DESIGN_FIELD_KEYS } from './voiceDesignAnswers';
 
 function verification(isCorrect, correctBody, wrongBody) {
   return isCorrect ? `검증: ✓\n${correctBody}` : `검증: ✗\n${wrongBody}`;
@@ -80,29 +81,29 @@ export function getTonePaintingFixedFeedback({ segmentTitle, selectedIndex, corr
 }
 
 export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKey) {
-  const keys = ['음높이', '음계', '리듬꼴', '음색'];
+  const keys = VOICE_DESIGN_FIELD_KEYS;
   const name = selectedChars?.[0];
   if (!name) {
-    return '인물을 선택하고 네 항목을 모두 고른 뒤 피드백 보기를 눌러 주세요.';
+    return '인물을 선택하고 세 항목을 모두 고른 뒤 피드백 보기를 눌러 주세요.';
   }
   const row = voiceDesign?.[name] || {};
   const answer = answerKey?.[name] || {};
   const filled = keys.every((k) => row[k]);
   if (!filled) {
-    return '음높이·음계·리듬꼴·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.';
+    return '음높이·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.';
   }
   const allMatch = keys.every((k) => row[k] === answer[k]);
   if (allMatch) {
     return verification(
       true,
-      `「${name}」의 음높이·음계·리듬꼴·음색이 과제와 맞아요. 이 인물 구간을 다시 들으며 네가 고른 네 가지가 소리와 어떻게 연결되는지 확인해 보세요.`
+      `「${name}」의 음높이·음계·음색이 과제와 맞아요. 이 인물 구간을 다시 들으며 네가 고른 세 가지가 소리와 어떻게 연결되는지 확인해 보세요.`
     );
   }
   const revisit = keys.filter((k) => row[k] !== answer[k]);
   return verification(
     false,
     '',
-    `${revisit.join('·')}부터 다시 들으며 소리의 높낮이, 밝고 어두운 느낌, 리듬 길이, 목소리 굵기를 귀로 비교해 보세요. 다시 들어보세요.`
+    `${revisit.join('·')}부터 다시 들으며 소리의 높낮이, 밝고 어두운 느낌, 목소리 굵기를 귀로 비교해 보세요. 다시 들어보세요.`
   );
 }
 

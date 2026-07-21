@@ -2,8 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
-import { getVoiceDesignFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import {
+  createEmptyMawangVoiceDesign,
+  isVoiceDesignRowFilled,
+  MAWANG_VOICE_ANSWER_KEY,
+  VOICE_DESIGN_FIELD_KEYS
+} from '../../lib/voiceDesignAnswers';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import { getVoiceDesignFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -42,23 +48,69 @@ const chars = [
 ];
 const VOICE_CHAR_NAMES = ['해설자', '아버지', '아들', '마왕'];
 
-const answerKey = {
-  해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-  아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-  아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
-  마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
-};
+const VOICE_DESIGN_CATEGORIES = [
+  {
+    key: '음높이',
+    tone: 'pitch',
+    cols: 3,
+    tip: '목소리가 어느 음역에서 울리는지를 말해요. 저음역·중음역·고음역으로 나눠요.',
+    options: [
+      { value: '낮음', pitchLevel: 'low', hint: '저음역' },
+      { value: '중간', pitchLevel: 'mid', hint: '중음역' },
+      { value: '높음', pitchLevel: 'high', hint: '고음역' }
+    ]
+  },
+  {
+    key: '음계',
+    tone: 'scale',
+    cols: 2,
+    tip: '음악의 기분이에요. 단조는 어둡고 진지한 느낌, 장조는 밝고 신나는 느낌이 나요.',
+    options: [
+      { value: '단조', icon: '🌙', hint: '어둡고 진지' },
+      { value: '장조', icon: '☀️', hint: '밝고 경쾌' }
+    ]
+  },
+  {
+    key: '음색',
+    tone: 'timbre',
+    cols: 2,
+    tip: '목소리의 색깔 같은 거예요. 두꺼우면 묵직하고, 얇으면 가볍고 여리게 들려요.',
+    options: [
+      { value: '두꺼움', icon: '▬', hint: '묵직하고 풍부' },
+      { value: '얇음', icon: '│', hint: '가볍고 여린' }
+    ]
+  }
+];
+
+function PitchRegisterIcon({ level }) {
+  return (
+    <span className={`vd-pitch-icon vd-pitch-icon--${level}`} aria-hidden="true">
+      <span className="vd-pitch-line" />
+    </span>
+  );
+}
+
+function VoiceDesignOptionIcon({ option }) {
+  if (option.pitchLevel) return <PitchRegisterIcon level={option.pitchLevel} />;
+  return (
+    <span className="vd-opt-icon" aria-hidden="true">
+      {option.icon}
+    </span>
+  );
+}
+
+const answerKey = MAWANG_VOICE_ANSWER_KEY;
 
 /** 정답 확인 패널 하단 모범 해설 (스크린샷 스타일 안내) */
 const voiceCompareCommentary = {
   해설자:
-    '해설자는 밤길 상황을 듣는 이에게 차분히 전달하는 역할이에요. 단조의 어두운 음계와 길게 이어지는 리듬으로 처음부터 긴장감을 깔고, 중간 높이·두꺼운 음색으로 이야기의 무게를 실어 줍니다.',
+    '해설자는 밤길 상황을 듣는 이에게 차분히 전달하는 역할이에요. 단조의 어두운 음계와 중간 높이·두꺼운 음색으로 이야기의 무게를 실어 줍니다.',
   아버지:
-    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮은 음높이와 두꺼운 음색이 어른의 단단함을, 단조와 긴 리듬이 밤길의 압박을 함께 드러냅니다.',
+    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮은 음높이와 두꺼운 음색이 어른의 단단함을, 단조가 밤길의 압박을 함께 드러냅니다.',
   아들:
-    '아들은 두려움과 호소가 섞인 목소리로 들려요. 높은 음높이, 짧게 끊기는 리듬, 얇은 음색이 불안과 다급함을 표현하고, 단조는 비극적 분위기와 맞닿아 있습니다.',
+    '아들은 두려움과 호소가 섞인 목소리로 들려요. 높은 음높이와 얇은 음색, 단조가 불안과 비극적 분위기를 표현합니다.',
   마왕:
-    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 길게 이어지는 리듬, 중간 음색이 “부드러운 제안”처럼 들리게 설계된 모범안입니다.'
+    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 얇은 음색이 부드럽고 가벼운 유혹처럼 들리게 설계된 모범안입니다.'
 };
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
@@ -69,12 +121,7 @@ function VoiceDesign({ go }) {
   const voiceDesignState = useAppStore((s) => s.voiceDesignState);
   const setVoiceDesignState = useAppStore((s) => s.setVoiceDesignState);
   const [selectedChars, setSelectedChars] = useState(() => voiceDesignState?.selectedChars || ['해설자', '아버지']);
-  const [voiceDesign, setVoiceDesign] = useState(() => voiceDesignState?.voiceDesign || {
-    해설자: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-    아버지: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-    아들: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-    마왕: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' }
-  });
+  const [voiceDesign, setVoiceDesign] = useState(() => voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign());
   const [showCompare, setShowCompare] = useState(false);
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
   /** { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } | null */
@@ -105,11 +152,7 @@ function VoiceDesign({ go }) {
   };
 
   const isSel = (category, value) => voiceDesign[selectedCharacter]?.[category] === value;
-  const isCharacterFilled = (name) => {
-    const row = voiceDesign[name];
-    if (!row) return false;
-    return ['음높이', '음계', '리듬꼴', '음색'].every((k) => row[k]);
-  };
+  const isCharacterFilled = (name) => isVoiceDesignRowFilled(voiceDesign[name]);
   /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */
   const canCheckAnswer = useMemo(() => {
     const n = VOICE_CHAR_NAMES.filter((name) => isCharacterFilled(name)).length;
@@ -126,7 +169,7 @@ function VoiceDesign({ go }) {
     () => getVoiceDesignFixedFeedback([selectedCharacter], voiceDesign, answerKey),
     [selectedCharacter, voiceDesign]
   );
-  const designKeys = ['음높이', '음계', '리듬꼴', '음색'];
+  const designKeys = VOICE_DESIGN_FIELD_KEYS;
   const currentSnapshot = useMemo(
     () =>
       JSON.stringify({
@@ -173,7 +216,7 @@ function VoiceDesign({ go }) {
   }, [selectedChars, voiceDesign, setVoiceDesignState]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물 2명을 골라 해당 인물이 등장하는 부분을 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.' : <>성부를 골라 들으며 음높이·음계·리듬꼴·음색을 설계해 보세요.<br /><strong>서로 다른 두 대상</strong>에 대해 네 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)</>}<br />음악 요소: <strong>음색</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물 2명을 골라 해당 인물이 등장하는 부분을 들으며 음높이·음계·음색을 설계해 보세요.' : <>성부를 골라 들으며 음높이·음계·음색을 설계해 보세요.<br /><strong>서로 다른 두 대상</strong>에 대해 세 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)</>}<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
         <div className="sec">{isErlkonig ? '등장인물 선택 · 설계할 인물로 전환' : '성부 선택 · 설계할 대상 전환'}</div>
         <div className="char-tabs">
@@ -216,32 +259,40 @@ function VoiceDesign({ go }) {
           />
         </div>
 
-        <div className="vd-item">
-          <div className="vd-label">음높이 <span className="tip-wrap"><span className="q-mini">?</span><span className="tip-bubble">소리가 높은지 낮은지를 말해요. 아이 목소리는 높고, 어른 목소리는 더 낮아요.</span></span></div>
-          <div className="vd-opts">
-            {['낮음', '중간', '높음'].map((v) => <button key={v} className={`vd-opt ${isSel('음높이', v) ? 'sel' : ''}`} onClick={() => selectDesign('음높이', v)}>{v}</button>)}
+        <div className="voice-design-panel">
+          <div className="voice-design-panel-head">
+            <span className="voice-design-panel-icon" aria-hidden="true">🎙️</span>
+            <div>
+              <div className="voice-design-panel-title">음색 설계</div>
+              <div className="voice-design-panel-desc">듣고 느낀 대로 세 가지를 골라 {active.name}의 목소리를 설계해 보세요.</div>
+            </div>
           </div>
-        </div>
 
-        <div className="vd-item">
-          <div className="vd-label">음계 <span className="tip-wrap"><span className="q-mini">?</span><span className="tip-bubble">음악의 기분이에요. 단조는 어둡고 진지한 느낌, 장조는 밝고 신나는 느낌이 나요.</span></span></div>
-          <div className="vd-opts">
-            {['단조', '장조'].map((v) => <button key={v} className={`vd-opt ${isSel('음계', v) ? 'sel' : ''}`} onClick={() => selectDesign('음계', v)}>{v}</button>)}
-          </div>
-        </div>
-
-        <div className="vd-item">
-          <div className="vd-label">리듬꼴 <span className="tip-wrap"><span className="q-mini">?</span><span className="tip-bubble">소리가 짧게 톡톡 끊기는지, 길게 이어지는지예요. 걷는 발걸음처럼 느낄 수도 있어요.</span></span></div>
-          <div className="vd-opts">
-            {['짧음', '김'].map((v) => <button key={v} className={`vd-opt ${isSel('리듬꼴', v) ? 'sel' : ''}`} onClick={() => selectDesign('리듬꼴', v)}>{v}</button>)}
-          </div>
-        </div>
-
-        <div className="vd-item">
-          <div className="vd-label">음색 <span className="tip-wrap"><span className="q-mini">?</span><span className="tip-bubble">목소리의 색깔 같은 거예요. 두꺼우면 묵직하고, 얇으면 가볍고 날카롭게 들려요.</span></span></div>
-          <div className="vd-opts">
-            {['두꺼움', '중간', '얇음'].map((v) => <button key={v} className={`vd-opt ${isSel('음색', v) ? 'sel' : ''}`} onClick={() => selectDesign('음색', v)}>{v}</button>)}
-          </div>
+          {VOICE_DESIGN_CATEGORIES.map((category) => (
+            <div key={category.key} className="vd-item">
+              <div className="vd-label">
+                {category.key}
+                <span className="tip-wrap">
+                  <span className="q-mini">?</span>
+                  <span className="tip-bubble">{category.tip}</span>
+                </span>
+              </div>
+              <div className={`vd-opts vd-opts--${category.cols}`}>
+                {category.options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`vd-opt vd-opt--${category.tone} ${isSel(category.key, option.value) ? 'sel' : ''}`}
+                    onClick={() => selectDesign(category.key, option.value)}
+                  >
+                    <VoiceDesignOptionIcon option={option} />
+                    <span className="vd-opt-label">{option.value}</span>
+                    <span className="vd-opt-hint">{option.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         {canShowAnswerCheck ? (
@@ -321,7 +372,7 @@ function VoiceDesign({ go }) {
           <ArtSongTakeaway
             eyebrow={isErlkonig ? '예술가곡의 첫 번째 특징' : '할렐루야 감상의 핵심'}
             title={isErlkonig ? '시와 음악이 하나가 된다' : '성부의 겹침이 감정을 키운다'}
-            description={isErlkonig ? '괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·리듬꼴로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요.' : '할렐루야는 성부가 겹칠수록 울림이 커지고, 같은 후렴도 다르게 들려요. 성부별 음색과 움직임을 비교해 들으면 곡의 감정 구조가 선명해집니다.'}
+            description={isErlkonig ? '괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·음계로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요.' : '할렐루야는 성부가 겹칠수록 울림이 커지고, 같은 후렴도 다르게 들려요. 성부별 음색과 움직임을 비교해 들으면 곡의 감정 구조가 선명해집니다.'}
           />
         ) : null}
 

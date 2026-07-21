@@ -1,3 +1,5 @@
+import { isVoiceDesignRowFilled } from './voiceDesignAnswers';
+
 const hasText = (v) => typeof v === 'string' && v.trim().length > 0;
 
 export const SB_ATONAL_CARD_GOLD =
@@ -16,8 +18,7 @@ export function formatSbAtonalStudentResponse(atonalState) {
 export const STEP2_LOCKED_ANSWER_MSG = '2단계에서 이 활동을 완료하면 정답이 공개됩니다.';
 
 function hasVoiceCharResponse(voiceDesign, name) {
-  const row = voiceDesign?.[name] || {};
-  return ['음높이', '음계', '리듬꼴', '음색'].some((k) => hasText(row[k]));
+  return isVoiceDesignRowFilled(voiceDesign?.[name]);
 }
 
 /** 곡별 2단계 활동·문항별 학생 응답 여부 */

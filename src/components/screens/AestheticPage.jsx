@@ -5,6 +5,11 @@ import {
   PIANO_RH_SCENE_CORRECT
 } from '../../lib/pianoSceneAnswers';
 import {
+  formatVoiceDesignRowText,
+  isVoiceDesignRowFilled,
+  MAWANG_VOICE_ANSWER_KEY
+} from '../../lib/voiceDesignAnswers';
+import {
   formatSbAtonalStudentResponse,
   getStep2ResponseFlags,
   hasAnyStep2Response,
@@ -156,14 +161,9 @@ function AestheticPage({ go }) {
                 { value: '반주', label: '피아노 반주' },
                 { value: '맥락', label: '사회·역사적 맥락' }
               ];
-  const voiceAnswerKey = {
-    해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-    아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-    아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
-    마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
-  };
+  const voiceAnswerKey = MAWANG_VOICE_ANSWER_KEY;
   const voiceRows = Object.entries(voiceDesignState?.voiceDesign || {}).filter(([, row]) =>
-    ['음높이', '음계', '리듬꼴', '음색'].some((k) => row?.[k])
+    isVoiceDesignRowFilled(row)
   );
   const emotionRows = emotionResult
     ? [
@@ -595,15 +595,11 @@ function AestheticPage({ go }) {
                           <div className="cmp-mini-grid">
                             <div>
                               <div className="small-note">내 답변</div>
-                              <div className="review-item">
-                                음높이 {row.음높이 || '—'} · 음계 {row.음계 || '—'} · 리듬꼴 {row.리듬꼴 || '—'} · 음색 {row.음색 || '—'}
-                              </div>
+                              <div className="review-item">{formatVoiceDesignRowText(row)}</div>
                             </div>
                             <div>
                               <div className="small-note">정답</div>
-                              <div className="review-item">
-                                음높이 {voiceAnswerKey[name]?.음높이 || '—'} · 음계 {voiceAnswerKey[name]?.음계 || '—'} · 리듬꼴 {voiceAnswerKey[name]?.리듬꼴 || '—'} · 음색 {voiceAnswerKey[name]?.음색 || '—'}
-                              </div>
+                              <div className="review-item">{formatVoiceDesignRowText(voiceAnswerKey[name] || {})}</div>
                             </div>
                           </div>
                         </div>

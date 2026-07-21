@@ -15,7 +15,81 @@ export function arraysEqualAsSet(actual, expected) {
   return expected.every((item) => actualSet.has(item));
 }
 
-const MAWANG_Q1_CHARACTERS = ['해설자', '아버지', '아들', '마왕'];
+export const MAWANG_Q1_CHARACTERS = ['해설자', '아버지', '아들', '마왕'];
+
+/** Q1 — 표준 이름 + 허용 동의어(칸마다 하나씩, 네 역할 모두 있어야 함) */
+export const MAWANG_Q1_ROLE_ALIASES = {
+  해설자: ['해설자', '내레이션', '나레이션'],
+  아버지: ['아버지', '아빠'],
+  아들: ['아들', '아이'],
+  마왕: ['마왕']
+};
+
+/**
+ * Q2 줄거리 — 네 가지 핵심 축(각 축마다 동의어 하나 이상).
+ * 모두 포함되면 정답. 서술 방식·문장 순서는 달라도 됨.
+ */
+export const MAWANG_Q2_KEYWORD_GROUPS = [
+  { id: 'father', label: '아버지', keywords: ['아버지', '아빠'] },
+  { id: 'son', label: '아들', keywords: ['아들', '아이'] },
+  { id: 'erlkonig', label: '마왕', keywords: ['마왕'] },
+  { id: 'death', label: '결말(죽음)', keywords: ['죽', '죽음', '죽어'] }
+];
+
+/** Q2 보조 키워드 — 피드백 정교화용(채점 필수 아님) */
+export const MAWANG_Q2_OPTIONAL_KEYWORDS = [
+  '폭풍', '폭풍우', '밤', '유혹', '달려', '집', '안고', '무서', '두려', '부정'
+];
+
+export function resolveMawangCharacterRole(name) {
+  const n = normalizeOverviewText(name);
+  if (!n) return null;
+  for (const [canonical, aliases] of Object.entries(MAWANG_Q1_ROLE_ALIASES)) {
+    if (aliases.some((alias) => {
+      const a = normalizeOverviewText(alias);
+      return n === a || n.includes(a);
+    })) {
+      return canonical;
+    }
+  }
+  return null;
+}
+
+export function evaluateMawangOverviewQ1(chars) {
+  const slots = (chars || []).map((c) => clean(c)).filter(Boolean);
+  const roles = slots.map(resolveMawangCharacterRole);
+  const matchedRoles = new Set(roles.filter(Boolean));
+  const missingRoles = MAWANG_Q1_CHARACTERS.filter((r) => !matchedRoles.has(r));
+  const unknownSlots = slots.filter((_, idx) => !roles[idx]);
+  const duplicateRole = roles.filter(Boolean).length !== matchedRoles.size;
+  const isCorrect = slots.length === 4
+    && !unknownSlots.length
+    && !duplicateRole
+    && missingRoles.length === 0;
+  return { isCorrect, matchedRoles: [...matchedRoles], missingRoles, unknownSlots, duplicateRole };
+}
+
+export function evaluateMawangOverviewQ2(story) {
+  const text = normalizeOverviewText(story);
+  const matchedGroups = MAWANG_Q2_KEYWORD_GROUPS.filter((group) =>
+    group.keywords.some((kw) => text.includes(normalizeOverviewText(kw))));
+  const missingGroups = MAWANG_Q2_KEYWORD_GROUPS.filter(
+    (group) => !matchedGroups.some((g) => g.id === group.id)
+  );
+  return {
+    isCorrect: missingGroups.length === 0 && text.length > 0,
+    matchedGroups,
+    missingGroups
+  };
+}
+
+export function gradeMawangOverviewQ1(chars) {
+  return evaluateMawangOverviewQ1(chars).isCorrect;
+}
+
+export function gradeMawangOverviewQ2(story) {
+  return evaluateMawangOverviewQ2(story).isCorrect;
+}
 const HAYDN_Q1_INSTRUMENTS = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
 const SCHOENBERG_Q1_INSTRUMENTS = [
   '소프라노(또는 메조소프라노)',
@@ -90,7 +164,7 @@ export function gradeOverviewQ1(song, data) {
   const chars = (data.analyticalCharacters || []).filter(Boolean);
   switch (song) {
     case 'mawang':
-      return arraysEqualAsSet(chars, MAWANG_Q1_CHARACTERS);
+      return gradeMawangOverviewQ1(chars);
     case 'handel':
       return includesAnyToken(data.handelLyricMeaning, ['성경', '종교']);
     case 'haydn':
@@ -111,7 +185,7 @@ export function gradeOverviewQ2(song, data) {
   if (!hasOverviewQ2(song)) return null;
   switch (song) {
     case 'mawang':
-      return includesAnyToken(data.analyticalStory, ['아버지', '아들', '마왕', '죽']);
+      return gradeMawangOverviewQ2(data.analyticalStory);
     case 'handel':
       return includesAnyToken(data.handelOperaDiff, ['오라토리오', '오페라']);
     case 'haydn':

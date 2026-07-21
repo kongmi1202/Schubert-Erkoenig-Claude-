@@ -1,4 +1,13 @@
 import { getApiKeySetupMessage, requestOpenAiText } from './openaiClient';
+import {
+  evaluateMawangOverviewQ1,
+  evaluateMawangOverviewQ2,
+  MAWANG_Q1_ROLE_ALIASES,
+  MAWANG_Q2_KEYWORD_GROUPS,
+  OVERVIEW_REFERENCE_ANSWERS,
+  resolveMawangCharacterRole
+} from './overviewGrading';
+import { VOICE_DESIGN_FIELD_KEYS } from './voiceDesignAnswers';
 
 const MSG_NO_KEY = getApiKeySetupMessage();
 
@@ -219,6 +228,87 @@ function userCharacterNameSet(userCharacterSlots, userCharsText) {
   return new Set(normalizeList(userCharsText || ''));
 }
 
+function buildMawangOverviewFallbackBody(userCharacterSlots, userStory) {
+  const q1 = evaluateMawangOverviewQ1(userCharacterSlots);
+  const q2 = evaluateMawangOverviewQ2(userStory);
+  const q1Lines = [];
+  if (q1.isCorrect) {
+    q1Lines.push('Q1 등장인물 네 역할을 모두 잘 짚었어요. (아이·아빠·내레이션 표현도 같은 답이에요.)');
+  } else {
+    if (q1.duplicateRole) {
+      q1Lines.push('Q1 같은 역할이 두 번 들어간 칸이 있는지 확인해 보세요. 네 역할이 각각 한 번씩 필요해요.');
+    }
+    if (q1.unknownSlots.length) {
+      q1Lines.push('Q1 인물 이름을 다시 확인해 보세요. 해설자(내레이션), 아버지(아빠), 아들(아이), 마왕 네 가지가 필요해요.');
+    }
+    if (q1.missingRoles.length) {
+      q1Lines.push(`Q1 아직 빠진 역할이 있어요: ${q1.missingRoles.join(', ')}`);
+    }
+  }
+  const q2Lines = [];
+  if (q2.isCorrect) {
+    q2Lines.push('Q2 줄거리에 아버지·아들·마왕·결말(죽음) 네 가지 핵심이 들어 있어요.');
+  } else if (!(userStory || '').trim()) {
+    q2Lines.push('Q2 줄거리를 처음-중간-끝 순서로 한두 문장 이상 써 보세요.');
+  } else if (q2.missingGroups.length) {
+    q2Lines.push(`Q2 줄거리에 더 넣으면 좋은 핵심: ${q2.missingGroups.map((g) => g.label).join(', ')}`);
+  }
+  return [...q1Lines, ...q2Lines].filter(Boolean).join('\n\n');
+}
+
+function buildMawangOverviewShortInputFeedback(userStory) {
+  const raw = (userStory || '').trim();
+  return `Q2 입력이 너무 짧아서(현재: "${raw || '(없음)'}") 줄거리 피드백을 정확히 만들기 어려워요.
+
+처음-중간-끝 순서로, 아버지(아빠)·아들(아이)·마왕·결말이 들어가게 한두 문장 이상 써 보세요.`;
+}
+
+/**
+ * 마왕 개요 파악 Q1·Q2 — Kulhavy & Stock(1989) 검증·정교화 + Shute(2008) 형성적 피드백
+ */
+export async function generateMawangOverviewFeedback({ userCharacterSlots, userStory }) {
+  const fallbackBody = buildMawangOverviewFallbackBody(userCharacterSlots, userStory);
+  const normalizedStory = (userStory || '').trim();
+  if (normalizedStory.length <= 2) {
+    return `${fallbackBody}\n\n${buildMawangOverviewShortInputFeedback(normalizedStory)}`;
+  }
+
+  const q1 = evaluateMawangOverviewQ1(userCharacterSlots);
+  const q2 = evaluateMawangOverviewQ2(userStory);
+  const overallCorrect = q1.isCorrect && q2.isCorrect;
+  const userCharsText = (userCharacterSlots || []).filter(Boolean).join(', ');
+  const roleHints = Object.entries(MAWANG_Q1_ROLE_ALIASES)
+    .map(([canonical, aliases]) => `${canonical}: ${aliases.join('/')}`)
+    .join('; ');
+  const q2GroupHints = MAWANG_Q2_KEYWORD_GROUPS.map((g) => g.label).join(', ');
+
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 슈베르트 <마왕> 개요 파악 Q1(등장인물)과 Q2(줄거리)에 대한 형성적 피드백이다.
+
+Q1 허용 표현(동의어): ${roleHints}
+Q2 핵심 축(네 축 모두 들어가면 충분): ${q2GroupHints}
+· 줄거리는 문장 표현·순서가 달라도 됨. 위 네 축이 드러나면 정답으로 본다.
+
+내부 참고(학생에게 그대로 밝히지 말 것):
+· Q1 정오: ${q1.isCorrect ? '네 역할 모두 포함' : `부족/중복 — 빠진 역할: ${q1.missingRoles.join(', ') || '없음'}`}
+· Q2 정오: ${q2.isCorrect ? '핵심 네 축 포함' : `부족 — 빠진 축: ${q2.missingGroups.map((g) => g.label).join(', ') || '없음'}`}
+· 종합 정오: ${overallCorrect ? 'Q1·Q2 모두 기준 충족' : '아직 보완 필요'}
+
+규칙:
+· 첫 줄은 반드시 검증: ✓ 또는 검증: ✗ — Q1·Q2를 종합해 기준 충족 시 ✓.
+· 검증 ✓: Q1·Q2 각각 음악·서사 요소(등장인물, 줄거리, 분위기)를 이름으로 짚어 정교화(총 2~3문장). 모범 문장 복사 금지.
+· 검증 ✗: 정답 인물명·정답 줄거리 문장을 그대로 쓰지 말 것. 빠진 역할·줄거리 축을 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
+· 학생이 쓴 단어를 짧게 인용해도 좋다.
+
+학생 Q1: ${userCharsText || '(없음)'}
+학생 Q1 역할 해석: ${(userCharacterSlots || []).map((c) => `${c || '—'}→${resolveMawangCharacterRole(c) || '?'}`).join(', ')}
+
+학생 Q2 (줄거리): ${normalizedStory || '(없음)'}
+모범 Q2 참고(그대로 복사 금지): ${OVERVIEW_REFERENCE_ANSWERS.mawang.q2}`;
+
+  const text = await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallbackBody);
+  return syncFormativeAiVerificationLine(text, overallCorrect);
+}
+
 function buildAnalyticalFallbackBody(userCharacterSlots, userCharsText, correctChars, userStory, q2Label = '줄거리 요약') {
   const userSet = userCharacterNameSet(userCharacterSlots, userCharsText);
   const correctSet = new Set(correctChars);
@@ -298,7 +388,7 @@ Q2 비교 초점: ${q2PromptGuide}
 }
 
 function buildVoiceFallback(selectedChars, voiceDesign, answerKey) {
-  const keys = ['음높이', '음계', '리듬꼴', '음색'];
+  const keys = VOICE_DESIGN_FIELD_KEYS;
   let total = 0;
   let match = 0;
   selectedChars.forEach((name) => {
@@ -313,7 +403,7 @@ function buildVoiceFallback(selectedChars, voiceDesign, answerKey) {
 export async function generateVoiceDesignCompareFeedback(selectedChars, voiceDesign, answerKey) {
   const fallback = buildVoiceFallback(selectedChars, voiceDesign, answerKey);
   const rows = selectedChars.flatMap((name) =>
-    ['음높이', '음계', '리듬꼴', '음색'].map((key) => ({
+    VOICE_DESIGN_FIELD_KEYS.map((key) => ({
       인물: name,
       요소: key,
       학생: voiceDesign[name]?.[key] || '—',
@@ -323,13 +413,13 @@ export async function generateVoiceDesignCompareFeedback(selectedChars, voiceDes
   const allMatch = rows.length > 0 && rows.every((r) => r.학생 !== '—' && r.학생 === r.모범);
   const who = selectedChars.length > 1 ? '선택한 인물들' : `「${selectedChars[0] || ''}」`;
 
-  const taskPrompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 음높이·음계·리듬꼴·음색 설계와 모범안이다. (대상: ${who})
+  const taskPrompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 음높이·음계·음색 설계와 모범안이다. (대상: ${who})
 
-내부 참고: 네 칸 모두 학생 값이 모범과 같으면 ${allMatch ? 'true (검증 ✓)' : 'false (검증은 불일치 시 ✗)'}.
+내부 참고: 세 칸 모두 학생 값이 모범과 같으면 ${allMatch ? 'true (검증 ✓)' : 'false (검증은 불일치 시 ✗)'}.
 
 규칙:
-· 첫 줄: 검증: ✓ (네 요소 모두 모범과 일치) 또는 검증: ✗ (하나라도 다름 또는 미선택).
-· 검증 ✓: 음높이·음계·리듬꼴·음색 중 무엇이 어떤 음악적 역할과 맞닿는지 2~3문장으로 정교화. 개인 칭찬 문장 금지.
+· 첫 줄: 검증: ✓ (세 요소 모두 모범과 일치) 또는 검증: ✗ (하나라도 다름 또는 미선택).
+· 검증 ✓: 음높이·음계·음색 중 무엇이 어떤 음악적 역할과 맞닿는지 2~3문장으로 정교화. 개인 칭찬 문장 금지.
 · 검증 ✗: 모범 칸의 정확한 단어(예: "높음", "단조")를 쓰지 말 것. 어느 요소를 어떤 소리 특징으로 다시 들을지 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
 
 데이터(JSON): ${JSON.stringify(rows)}`;

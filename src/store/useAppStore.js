@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createEmptyMawangVoiceDesign } from '../lib/voiceDesignAnswers';
 
 export const screenOrder = ['intro','studentInfo','songSelect','videoPage','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
 
@@ -51,12 +52,7 @@ export const useAppStore = create((set) => ({
   selectedCharacter: '해설자',
   voiceDesignState: {
     selectedChars: ['해설자', '아버지'],
-    voiceDesign: {
-      해설자: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-      아버지: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-      아들: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' },
-      마왕: { 음높이: '', 음계: '', 리듬꼴: '', 음색: '' }
-    }
+    voiceDesign: createEmptyMawangVoiceDesign()
   },
   pianoAnalysisState: {
     savedPreview: { rh: '', lh: '' },

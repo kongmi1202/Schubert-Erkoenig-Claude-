@@ -14,6 +14,7 @@ import {
   gradePianoLhScene,
   gradePianoRhScene
 } from '../../lib/pianoSceneAnswers';
+import { gradeMawangVoiceDesignRow } from '../../lib/voiceDesignAnswers';
 
 const colorMap = {
   '짙은 보라': '#4c1d95',
@@ -264,14 +265,10 @@ function FinalCard({ go }) {
       addCheck(gradeOverviewQ1('mawang', overviewState));
       addCheck(gradeOverviewQ2('mawang', overviewState));
       const voiceDesign = voiceDesignState?.voiceDesign || {};
-      addCheck(
-        ['해설자', '아버지', '아들', '마왕'].every((name) => (
-          voiceDesign[name]?.음높이 === ({ 해설자: '중간', 아버지: '낮음', 아들: '높음', 마왕: '중간' }[name])
-          && voiceDesign[name]?.음계 === ({ 해설자: '단조', 아버지: '단조', 아들: '단조', 마왕: '장조' }[name])
-          && voiceDesign[name]?.리듬꼴 === ({ 해설자: '김', 아버지: '김', 아들: '짧음', 마왕: '김' }[name])
-          && voiceDesign[name]?.음색 === ({ 해설자: '두꺼움', 아버지: '두꺼움', 아들: '얇음', 마왕: '중간' }[name])
-        ))
-      );
+      const voiceNames = ['해설자', '아버지', '아들', '마왕'].filter((name) => step2Flags[`voice${name}`]);
+      if (voiceNames.length) {
+        addCheck(voiceNames.every((name) => gradeMawangVoiceDesignRow(name, voiceDesign[name])));
+      }
       addCheck(gradePianoRhScene(pianoAnalysisState?.rhScene));
       addCheck(gradePianoLhScene(pianoAnalysisState?.lhScene));
     }
@@ -732,7 +729,7 @@ function FinalCard({ go }) {
                 <div className="fb show info">
                   2-B 음색 설계: {['해설자', '아버지', '아들', '마왕'].filter((n) => step2Flags[`voice${n}`]).join(', ')} 응답 완료
                 </div>
-                <div className="fb show gold">정답: 인물별 음높이·음계·리듬꼴·음색 비교표 참고</div>
+                <div className="fb show gold">정답: 인물별 음높이·음계·음색 비교표 참고</div>
               </div>
               ) : null}
               {(step2Flags.pianoRhScene || step2Flags.pianoLhScene) ? (

@@ -16,6 +16,11 @@ import {
   gradePianoLhScene,
   gradePianoRhScene
 } from './pianoSceneAnswers';
+import {
+  formatVoiceDesignRowText,
+  gradeMawangVoiceDesignRow,
+  MAWANG_VOICE_ANSWER_KEY
+} from './voiceDesignAnswers';
 import { formatSbAtonalStudentResponse, getStep2ResponseFlags, SB_ATONAL_CARD_GOLD } from './step2Review';
 
 const clean = (v) => (typeof v === 'string' ? v.trim() : '');
@@ -276,20 +281,16 @@ export function buildStep2EssayEntries(data) {
 
   pushOverview('개요 Q1 등장인물', '개요 Q2 줄거리');
   const voiceDesign = data.voiceDesignState?.voiceDesign || {};
-  const voiceAnswerKey = {
-    해설자: { 음높이: '중간', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-    아버지: { 음높이: '낮음', 음계: '단조', 리듬꼴: '김', 음색: '두꺼움' },
-    아들: { 음높이: '높음', 음계: '단조', 리듬꼴: '짧음', 음색: '얇음' },
-    마왕: { 음높이: '중간', 음계: '장조', 리듬꼴: '김', 음색: '중간' }
-  };
   ['해설자', '아버지', '아들', '마왕'].forEach((name) => {
     const row = voiceDesign[name] || {};
     if (!flags[`voice${name}`]) return;
-    const studentText = `음높이 ${row.음높이 || '—'}, 음계 ${row.음계 || '—'}, 리듬꼴 ${row.리듬꼴 || '—'}, 음색 ${row.음색 || '—'}`;
-    const ans = voiceAnswerKey[name];
-    const correctText = `음높이 ${ans.음높이}, 음계 ${ans.음계}, 리듬꼴 ${ans.리듬꼴}, 음색 ${ans.음색}`;
-    const isCorrect = ['음높이', '음계', '리듬꼴', '음색'].every((k) => clean(row[k]) === ans[k]);
-    entries.push(makeEntry(`${name} 음색 설계`, studentText, correctText, isCorrect));
+    const ans = MAWANG_VOICE_ANSWER_KEY[name];
+    entries.push(makeEntry(
+      `${name} 음색 설계`,
+      formatVoiceDesignRowText(row),
+      formatVoiceDesignRowText(ans),
+      gradeMawangVoiceDesignRow(name, row)
+    ));
   });
   const piano = data.pianoAnalysisState || {};
   if (flags.pianoRhScene || flags.pianoLhScene) {
