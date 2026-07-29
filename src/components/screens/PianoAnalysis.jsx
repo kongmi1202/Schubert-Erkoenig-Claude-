@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { useAppStore } from '../../store/useAppStore';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import { getPianoSceneFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import { PIANO_LH_SCENE_OPTIONS, PIANO_RH_SCENE_OPTIONS } from '../../lib/pianoSceneAnswers';
+import { useAppStore } from '../../store/useAppStore';
 
 const PIANO_RH_AUDIO_SRC = '/audio/mawang-rh-accompaniment.mp3';
 const PIANO_LH_AUDIO_SRC = '/audio/mawang-lh-accompaniment.mp3';
@@ -89,8 +91,10 @@ function PianoAnalysis({ go }) {
   const [rhScene, setRhScene] = useState(() => pianoAnalysisState?.rhScene || '');
   const [lhScene, setLhScene] = useState(() => pianoAnalysisState?.lhScene || '');
   const [showCompare, setShowCompare] = useState(false);
+  const [hasOpenedScoreCompare, setHasOpenedScoreCompare] = useState(false);
   const [rhGuideOpen, setRhGuideOpen] = useState(true);
   const [lhGuideOpen, setLhGuideOpen] = useState(true);
+  const [sceneFeedbackKey, setSceneFeedbackKey] = useState(0);
   const rhAudioRef = useRef(null);
   const lhAudioRef = useRef(null);
   const pianoCtxRef = useRef(null);
@@ -185,7 +189,20 @@ function PianoAnalysis({ go }) {
     setSavedPreview((prev) => ({ ...prev, [key]: dataUrl }));
   };
   const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
-  const canOpenAnswer = canCheckAnswer;
+  const sceneSnapshot = useMemo(
+    () => JSON.stringify({ rhScene, lhScene }),
+    [rhScene, lhScene]
+  );
+  const getSceneFeedback = useCallback(
+    () => getPianoSceneFixedFeedback({ rhScene, lhScene }),
+    [rhScene, lhScene]
+  );
+  const canOpenScoreCompare = canCheckAnswer;
+  const canShowSceneFeedback = canCheckAnswer && hasOpenedScoreCompare;
+
+  useEffect(() => {
+    setSceneFeedbackKey((k) => k + 1);
+  }, [sceneSnapshot]);
 
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">{isErlkonig ? '피아노 전주 분석하기' : '할렐루야 반주 흐름 분석하기'}</div><div className="s-desc">{isErlkonig ? '오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.' : '고음/저음 반주의 흐름을 각각 듣고 가락선으로 표현해보세요.'}<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
@@ -334,12 +351,16 @@ function PianoAnalysis({ go }) {
           <button
             type="button"
             className="answer-check-toggle"
-            onClick={() => { setShowCompare((v) => !v); setStageCompletion('piano', true); }}
+            onClick={() => {
+              setShowCompare((v) => !v);
+              setHasOpenedScoreCompare(true);
+              setStageCompletion('piano', true);
+            }}
             aria-expanded={showCompare}
-            disabled={!canOpenAnswer}
-            style={!canOpenAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            disabled={!canOpenScoreCompare}
+            style={!canOpenScoreCompare ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
           >
-            <span className="answer-check-toggle-label">{canOpenAnswer ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}</span>
+            <span className="answer-check-toggle-label">가락선 비교하기</span>
             <span className="answer-check-toggle-chevron" aria-hidden="true">
               {showCompare ? '▲' : '▼'}
             </span>
@@ -368,7 +389,7 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">{isErlkonig ? '오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표 -> 말발굽 소리를 묘사해요.' : '고음 반주: 밝은 화성과 반복 동기가 위쪽에서 반짝이며 울려요.'}</div>
+            <div className="fb show info">{isErlkonig ? '오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표.' : '고음 반주: 밝은 화성과 반복 동기가 위쪽에서 반짝이며 울려요.'}</div>
 
             <div className="sec">왼손 가락선 비교</div>
             <div className="cv-compare">
@@ -390,9 +411,20 @@ function PianoAnalysis({ go }) {
                 </div>
               </div>
             </div>
-            <div className="fb show info">{isErlkonig ? '왼손: 강하게 오르내리는 베이스 -> 심장이 두근거리는 긴박감을 표현해요.' : '저음 반주: 반복 베이스와 화성 진행이 바닥을 단단하게 받쳐 장엄함을 만들어요.'}</div>
+            <div className="fb show info">{isErlkonig ? '왼손: 강하게 오르내리는 베이스.' : '저음 반주: 반복 베이스와 화성 진행이 바닥을 단단하게 받쳐 장엄함을 만들어요.'}</div>
           </div>
         </div>
+
+        {canShowSceneFeedback ? (
+          <FormativeFeedbackBlock
+            key={`piano-scene-fb-${sceneFeedbackKey}`}
+            getFeedback={getSceneFeedback}
+          />
+        ) : canCheckAnswer ? (
+          <div className="small-note" style={{ marginTop: 8 }}>
+            가락선 비교하기를 먼저 열어 본 뒤, 장면 피드백을 받을 수 있어요.
+          </div>
+        ) : null}
 
         {canCheckAnswer ? (
           <ArtSongTakeaway

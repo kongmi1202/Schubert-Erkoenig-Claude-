@@ -1,4 +1,5 @@
 import { normalizeFormativeChoice } from './compareFeedback';
+import { gradePianoLhScene, gradePianoRhScene } from './pianoSceneAnswers';
 import { VOICE_DESIGN_FIELD_KEYS } from './voiceDesignAnswers';
 
 function verification(isCorrect, correctBody, wrongBody) {
@@ -232,6 +233,80 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
     summary: `「${name}」설계를 항목별로 점검했어요. 맞은 항목 ${matched.length}개 · 다시 볼 항목 ${missed.length}개`,
     sections,
     footer: '정답 보기는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
+  };
+}
+
+const PIANO_SCENE_HINTS = {
+  rh: {
+    hint: '오른손만 다시 들으며, 빠르고 촘촘하게 반복되는 리듬이 어떤 움직임을 떠올리게 하는지 비교해 보세요.',
+    example: '잔잔한 물결처럼 느리게 흔들리는지, 달리듯이 짧게 자주 뛰어가는지 손으로 박자를 쳐 보며 골라 보세요.'
+  },
+  lh: {
+    hint: '왼손만 다시 들으며, 낮고 강하게 반복되는 베이스가 어떤 박동·무게감을 주는지 비교해 보세요.',
+    example: '부드럽게 흐르는 느낌인지, 가슴이 뛰듯 짧게 쿵쿵 찍히는 느낌인지 손바닥으로 박을 맞춰 보며 골라 보세요.'
+  }
+};
+
+/**
+ * 마왕 2-C 피아노 반주 · 오른손/왼손 장면 선택 형성적 피드백 (정답 보기 미포함)
+ */
+export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
+  const rh = String(rhScene || '').trim();
+  const lh = String(lhScene || '').trim();
+  if (!rh || !lh) {
+    return { kind: 'plain', text: '오른손·왼손 장면을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
+  }
+
+  const rhOk = gradePianoRhScene(rh);
+  const lhOk = gradePianoLhScene(lh);
+  const allMatch = rhOk && lhOk;
+  const matchedCount = (rhOk ? 1 : 0) + (lhOk ? 1 : 0);
+
+  const sections = [
+    {
+      field: 'rh',
+      label: '오른손 장면',
+      focus: '빠른 반복 리듬 · 움직임',
+      tone: 'pitch',
+      status: rhOk ? 'ok' : 'miss',
+      studentPick: rh,
+      note: rhOk ? '오른손 장면 선택이 맞아요.' : `네가 고른 「${rh}」은 오른손 반주와 잘 맞지 않아요.`,
+      hint: rhOk ? '' : PIANO_SCENE_HINTS.rh.hint,
+      example: rhOk ? '' : PIANO_SCENE_HINTS.rh.example
+    },
+    {
+      field: 'lh',
+      label: '왼손 장면',
+      focus: '낮은 베이스 · 박동/무게',
+      tone: 'timbre',
+      status: lhOk ? 'ok' : 'miss',
+      studentPick: lh,
+      note: lhOk ? '왼손 장면 선택이 맞아요.' : `네가 고른 「${lh}」은 왼손 반주와 잘 맞지 않아요.`,
+      hint: lhOk ? '' : PIANO_SCENE_HINTS.lh.hint,
+      example: lhOk ? '' : PIANO_SCENE_HINTS.lh.example
+    }
+  ];
+
+  if (allMatch) {
+    return {
+      kind: 'voice-sections',
+      isCorrect: true,
+      verification: '검증: ✓',
+      character: 'piano-scene',
+      summary: '오른손·왼손 장면이 모두 맞아요.',
+      sections,
+      footer: '각 손 반주를 다시 들으며, 고른 장면이 소리의 리듬·무게와 어떻게 연결되는지 확인해 보세요.'
+    };
+  }
+
+  return {
+    kind: 'voice-sections',
+    isCorrect: false,
+    verification: '검증: ✗',
+    character: 'piano-scene',
+    summary: `장면 선택을 손별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
+    sections,
+    footer: '정답 장면 이름은 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
   };
 }
 
