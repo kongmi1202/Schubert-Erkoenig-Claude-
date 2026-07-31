@@ -4,8 +4,10 @@ import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
 import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
 import {
   createEmptyMawangVoiceDesign,
+  getMawangMelodyOptions,
   isVoiceDesignRowFilled,
   MAWANG_VOICE_ANSWER_KEY,
+  normalizeMawangVoiceDesign,
   VOICE_DESIGN_FIELD_KEYS
 } from '../../lib/voiceDesignAnswers';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
@@ -48,18 +50,7 @@ const chars = [
 ];
 const VOICE_CHAR_NAMES = ['해설자', '아버지', '아들', '마왕'];
 
-const VOICE_DESIGN_CATEGORIES = [
-  {
-    key: '음높이',
-    tone: 'pitch',
-    cols: 3,
-    tip: '목소리가 어느 음역에서 울리는지를 말해요. 저음역·중음역·고음역으로 나눠요.',
-    options: [
-      { value: '낮음', pitchLevel: 'low', hint: '저음역' },
-      { value: '중간', pitchLevel: 'mid', hint: '중음역' },
-      { value: '높음', pitchLevel: 'high', hint: '고음역' }
-    ]
-  },
+const VOICE_SCALE_TIMBRE_CATEGORIES = [
   {
     key: '음계',
     tone: 'scale',
@@ -82,35 +73,119 @@ const VOICE_DESIGN_CATEGORIES = [
   }
 ];
 
-function PitchRegisterIcon({ level }) {
-  return (
-    <span className={`vd-pitch-icon vd-pitch-icon--${level}`} aria-hidden="true">
-      <span className="vd-pitch-line" />
-    </span>
-  );
+function MelodyShapeIcon({ type }) {
+  const common = {
+    viewBox: '0 0 64 40',
+    className: 'vd-melody-svg',
+    role: 'img',
+    'aria-hidden': true
+  };
+  switch (type) {
+    case 'narrate':
+      // 잔잔히 이어지는 이야기 선
+      return (
+        <svg {...common}>
+          <path d="M6 28 C16 28, 18 14, 28 14 S40 28, 50 22 S58 18, 60 18" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="14" cy="26" r="2.5" fill="currentColor" />
+          <circle cx="28" cy="14" r="2.5" fill="currentColor" />
+          <circle cx="50" cy="22" r="2.5" fill="currentColor" />
+        </svg>
+      );
+    case 'stuck':
+      // 같은 높이에서 반복
+      return (
+        <svg {...common}>
+          <path d="M8 20 H56" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="2 4" opacity=".45" />
+          <circle cx="14" cy="20" r="3.2" fill="currentColor" />
+          <circle cx="28" cy="20" r="3.2" fill="currentColor" />
+          <circle cx="42" cy="20" r="3.2" fill="currentColor" />
+          <circle cx="56" cy="20" r="3.2" fill="currentColor" />
+        </svg>
+      );
+    case 'ornate':
+      // 화려하게 꾸며진 곡선
+      return (
+        <svg {...common}>
+          <path d="M6 30 C14 30, 16 8, 26 10 S34 34, 42 18 S52 6, 60 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <path d="M24 8 l2.5 5 5.5.4-4.2 3.6 1.4 5.4-4.7-2.8-4.7 2.8 1.4-5.4-4.2-3.6 5.5-.4z" fill="currentColor" opacity=".9" />
+          <path d="M48 6 l1.8 3.6 4 .3-3 2.6 1 3.8-3.4-2-3.4 2 1-3.8-3-2.6 4-.3z" fill="currentColor" opacity=".75" />
+        </svg>
+      );
+    case 'softLow':
+      // 낮고 부드러운 곡선
+      return (
+        <svg {...common}>
+          <path d="M6 16 C18 16, 22 30, 34 30 S48 24, 60 26" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" />
+          <circle cx="12" cy="16" r="2.4" fill="currentColor" />
+          <circle cx="34" cy="30" r="2.8" fill="currentColor" />
+          <circle cx="56" cy="26" r="2.4" fill="currentColor" />
+        </svg>
+      );
+    case 'sharpHigh':
+      // 높게 치솟는 날카로운 선
+      return (
+        <svg {...common}>
+          <path d="M6 30 L22 28 L32 6 L42 28 L58 26" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="32" cy="6" r="3" fill="currentColor" />
+        </svg>
+      );
+    case 'bounce':
+      // 가볍게 뛰어오르는 음형
+      return (
+        <svg {...common}>
+          <path d="M8 30 Q16 30 18 18 Q20 8 28 18 Q34 28 40 14 Q46 4 52 16 Q56 24 60 22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="18" cy="18" r="2.4" fill="currentColor" />
+          <circle cx="40" cy="14" r="2.4" fill="currentColor" />
+          <circle cx="52" cy="16" r="2.4" fill="currentColor" />
+        </svg>
+      );
+    case 'heavyLow':
+      // 낮고 묵직한 덩어리
+      return (
+        <svg {...common}>
+          <rect x="8" y="24" width="48" height="8" rx="3" fill="currentColor" opacity=".35" />
+          <path d="M10 22 H54" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="18" cy="22" r="3.4" fill="currentColor" />
+          <circle cx="32" cy="22" r="3.4" fill="currentColor" />
+          <circle cx="46" cy="22" r="3.4" fill="currentColor" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <path d="M10 28 C22 28 24 12 36 12 S50 28 58 22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      );
+  }
 }
 
 function VoiceDesignOptionIcon({ option }) {
-  if (option.pitchLevel) return <PitchRegisterIcon level={option.pitchLevel} />;
+  if (option.melodyIcon) {
+    return (
+      <span className="vd-melody-icon" aria-hidden="true">
+        <MelodyShapeIcon type={option.melodyIcon} />
+      </span>
+    );
+  }
   return (
     <span className="vd-opt-icon" aria-hidden="true">
-      {option.icon}
+      {option.icon || '♪'}
     </span>
   );
 }
 
 const answerKey = MAWANG_VOICE_ANSWER_KEY;
 
-/** 정답 확인 패널 하단 모범 해설 (스크린샷 스타일 안내) */
+/** 정답 확인 패널 하단 모범 해설 */
 const voiceCompareCommentary = {
   해설자:
-    '해설자는 밤길 상황을 듣는 이에게 차분히 전달하는 역할이에요. 단조의 어두운 음계와 중간 높이·두꺼운 음색으로 이야기의 무게를 실어 줍니다.',
+    '해설자는 밤길 상황을 듣는 이에게 담담히 전달하는 역할이에요. 장면을 전하는 선율과 단조의 어두운 음계, 두꺼운 음색이 이야기의 무게를 실어 줍니다.',
   아버지:
-    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮은 음높이와 두꺼운 음색이 어른의 단단함을, 단조가 밤길의 압박을 함께 드러냅니다.',
+    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮고 부드러운 선율과 두꺼운 음색이 어른의 단단함을, 장조의 밝고 안정된 느낌이 안심을 함께 드러냅니다.',
   아들:
-    '아들은 두려움과 호소가 섞인 목소리로 들려요. 높은 음높이와 얇은 음색, 단조가 불안과 비극적 분위기를 표현합니다.',
+    '아들은 두려움과 호소가 섞인 목소리로 들려요. 한자리에 머무는 답답한 선율과 얇은 음색, 단조가 불안과 비극적 분위기를 표현합니다.',
   마왕:
-    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 장조의 대비되는 밝음과 얇은 음색이 부드럽고 가벼운 유혹처럼 들리게 설계된 모범안입니다.'
+    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 달콤하고 화려한 선율과 장조의 밝음, 얇은 음색이 부드럽고 가벼운 유혹처럼 들리게 설계된 모범안입니다.'
 };
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
@@ -121,7 +196,9 @@ function VoiceDesign({ go }) {
   const voiceDesignState = useAppStore((s) => s.voiceDesignState);
   const setVoiceDesignState = useAppStore((s) => s.setVoiceDesignState);
   const [selectedChars, setSelectedChars] = useState(() => voiceDesignState?.selectedChars || ['해설자', '아버지']);
-  const [voiceDesign, setVoiceDesign] = useState(() => voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign());
+  const [voiceDesign, setVoiceDesign] = useState(() =>
+    normalizeMawangVoiceDesign(voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign())
+  );
   const [showCompare, setShowCompare] = useState(false);
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
   /** { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } | null */
@@ -129,6 +206,27 @@ function VoiceDesign({ go }) {
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
+  const melodyOptions = useMemo(
+    () => getMawangMelodyOptions(selectedCharacter),
+    [selectedCharacter]
+  );
+  const designCategories = useMemo(
+    () => [
+      {
+        key: '선율',
+        tone: 'pitch',
+        cols: 3,
+        tip: '선율은 “노래처럼 이어지는 음의 흐름”이에요. 음이 위로 올라갔다 내려오기도 하고, 같은 자리에서 맴돌기도 해요. 여기에서는 그 흐름이 담담한지·부드러운지·답답한지·화려한지처럼 어떤 느낌으로 들리는지 골라 보세요.',
+        options: melodyOptions.map((opt) => ({
+          value: opt.value,
+          melodyIcon: opt.icon,
+          hint: opt.hint
+        }))
+      },
+      ...VOICE_SCALE_TIMBRE_CATEGORIES
+    ],
+    [melodyOptions]
+  );
 
   const toggleChar = (name) => {
     setSelectedChars((prev) => {
@@ -216,7 +314,7 @@ function VoiceDesign({ go }) {
   }, [selectedChars, voiceDesign, setVoiceDesignState]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물 2명을 골라 해당 인물이 등장하는 부분을 들으며 음높이·음계·음색을 설계해 보세요.' : <>성부를 골라 들으며 음높이·음계·음색을 설계해 보세요.<br /><strong>서로 다른 두 대상</strong>에 대해 세 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)</>}<br />음악 요소: <strong>음색</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-B · 분석적 감상 — 음색</div><div className="s-title">{isErlkonig ? '인물의 목소리를 설계해보세요' : '할렐루야 성부의 음색을 설계해보세요'}</div><div className="s-desc">{isErlkonig ? '등장인물 2명을 골라 해당 인물이 등장하는 부분을 들으며 선율·음계·음색을 설계해 보세요.' : <>성부를 골라 들으며 음높이·음계·음색을 설계해 보세요.<br /><strong>서로 다른 두 대상</strong>에 대해 세 항목을 모두 고르면 다음 단계로 갈 수 있어요. (상단에서 어떤 두 명이 강조돼 있든 상관없어요.)</>}<br />음악 요소: <strong>음색</strong></div></div>
       <div className="body voice-body">
         <div className="sec">{isErlkonig ? '등장인물 선택 · 설계할 인물로 전환' : '성부 선택 · 설계할 대상 전환'}</div>
         <div className="char-tabs">
@@ -268,7 +366,7 @@ function VoiceDesign({ go }) {
             </div>
           </div>
 
-          {VOICE_DESIGN_CATEGORIES.map((category) => (
+          {designCategories.map((category) => (
             <div key={category.key} className="vd-item">
               <div className="vd-label">
                 {category.key}
@@ -282,7 +380,7 @@ function VoiceDesign({ go }) {
                   <button
                     key={option.value}
                     type="button"
-                    className={`vd-opt vd-opt--${category.tone} ${isSel(category.key, option.value) ? 'sel' : ''}`}
+                    className={`vd-opt vd-opt--${category.tone} ${category.key === '선율' ? 'vd-opt--melody' : ''} ${isSel(category.key, option.value) ? 'sel' : ''}`}
                     onClick={() => selectDesign(category.key, option.value)}
                   >
                     <VoiceDesignOptionIcon option={option} />
@@ -372,7 +470,7 @@ function VoiceDesign({ go }) {
           <ArtSongTakeaway
             eyebrow={isErlkonig ? '예술가곡의 첫 번째 특징' : '할렐루야 감상의 핵심'}
             title={isErlkonig ? '시와 음악이 하나가 된다' : '성부의 겹침이 감정을 키운다'}
-            description={isErlkonig ? '괴테의 시 속 각 인물의 성격과 감정이 음높이·음색·음계로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요.' : '할렐루야는 성부가 겹칠수록 울림이 커지고, 같은 후렴도 다르게 들려요. 성부별 음색과 움직임을 비교해 들으면 곡의 감정 구조가 선명해집니다.'}
+            description={isErlkonig ? '괴테의 시 속 각 인물의 성격과 감정이 선율·음색·음계로 그대로 표현됩니다. 시의 내용을 음악이 직접 표현하는 것이 예술가곡의 핵심이에요.' : '할렐루야는 성부가 겹칠수록 울림이 커지고, 같은 후렴도 다르게 들려요. 성부별 음색과 움직임을 비교해 들으면 곡의 감정 구조가 선명해집니다.'}
           />
         ) : null}
 

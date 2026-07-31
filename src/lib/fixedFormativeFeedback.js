@@ -1,6 +1,6 @@
 import { normalizeFormativeChoice } from './compareFeedback';
 import { gradePianoLhScene, gradePianoRhScene } from './pianoSceneAnswers';
-import { VOICE_DESIGN_FIELD_KEYS } from './voiceDesignAnswers';
+import { VOICE_DESIGN_FIELD_KEYS, normalizeVoiceDesignRow } from './voiceDesignAnswers';
 
 function verification(isCorrect, correctBody, wrongBody) {
   return isCorrect ? `검증: ✓\n${correctBody}` : `검증: ✗\n${wrongBody}`;
@@ -84,9 +84,9 @@ export function getTonePaintingFixedFeedback({ segmentTitle, selectedIndex, corr
 /** 정답 보기 값을 쓰지 않고, 인물·요소별 듣기 초점·예시만 안내 */
 const VOICE_FIELD_LISTEN_HINTS = {
   해설자: {
-    음높이: {
-      hint: '밤길 상황을 전하는 구간에서, 목소리가 바닥처럼 아주 낮은지·머리 위에서 울리듯 높은지·그 사이인지 비교해 보세요.',
-      example: '같은 가사를 낮은/중간/높은 목소리로 상상한 뒤, 영상 속 소리와 더 가까운 쪽을 골라 보세요.'
+    선율: {
+      hint: '이야기를 전하는 구간에서, 선율이 장면을 차분히 설명해 주는지·한곳에 맴도는지·화려하게 꾸며지는지 비교해 보세요.',
+      example: '뉴스처럼 담담히 전하는 선율과, 유혹하듯 화려한 선율 중 영상에 가까운 쪽을 골라 보세요.'
     },
     음계: {
       hint: '이 구간의 기분부터 짚어 보세요. 밝고 경쾌한지, 아니면 어둡고 진지한지 귀로만 비교해 보세요.',
@@ -98,9 +98,9 @@ const VOICE_FIELD_LISTEN_HINTS = {
     }
   },
   아버지: {
-    음높이: {
-      hint: '아들을 달래는 구간에서, 어른 목소리처럼 낮은지·중간인지·아이처럼 높은지 비교해 보세요.',
-      example: '“진정해라”를 낮은 목소리와 높은 목소리로 말해 본 뒤, 영상과 더 비슷한 쪽을 골라 보세요.'
+    선율: {
+      hint: '달래는 구간에서, 선율이 낮고 부드럽게 감싸는지·높고 날카로운지·화려하게 꾸며지는지 들어 보세요.',
+      example: '아이를 진정시키는 부드러운 선율과, 날카롭게 튀는 선율 중 영상에 가까운 쪽을 골라 보세요.'
     },
     음계: {
       hint: '달래는 말이어도 곡 분위기는 어떤가요? 밝고 가벼운지, 어둡고 무거운지 들어 보세요.',
@@ -112,9 +112,9 @@ const VOICE_FIELD_LISTEN_HINTS = {
     }
   },
   아들: {
-    음높이: {
-      hint: '호소하는 구간에서, 목소리가 낮게 깔리는지·중간인지·높게 솟는지 들어 보세요.',
-      example: '“아버지, 아버지”가 낮은 톤인지 높은 톤인지, 영상만 듣고 손가락으로 높낮이를 그려 보세요.'
+    선율: {
+      hint: '호소하는 구간에서, 선율이 같은 자리에서 답답하게 반복되는지·낮게 부드럽게 흐르는지·밝게 뛰어오르는지 들어 보세요.',
+      example: '손이 한 음 근처에서 맴도는지, 위아래로 크게 움직이는지 영상만 듣고 비교해 보세요.'
     },
     음계: {
       hint: '두려움·호소가 섞인 구간이 밝고 가벼운지, 어둡고 불안한지 비교해 보세요.',
@@ -126,9 +126,9 @@ const VOICE_FIELD_LISTEN_HINTS = {
     }
   },
   마왕: {
-    음높이: {
-      hint: '유혹하는 구간에서, 목소리가 아주 낮은지·중간인지·아주 높은지 비교해 보세요.',
-      example: '“나와 가자”를 세 높이로 속삭여 본 뒤, 영상 속 높이와 가장 가까운 쪽을 골라 보세요.'
+    선율: {
+      hint: '유혹하는 구간에서, 선율이 달콤하고 화려하게 꾸며지는지·낮고 무거운지·한자리에 머무는지 비교해 보세요.',
+      example: '속삭이듯 꾸며진 선율과, 묵직하게만 내려가는 선율 중 영상에 가까운 쪽을 골라 보세요.'
     },
     음계: {
       hint: '달콤한 유혹처럼 들리는데, 분위기는 밝은 쪽인지 어두운 쪽인지 들어 보세요.',
@@ -142,7 +142,7 @@ const VOICE_FIELD_LISTEN_HINTS = {
 };
 
 const VOICE_FIELD_META = {
-  음높이: { label: '음높이', focus: '소리의 높낮이', tone: 'pitch' },
+  선율: { label: '선율', focus: '선율의 움직임·성격', tone: 'pitch' },
   음계: { label: '음계', focus: '밝고 어두운 기분', tone: 'scale' },
   음색: { label: '음색', focus: '목소리 굵기', tone: 'timbre' }
 };
@@ -171,11 +171,11 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
   if (!name) {
     return { kind: 'plain', text: '인물을 선택하고 세 항목을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
   }
-  const row = voiceDesign?.[name] || {};
+  const row = normalizeVoiceDesignRow(voiceDesign?.[name]);
   const answer = answerKey?.[name] || {};
   const filled = keys.every((k) => row[k]);
   if (!filled) {
-    return { kind: 'plain', text: '음높이·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
+    return { kind: 'plain', text: '선율·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
   }
 
   const matched = keys.filter((k) => row[k] === answer[k]);
@@ -183,7 +183,7 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
   const allMatch = missed.length === 0;
 
   const sections = keys.map((field) => {
-    const meta = VOICE_FIELD_META[field];
+    const meta = VOICE_FIELD_META[field] || { label: field, focus: '', tone: 'pitch' };
     const ok = row[field] === answer[field];
     const studentPick = row[field] || '미선택';
     if (ok) {
@@ -219,7 +219,7 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
       isCorrect: true,
       verification: '검증: ✓',
       character: name,
-      summary: `「${name}」음높이·음계·음색이 모두 맞아요.`,
+      summary: `「${name}」선율·음계·음색이 모두 맞아요.`,
       sections,
       footer: '영상을 한 번 더 들으며 세 가지가 어떻게 함께 들리는지 확인해 보세요.'
     };

@@ -3,8 +3,6 @@ import {
   evaluateMawangOverviewQ1,
   evaluateMawangOverviewQ2,
   MAWANG_Q1_ROLE_ALIASES,
-  MAWANG_Q2_KEYWORD_GROUPS,
-  OVERVIEW_REFERENCE_ANSWERS,
   resolveMawangCharacterRole
 } from './overviewGrading';
 import { VOICE_DESIGN_FIELD_KEYS } from './voiceDesignAnswers';
@@ -228,85 +226,234 @@ function userCharacterNameSet(userCharacterSlots, userCharsText) {
   return new Set(normalizeList(userCharsText || ''));
 }
 
-function buildMawangOverviewFallbackBody(userCharacterSlots, userStory) {
-  const q1 = evaluateMawangOverviewQ1(userCharacterSlots);
-  const q2 = evaluateMawangOverviewQ2(userStory);
-  const q1Lines = [];
+/** Q1 빠진 역할 → 정답 이름 없이 듣기·역할 힌트만 */
+const MAWANG_Q1_MISSING_HINTS = {
+  해설자:
+    '이야기를 밖에서 전하는 목소리(상황을 설명해 주는 역할)가 칸에 있는지, 영상을 다시 들으며 확인해 보세요.',
+  아버지:
+    '아이를 달래거나 안고 가는 어른 인물이 빠지지 않았는지, 대화가 오가는 장면을 다시 들어 보세요.',
+  아들:
+    '두려워하며 호소하는 아이 인물이 들어갔는지, 높은 목소리로 부르는 구간을 다시 짚어 보세요.',
+  마왕:
+    '달콤하게 설득하거나 유혹하는 신비한 인물이 빠지지 않았는지, 분위기 다른 구간을 비교해 들어 보세요.'
+};
+
+/** Q2 빠진 축 → 정답 키워드·모범 문장 없이 서사 힌트만 */
+const MAWANG_Q2_MISSING_HINTS = {
+  father:
+    '누가 아이를 데리고 가는지(보호하는 어른)가 줄거리에 드러나는지 확인해 보세요.',
+  son:
+    '두려워하거나 호소하는 아이 인물이 줄거리에 드러나는지 확인해 보세요.',
+  erlkonig:
+    '아이와 어른 말고, 유혹하거나 말을 거는 또 다른 존재가 이야기에 있는지 생각해 보세요.',
+  death:
+    '이야기가 어떻게 끝나는지(결말)가 한 문장으로라도 드러나는지 점검해 보세요.'
+};
+
+function buildMawangQ1Body(q1, userCharacterSlots = []) {
+  const slots = (userCharacterSlots || []).map((c) => String(c || '').trim()).filter(Boolean);
+  const nonAttempt = slots.filter((s) => /^(모름|몰라|모르겠|잘\s*모르|글쎄|없음|모름입니다|\.+)$/i.test(s.replace(/\s/g, '')));
+
   if (q1.isCorrect) {
-    q1Lines.push('Q1 등장인물 네 역할을 모두 잘 짚었어요. (아이·아빠·내레이션 표현도 같은 답이에요.)');
-  } else {
-    if (q1.duplicateRole) {
-      q1Lines.push('Q1 같은 역할이 두 번 들어간 칸이 있는지 확인해 보세요. 네 역할이 각각 한 번씩 필요해요.');
-    }
-    if (q1.unknownSlots.length) {
-      q1Lines.push('Q1 인물 이름을 다시 확인해 보세요. 해설자(내레이션), 아버지(아빠), 아들(아이), 마왕 네 가지가 필요해요.');
-    }
-    if (q1.missingRoles.length) {
-      q1Lines.push(`Q1 아직 빠진 역할이 있어요: ${q1.missingRoles.join(', ')}`);
-    }
+    return '등장인물 네 역할을 모두 잘 짚었어요. 예술가곡에서는 시의 인물마다 목소리·역할이 나뉘어 이야기의 분위기를 만듭니다.';
   }
-  const q2Lines = [];
-  if (q2.isCorrect) {
-    q2Lines.push('Q2 줄거리에 아버지·아들·마왕·결말(죽음) 네 가지 핵심이 들어 있어요.');
-  } else if (!(userStory || '').trim()) {
-    q2Lines.push('Q2 줄거리를 처음-중간-끝 순서로 한두 문장 이상 써 보세요.');
-  } else if (q2.missingGroups.length) {
-    q2Lines.push(`Q2 줄거리에 더 넣으면 좋은 핵심: ${q2.missingGroups.map((g) => g.label).join(', ')}`);
+
+  const parts = [];
+  if (nonAttempt.length) {
+    parts.push(
+      `「${nonAttempt[0]}」처럼 비워 둔 칸이 있어요. 영상에서 들리는 네 목소리를 역할로 구분해 칸에 적어 보세요.`
+    );
+    parts.push(
+      '힌트: 이야기를 전하는 목소리 / 달래는 어른 / 호소하는 아이 / 유혹하는 존재처럼, 목소리의 역할부터 먼저 나눠 보세요.'
+    );
+    parts.push('다시 생각해보세요.');
+    return parts.join('\n');
   }
-  return [...q1Lines, ...q2Lines].filter(Boolean).join('\n\n');
+
+  parts.push('등장인물 칸을 다시 점검해 보세요.');
+  if (q1.duplicateRole) {
+    parts.push('같은 역할이 두 칸에 겹친 것 같아요. 네 칸에 서로 다른 역할이 하나씩 들어가는지 확인해 보세요.');
+  }
+  if (q1.unknownSlots.length) {
+    parts.push(
+      '적기 어려운 이름이 있다면, 영상에서 들리는 목소리의 역할(전하는 말 / 달래는 말 / 호소 / 유혹)로 먼저 구분해 보세요.'
+    );
+  }
+  if (q1.missingRoles.length) {
+    q1.missingRoles.forEach((role) => {
+      const hint = MAWANG_Q1_MISSING_HINTS[role];
+      if (hint) parts.push(hint);
+    });
+  } else if (!q1.duplicateRole && !q1.unknownSlots.length) {
+    parts.push(
+      '예: 영상만 들으며 “이야기를 전하는 목소리”와 “서로 대화하는 인물”을 손가락으로 세어 본 뒤 칸을 다시 채워 보세요.'
+    );
+  }
+  parts.push('다시 생각해보세요.');
+  return parts.join('\n');
 }
 
-function buildMawangOverviewShortInputFeedback(userStory) {
-  const raw = (userStory || '').trim();
-  return `Q2 입력이 너무 짧아서(현재: "${raw || '(없음)'}") 줄거리 피드백을 정확히 만들기 어려워요.
+function buildMawangQ2Body(q2, userStory) {
+  if (q2.isCorrect) {
+    return '줄거리에 핵심 흐름이 잘 드러나요. 예술가곡은 시의 처음·중간·끝 흐름이 음악의 긴장과 맞물립니다.';
+  }
+  if (!(userStory || '').trim()) {
+    return '줄거리를 처음(배경)·중간(사건·갈등)·끝(결말) 순서로 한두 문장 이상 써 보세요. 다시 들어보세요.';
+  }
+  if ((userStory || '').trim().length <= 2) {
+    return `입력이 너무 짧아요(현재: "${(userStory || '').trim()}"). 처음·중간·끝 순서로 한두 문장 이상, 영상에서 들은 흐름을 네 말로 적어 보세요. 다시 들어보세요.`;
+  }
+  const parts = ['줄거리를 조금 더 채워 보세요.'];
+  q2.missingGroups.forEach((g) => {
+    const hint = MAWANG_Q2_MISSING_HINTS[g.id];
+    if (hint) parts.push(hint);
+  });
+  parts.push(
+    '예: “언제·어디서 / 누가 무엇을 하는지 / 마지막에 어떻게 되는지” 세 칸으로 나눠 짧게 써 본 뒤 이어 붙여 보세요.'
+  );
+  parts.push('다시 들어보세요.');
+  return parts.join('\n');
+}
 
-처음-중간-끝 순서로, 아버지(아빠)·아들(아이)·마왕·결말이 들어가게 한두 문장 이상 써 보세요.`;
+function buildMawangOverviewStructuredFeedback(userCharacterSlots, userStory, q1Body, q2Body) {
+  const q1 = evaluateMawangOverviewQ1(userCharacterSlots);
+  const q2 = evaluateMawangOverviewQ2(userStory);
+  return {
+    kind: 'overview-sections',
+    isCorrect: q1.isCorrect && q2.isCorrect,
+    summary: '개요 파악 Q1·Q2를 각각 점검했어요.',
+    sections: [
+      {
+        id: 'q1',
+        label: 'Q1 등장인물',
+        focus: '역할 구분 · 시의 인물',
+        tone: 'pitch',
+        status: q1.isCorrect ? 'ok' : 'miss',
+        verification: q1.isCorrect ? '검증: ✓' : '검증: ✗',
+        body: q1Body || buildMawangQ1Body(q1, userCharacterSlots)
+      },
+      {
+        id: 'q2',
+        label: 'Q2 줄거리',
+        focus: '처음 · 중간 · 끝',
+        tone: 'scale',
+        status: q2.isCorrect ? 'ok' : 'miss',
+        verification: q2.isCorrect ? '검증: ✓' : '검증: ✗',
+        body: q2Body || buildMawangQ2Body(q2, userStory)
+      }
+    ],
+    footer: q1.isCorrect && q2.isCorrect
+      ? '정답 확인하기에서 모범 해설과 비교해 보세요.'
+      : '정답 이름·모범 문장은 알려 주지 않아요. 힌트만 보고 다시 고쳐 보세요.'
+  };
+}
+
+function parseMawangOverviewAiSections(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return { q1Body: '', q2Body: '', ok: false };
+
+  const stripVerification = (s) =>
+    String(s || '')
+      .replace(/^\s*검증\s*[:：]\s*[✓✗✔].*\n?/gm, '')
+      .replace(/===Q[12]===/gi, '')
+      .trim();
+
+  // split 기반 파싱(정규식 lookahead 오류로 Q2가 Q1에 섞이던 문제 방지)
+  const q1Token = raw.search(/===Q1===/i);
+  const q2Token = raw.search(/===Q2===/i);
+  if (q1Token < 0 || q2Token < 0 || q2Token <= q1Token) {
+    return { q1Body: '', q2Body: '', ok: false };
+  }
+
+  const q1Body = stripVerification(raw.slice(q1Token + '===Q1==='.length, q2Token));
+  const q2Body = stripVerification(raw.slice(q2Token + '===Q2==='.length));
+  if (!q1Body || !q2Body || /===Q/i.test(q1Body) || /===Q/i.test(q2Body)) {
+    return { q1Body: '', q2Body: '', ok: false };
+  }
+  return { q1Body, q2Body, ok: true };
 }
 
 /**
  * 마왕 개요 파악 Q1·Q2 — Kulhavy & Stock(1989) 검증·정교화 + Shute(2008) 형성적 피드백
+ * @returns {Promise<{ kind: 'overview-sections', sections: Array, ... }>}
  */
 export async function generateMawangOverviewFeedback({ userCharacterSlots, userStory }) {
-  const fallbackBody = buildMawangOverviewFallbackBody(userCharacterSlots, userStory);
-  const normalizedStory = (userStory || '').trim();
-  if (normalizedStory.length <= 2) {
-    return `${fallbackBody}\n\n${buildMawangOverviewShortInputFeedback(normalizedStory)}`;
-  }
-
   const q1 = evaluateMawangOverviewQ1(userCharacterSlots);
   const q2 = evaluateMawangOverviewQ2(userStory);
-  const overallCorrect = q1.isCorrect && q2.isCorrect;
+  const normalizedStory = (userStory || '').trim();
+  const q1Fallback = buildMawangQ1Body(q1, userCharacterSlots);
+  const q2Fallback = buildMawangQ2Body(q2, userStory);
+  const fallback = buildMawangOverviewStructuredFeedback(
+    userCharacterSlots,
+    userStory,
+    q1Fallback,
+    q2Fallback
+  );
+
+  // 모름 등 미시도·미인식 칸이 있으면 AI 본문보다 고정 힌트가 더 안전
+  const hasNonAttemptOrUnknown = q1.unknownSlots.length > 0
+    || (userCharacterSlots || []).some((c) =>
+      /^(모름|몰라|모르겠|잘\s*모르|글쎄|없음|\.+)$/i.test(String(c || '').trim().replace(/\s/g, ''))
+    );
+
+  if (normalizedStory.length <= 2 || hasNonAttemptOrUnknown) {
+    return fallback;
+  }
+
   const userCharsText = (userCharacterSlots || []).filter(Boolean).join(', ');
   const roleHints = Object.entries(MAWANG_Q1_ROLE_ALIASES)
     .map(([canonical, aliases]) => `${canonical}: ${aliases.join('/')}`)
     .join('; ');
-  const q2GroupHints = MAWANG_Q2_KEYWORD_GROUPS.map((g) => g.label).join(', ');
 
-  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 슈베르트 <마왕> 개요 파악 Q1(등장인물)과 Q2(줄거리)에 대한 형성적 피드백이다.
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. 슈베르트 <마왕> 개요 파악 피드백이다.
 
-Q1 허용 표현(동의어): ${roleHints}
-Q2 핵심 축(네 축 모두 들어가면 충분): ${q2GroupHints}
-· 줄거리는 문장 표현·순서가 달라도 됨. 위 네 축이 드러나면 정답으로 본다.
+출력 형식(반드시 이 두 블록만, 검증 줄·다른 블록 표기 금지):
+===Q1===
+(Q1 본문만 1~3문장. Q2 내용·===Q2=== 표기를 절대 넣지 말 것)
+===Q2===
+(Q2 본문만 1~3문장. Q1 내용·===Q1=== 표기를 절대 넣지 말 것)
 
-내부 참고(학생에게 그대로 밝히지 말 것):
-· Q1 정오: ${q1.isCorrect ? '네 역할 모두 포함' : `부족/중복 — 빠진 역할: ${q1.missingRoles.join(', ') || '없음'}`}
-· Q2 정오: ${q2.isCorrect ? '핵심 네 축 포함' : `부족 — 빠진 축: ${q2.missingGroups.map((g) => g.label).join(', ') || '없음'}`}
-· 종합 정오: ${overallCorrect ? 'Q1·Q2 모두 기준 충족' : '아직 보완 필요'}
+채점용 내부 참고(학생 출력 금지):
+· Q1 허용 동의어: ${roleHints}
+· Q1 정오: ${q1.isCorrect ? '맞음' : `틀림(중복=${q1.duplicateRole}, 미인식=${q1.unknownSlots.join('/') || '없음'})`}
+· Q2 정오: ${q2.isCorrect ? '맞음' : '틀림'}
+· 학생 Q1 해석: ${(userCharacterSlots || []).map((c) => `${c || '—'}→${resolveMawangCharacterRole(c) || '?'}`).join(', ')}
 
-규칙:
-· 첫 줄은 반드시 검증: ✓ 또는 검증: ✗ — Q1·Q2를 종합해 기준 충족 시 ✓.
-· 검증 ✓: Q1·Q2 각각 음악·서사 요소(등장인물, 줄거리, 분위기)를 이름으로 짚어 정교화(총 2~3문장). 모범 문장 복사 금지.
-· 검증 ✗: 정답 인물명·정답 줄거리 문장을 그대로 쓰지 말 것. 빠진 역할·줄거리 축을 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
-· 학생이 쓴 단어를 짧게 인용해도 좋다.
+[정답 유출 금지]
+· 정답 인물명·동의어(해설자/아버지/아들/마왕 등)를 본문에 쓰지 말 것.
+· “빠진 인물은 OOO”, 모범 줄거리 문구 추가 지시 금지.
+· 허용: 개념 설명, 듣기/쓰기 힌트, 절차 예시, 관련 개념(등장인물, 줄거리, 처음-중간-끝).
+· 학생이 이미 쓴 단어만 짧게 인용 가능.
+
+Q1이 맞으면 등장인물·역할 개념으로 짧게 정교화.
+Q1이 틀리면 역할 구분 듣기 힌트만(이름 금지). 끝은 "다시 생각해보세요."
+Q2가 맞으면 줄거리·분위기 개념으로 짧게 정교화.
+Q2가 틀리면 처음-중간-끝 점검 힌트만. 끝은 "다시 들어보세요."
 
 학생 Q1: ${userCharsText || '(없음)'}
-학생 Q1 역할 해석: ${(userCharacterSlots || []).map((c) => `${c || '—'}→${resolveMawangCharacterRole(c) || '?'}`).join(', ')}
+학생 Q2: ${normalizedStory || '(없음)'}`;
 
-학생 Q2 (줄거리): ${normalizedStory || '(없음)'}
-모범 Q2 참고(그대로 복사 금지): ${OVERVIEW_REFERENCE_ANSWERS.mawang.q2}`;
-
-  const text = await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallbackBody);
-  return syncFormativeAiVerificationLine(text, overallCorrect);
+  const aiText = await requestCompareFeedback(
+    wrapFormativePrompt(taskPrompt),
+    `===Q1===\n${q1Fallback}\n===Q2===\n${q2Fallback}`
+  );
+  const parsed = parseMawangOverviewAiSections(aiText);
+  const pickBody = (aiBody, isCorrect, fallbackBody) => {
+    const body = String(aiBody || '').trim();
+    if (!body || !parsed.ok) return fallbackBody;
+    if (/===Q/i.test(body)) return fallbackBody;
+    if (isCorrect && /빠졌|부족|다시 생각|검증\s*[:：]\s*✗/.test(body)) return fallbackBody;
+    if (!isCorrect && /(해설자|아버지|아들|마왕|내레이션|폭풍우 치는 밤)/.test(body)) {
+      return fallbackBody;
+    }
+    return body;
+  };
+  return buildMawangOverviewStructuredFeedback(
+    userCharacterSlots,
+    userStory,
+    pickBody(parsed.q1Body, q1.isCorrect, q1Fallback),
+    pickBody(parsed.q2Body, q2.isCorrect, q2Fallback)
+  );
 }
 
 function buildAnalyticalFallbackBody(userCharacterSlots, userCharsText, correctChars, userStory, q2Label = '줄거리 요약') {
@@ -413,14 +560,14 @@ export async function generateVoiceDesignCompareFeedback(selectedChars, voiceDes
   const allMatch = rows.length > 0 && rows.every((r) => r.학생 !== '—' && r.학생 === r.모범);
   const who = selectedChars.length > 1 ? '선택한 인물들' : `「${selectedChars[0] || ''}」`;
 
-  const taskPrompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 음높이·음계·음색 설계와 모범안이다. (대상: ${who})
+  const taskPrompt = `너는 음악 수업 선생님이야. 아래 표는 학생이 고른 인물의 선율·음계·음색 설계와 모범안이다. (대상: ${who})
 
 내부 참고: 세 칸 모두 학생 값이 모범과 같으면 ${allMatch ? 'true (검증 ✓)' : 'false (검증은 불일치 시 ✗)'}.
 
 규칙:
 · 첫 줄: 검증: ✓ (세 요소 모두 모범과 일치) 또는 검증: ✗ (하나라도 다름 또는 미선택).
-· 검증 ✓: 음높이·음계·음색 중 무엇이 어떤 음악적 역할과 맞닿는지 2~3문장으로 정교화. 개인 칭찬 문장 금지.
-· 검증 ✗: 모범 칸의 정확한 단어(예: "높음", "단조")를 쓰지 말 것. 어느 요소를 어떤 소리 특징으로 다시 들을지 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
+· 검증 ✓: 선율·음계·음색 중 무엇이 어떤 음악적 역할과 맞닿는지 2~3문장으로 정교화. 개인 칭찬 문장 금지.
+· 검증 ✗: 모범 칸의 정확한 단어(예: "낮고 부드러운 선율", "단조")를 쓰지 말 것. 어느 요소를 어떤 소리 특징으로 다시 들을지 힌트만. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."
 
 데이터(JSON): ${JSON.stringify(rows)}`;
 

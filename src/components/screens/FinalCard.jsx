@@ -729,7 +729,7 @@ function FinalCard({ go }) {
                 <div className="fb show info">
                   2-B 음색 설계: {['해설자', '아버지', '아들', '마왕'].filter((n) => step2Flags[`voice${n}`]).join(', ')} 응답 완료
                 </div>
-                <div className="fb show gold">정답: 인물별 음높이·음계·음색 비교표 참고</div>
+                <div className="fb show gold">정답: 인물별 선율·음계·음색 비교표 참고</div>
               </div>
               ) : null}
               {(step2Flags.pianoRhScene || step2Flags.pianoLhScene) ? (

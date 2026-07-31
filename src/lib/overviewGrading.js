@@ -19,7 +19,7 @@ export const MAWANG_Q1_CHARACTERS = ['해설자', '아버지', '아들', '마왕
 
 /** Q1 — 표준 이름 + 허용 동의어(칸마다 하나씩, 네 역할 모두 있어야 함) */
 export const MAWANG_Q1_ROLE_ALIASES = {
-  해설자: ['해설자', '내레이션', '나레이션'],
+  해설자: ['해설자', '해설', '내레이션', '나레이션', '내레이터'],
   아버지: ['아버지', '아빠'],
   아들: ['아들', '아이'],
   마왕: ['마왕']
@@ -47,7 +47,9 @@ export function resolveMawangCharacterRole(name) {
   for (const [canonical, aliases] of Object.entries(MAWANG_Q1_ROLE_ALIASES)) {
     if (aliases.some((alias) => {
       const a = normalizeOverviewText(alias);
-      return n === a || n.includes(a);
+      if (!a) return false;
+      // 완전 일치, 별칭 포함("해설자님"), 짧은 허용형("해설"→해설자)
+      return n === a || n.includes(a) || (n.length >= 2 && a.startsWith(n));
     })) {
       return canonical;
     }
