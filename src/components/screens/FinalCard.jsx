@@ -60,15 +60,55 @@ function arraysEqualAsSet(actual, expected) {
   return hasAllItems(actual, expected);
 }
 
-function scoreFromAccuracy(correctCount, totalCount) {
-  if (!totalCount) return 0;
+/**
+ * 전체 필수 문항을 모수(100%)로 둔다.
+ * 미응답·오답은 모두 오답. 모든 문항에 응답했고 정답률 90%↑이면 상,
+ * 60~89% 중, 60% 미만 하. (미응답이 하나라도 있으면 상 불가)
+ */
+function gradeFromFullSetAccuracy(correctCount, totalCount, answeredCount) {
+  if (!totalCount) return '하';
   const ratio = (correctCount / totalCount) * 100;
-  if (ratio >= 80) return 5;
-  if (ratio >= 60) return 4;
-  if (ratio >= 40) return 3;
-  if (ratio >= 20) return 2;
-  if (ratio > 0) return 1;
-  return 0;
+  const allAnswered = answeredCount >= totalCount;
+  if (allAnswered && ratio >= 90) return '상';
+  if (ratio >= 60) return '중';
+  return '하';
+}
+
+function summarizeChecks(checks) {
+  const total = checks.length;
+  const answered = checks.filter((c) => c.answered).length;
+  const correct = checks.filter((c) => c.correct).length;
+  return {
+    total,
+    answered,
+    correct,
+    grade: gradeFromFullSetAccuracy(correct, total, answered)
+  };
+}
+
+/** answered + isCorrect(객관) / 서술형은 answered면 정답 처리 */
+function pushCheck(checks, answered, isCorrect = answered) {
+  const didAnswer = Boolean(answered);
+  checks.push({
+    answered: didAnswer,
+    correct: didAnswer && Boolean(isCorrect)
+  });
+}
+
+function isSensoryActivityDone(activity, artifacts, t) {
+  if (activity === '체육') return Boolean(artifacts?.pePhoto) && t(artifacts?.peAnswer).length > 0;
+  if (activity === '과학') return Boolean(artifacts?.scienceSelected?.length) && t(artifacts?.scienceAnswer).length > 0;
+  if (activity === '사회') return Boolean(artifacts?.mapAddress) && t(artifacts?.mapAnswer).length > 0;
+  if (activity === '수학') return Boolean(artifacts?.mathDrawing) && t(artifacts?.mathAnswer).length > 0;
+  return false;
+}
+
+function resolveMawangVoiceTargets(voiceDesignState, step2Flags) {
+  const selected = (voiceDesignState?.selectedChars || []).filter(Boolean);
+  if (selected.length >= 2) return selected.slice(0, 2);
+  const filled = ['해설자', '아버지', '아들', '마왕'].filter((name) => step2Flags[`voice${name}`]);
+  const pool = [...new Set([...selected, ...filled, '해설자', '아버지', '아들', '마왕'])];
+  return pool.slice(0, 2);
 }
 
 function FinalCard({ go }) {
@@ -177,24 +217,23 @@ function FinalCard({ go }) {
   );
   const evaluation = useMemo(() => {
     const t = (v) => (v || '').trim();
-    const activityAnswers = [sensoryArtifacts?.peAnswer, sensoryArtifacts?.scienceAnswer, sensoryArtifacts?.mapAnswer, sensoryArtifacts?.mathAnswer]
-      .filter((v) => t(v).length > 0).length;
-    const activityArtifacts = [sensoryArtifacts?.pePhoto, sensoryArtifacts?.mathDrawing, sensoryArtifacts?.mapAddress]
-      .filter(Boolean).length + (sensoryArtifacts?.scienceSelected?.length ? 1 : 0);
 
     const analyticalQ1 = isHandel ? handelLyricMeaning : analyticalCharacters.filter((c) => t(c).length > 0).join(', ');
     const analyticalQ2 = isHandel ? handelOperaDiff : analyticalStory;
+    const selectedActivities = sensoryArtifacts?.selectedActivities || [];
 
     const hasAnyInput = (
       selectedKeywords.length > 0
       || selectedColors.length > 0
       || t(sensoryDesc).length > 0
-      || activityAnswers > 0
+      || selectedActivities.length > 0
       || t(analyticalQ1).length > 0
       || t(analyticalQ2).length > 0
+      || hasAnyStep2Response(selectedSong, step2State)
       || t(q1).length > 0
       || t(q2).length > 0
       || t(q3).length > 0
+      || Boolean(q2Type)
     );
 
     if (!hasAnyInput) {
@@ -205,16 +244,20 @@ function FinalCard({ go }) {
       };
     }
 
-    const stage1Score = Math.min(5,
-      (selectedKeywords.length > 0 ? 1 : 0)
-      + (selectedColors.length >= 2 ? 1 : 0)
-      + (t(sensoryDesc).length >= 30 ? 2 : t(sensoryDesc).length > 0 ? 1 : 0)
-      + (activityAnswers > 0 ? 1 : 0)
-    );
+    // —— 1단계: 필수 문항 전부 모수 (미응답=오답, 서술형은 응답=정답) ——
+    const stage1Checks = [];
+    pushCheck(stage1Checks, selectedKeywords.length > 0);
+    pushCheck(stage1Checks, selectedColors.length >= 2);
+    pushCheck(stage1Checks, t(sensoryDesc).length > 0);
+    for (let i = 0; i < 2; i += 1) {
+      const activity = selectedActivities[i];
+      pushCheck(stage1Checks, Boolean(activity) && isSensoryActivityDone(activity, sensoryArtifacts, t));
+    }
+    const stage1Summary = summarizeChecks(stage1Checks);
+    const gradeStage1 = stage1Summary.grade;
 
-    const checks = [];
-    const addCheck = (isCorrect) => checks.push(Boolean(isCorrect));
-
+    // —— 2단계: 곡별 필수 문항 전부 모수 (미응답·오답=오답) ——
+    const stage2Checks = [];
     const overviewState = {
       analyticalCharacters,
       analyticalStory,
@@ -223,97 +266,94 @@ function FinalCard({ go }) {
     };
 
     if (isHandel) {
-      addCheck(gradeOverviewQ1('handel', overviewState));
-      addCheck(gradeOverviewQ2('handel', overviewState));
-      addCheck((tonePaintingHandelState?.selected?.s1 ?? null) === 0);
-      addCheck((tonePaintingHandelState?.selected?.s2 ?? null) === 1);
-      addCheck((tonePaintingHandelState?.selected?.s3 ?? null) === 2);
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('handel', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('handel', overviewState));
+      pushCheck(stage2Checks, step2Flags.toneS1, (tonePaintingHandelState?.selected?.s1 ?? null) === 0);
+      pushCheck(stage2Checks, step2Flags.toneS2, (tonePaintingHandelState?.selected?.s2 ?? null) === 1);
+      pushCheck(stage2Checks, step2Flags.toneS3, (tonePaintingHandelState?.selected?.s3 ?? null) === 2);
+      pushCheck(stage2Checks, step2Flags.melodyHarmony);
+      pushCheck(stage2Checks, step2Flags.melodyPoly);
     } else if (isHaydn) {
-      addCheck(gradeOverviewQ1('haydn', overviewState));
-      addCheck(gradeOverviewQ2('haydn', overviewState));
-      addCheck(hyTimbreState?.selectedByGrid?.['ig-1'] === hyTimbreCorrectInstr['ig-1'] && hyTimbreState?.roleByGrid?.['ig-1'] === hyTimbreCorrectRole['ig-1']);
-      addCheck(hyTimbreState?.selectedByGrid?.['ig-2'] === hyTimbreCorrectInstr['ig-2'] && hyTimbreState?.roleByGrid?.['ig-2'] === hyTimbreCorrectRole['ig-2']);
-      addCheck(hyTimbreState?.selectedByGrid?.['ig-3'] === hyTimbreCorrectInstr['ig-3'] && hyTimbreState?.roleByGrid?.['ig-3'] === hyTimbreCorrectRole['ig-3']);
-      addCheck(arraysEqualAsSet(hyThemeState?.matchPlaced?.theme1 || [], ['o1', 'o3', 'o5']));
-      addCheck(arraysEqualAsSet(hyThemeState?.matchPlaced?.theme2 || [], ['o2', 'o4', 'o6']));
-      addCheck(normalizeText(hyThemeState?.selectedDeg) === '5도');
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('haydn', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('haydn', overviewState));
+      pushCheck(stage2Checks, step2Flags.timbreIg1, hyTimbreState?.selectedByGrid?.['ig-1'] === hyTimbreCorrectInstr['ig-1'] && hyTimbreState?.roleByGrid?.['ig-1'] === hyTimbreCorrectRole['ig-1']);
+      pushCheck(stage2Checks, step2Flags.timbreIg2, hyTimbreState?.selectedByGrid?.['ig-2'] === hyTimbreCorrectInstr['ig-2'] && hyTimbreState?.roleByGrid?.['ig-2'] === hyTimbreCorrectRole['ig-2']);
+      pushCheck(stage2Checks, step2Flags.timbreIg3, hyTimbreState?.selectedByGrid?.['ig-3'] === hyTimbreCorrectInstr['ig-3'] && hyTimbreState?.roleByGrid?.['ig-3'] === hyTimbreCorrectRole['ig-3']);
+      pushCheck(stage2Checks, step2Flags.theme1, arraysEqualAsSet(hyThemeState?.matchPlaced?.theme1 || [], ['o1', 'o3', 'o5']));
+      pushCheck(stage2Checks, step2Flags.theme2, arraysEqualAsSet(hyThemeState?.matchPlaced?.theme2 || [], ['o2', 'o4', 'o6']));
+      pushCheck(stage2Checks, step2Flags.themeDeg, normalizeText(hyThemeState?.selectedDeg) === '5도');
     } else if (isVivaldi) {
-      addCheck(gradeOverviewQ1('vivaldi', overviewState));
-      addCheck(vvSonnetState?.selectedById?.['vv-c1'] === vvSonnetCorrect['vv-c1']);
-      addCheck(vvSonnetState?.selectedById?.['vv-c2'] === vvSonnetCorrect['vv-c2']);
-      addCheck(vvConcertoState?.discoveryChoice === '독주와 총주가 번갈아 나온다');
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('vivaldi', overviewState));
+      pushCheck(stage2Checks, step2Flags.sonnetC1, vvSonnetState?.selectedById?.['vv-c1'] === vvSonnetCorrect['vv-c1']);
+      pushCheck(stage2Checks, step2Flags.sonnetC2, vvSonnetState?.selectedById?.['vv-c2'] === vvSonnetCorrect['vv-c2']);
+      pushCheck(stage2Checks, step2Flags.concertoDiscovery, vvConcertoState?.discoveryChoice === '독주와 총주가 번갈아 나온다');
     } else if (isChopin) {
-      addCheck(gradeOverviewQ1('chopin', overviewState));
-      addCheck(gradeOverviewQ2('chopin', overviewState));
-      addCheck(cpFormState?.formAnswers?.['cp-f1'] === cpFormCorrect['cp-f1']);
-      addCheck(cpFormState?.formAnswers?.['cp-f2'] === cpFormCorrect['cp-f2']);
-      addCheck(cpFormState?.formAnswers?.['cp-f3'] === cpFormCorrect['cp-f3']);
-      addCheck(cpFormState?.featureById?.['cp-f1'] === cpFeatureCorrect['cp-f1']);
-      addCheck(cpFormState?.featureById?.['cp-f2'] === cpFeatureCorrect['cp-f2']);
-      addCheck(cpFormState?.featureById?.['cp-f3'] === cpFeatureCorrect['cp-f3']);
-      addCheck(cpFormState?.discoveryChoice === '서로 다른 느낌을 대비시키기 위해');
-      addCheck(cpRhythmState?.selectedByGroup?.['cp-rh-q'] === cpRhythmCorrect['cp-rh-q']);
-      addCheck(cpRhythmState?.selectedByGroup?.['cp-lh-q'] === cpRhythmCorrect['cp-lh-q']);
-      addCheck(cpRhythmState?.selectedByGroup?.['cp-poly-q'] === cpRhythmCorrect['cp-poly-q']);
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('chopin', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('chopin', overviewState));
+      pushCheck(stage2Checks, step2Flags.formF1, cpFormState?.formAnswers?.['cp-f1'] === cpFormCorrect['cp-f1']);
+      pushCheck(stage2Checks, step2Flags.formF2, cpFormState?.formAnswers?.['cp-f2'] === cpFormCorrect['cp-f2']);
+      pushCheck(stage2Checks, step2Flags.formF3, cpFormState?.formAnswers?.['cp-f3'] === cpFormCorrect['cp-f3']);
+      pushCheck(stage2Checks, step2Flags.featureF1, cpFormState?.featureById?.['cp-f1'] === cpFeatureCorrect['cp-f1']);
+      pushCheck(stage2Checks, step2Flags.featureF2, cpFormState?.featureById?.['cp-f2'] === cpFeatureCorrect['cp-f2']);
+      pushCheck(stage2Checks, step2Flags.featureF3, cpFormState?.featureById?.['cp-f3'] === cpFeatureCorrect['cp-f3']);
+      pushCheck(stage2Checks, step2Flags.formDiscovery, cpFormState?.discoveryChoice === '서로 다른 느낌을 대비시키기 위해');
+      pushCheck(stage2Checks, step2Flags.rhythmRh, cpRhythmState?.selectedByGroup?.['cp-rh-q'] === cpRhythmCorrect['cp-rh-q']);
+      pushCheck(stage2Checks, step2Flags.rhythmLh, cpRhythmState?.selectedByGroup?.['cp-lh-q'] === cpRhythmCorrect['cp-lh-q']);
+      pushCheck(stage2Checks, step2Flags.rhythmPoly, cpRhythmState?.selectedByGroup?.['cp-poly-q'] === cpRhythmCorrect['cp-poly-q']);
     } else if (isSchoenberg) {
-      addCheck(gradeOverviewQ1('schoenberg', overviewState));
-      addCheck(gradeOverviewQ2('schoenberg', overviewState));
-      addCheck(sbSprechState?.bothCorrect === true || Boolean(sbSprechState?.selectedChoice));
-      addCheck(arraysEqualAsSet(sbAtonalState?.placedCards?.tonal || [], ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']));
-      addCheck(arraysEqualAsSet(sbAtonalState?.placedCards?.atonal || [], ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']));
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('schoenberg', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('schoenberg', overviewState));
+      pushCheck(stage2Checks, step2Flags.sprech, sbSprechState?.bothCorrect === true || Boolean(sbSprechState?.selectedChoice));
+      pushCheck(
+        stage2Checks,
+        step2Flags.atonalCards || step2Flags.atonalChoice,
+        arraysEqualAsSet(sbAtonalState?.placedCards?.tonal || [], ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'])
+          && arraysEqualAsSet(sbAtonalState?.placedCards?.atonal || [], ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'])
+      );
     } else {
-      addCheck(gradeOverviewQ1('mawang', overviewState));
-      addCheck(gradeOverviewQ2('mawang', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('mawang', overviewState));
+      pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('mawang', overviewState));
       const voiceDesign = voiceDesignState?.voiceDesign || {};
-      const voiceNames = ['해설자', '아버지', '아들', '마왕'].filter((name) => step2Flags[`voice${name}`]);
-      if (voiceNames.length) {
-        addCheck(voiceNames.every((name) => gradeMawangVoiceDesignRow(name, voiceDesign[name])));
-      }
-      addCheck(gradePianoRhScene(pianoAnalysisState?.rhScene));
-      addCheck(gradePianoLhScene(pianoAnalysisState?.lhScene));
+      resolveMawangVoiceTargets(voiceDesignState, step2Flags).forEach((name) => {
+        pushCheck(stage2Checks, step2Flags[`voice${name}`], gradeMawangVoiceDesignRow(name, voiceDesign[name]));
+      });
+      pushCheck(stage2Checks, step2Flags.pianoRhScene, gradePianoRhScene(pianoAnalysisState?.rhScene));
+      pushCheck(stage2Checks, step2Flags.pianoLhScene, gradePianoLhScene(pianoAnalysisState?.lhScene));
+      pushCheck(stage2Checks, step2Flags.pianoRhDrawing);
+      pushCheck(stage2Checks, step2Flags.pianoLhDrawing);
     }
 
-    const stage2Score = scoreFromAccuracy(checks.filter(Boolean).length, checks.length);
+    const stage2Summary = summarizeChecks(stage2Checks);
+    const gradeStage2 = stage2Summary.grade;
 
-    const stage3Score = Math.min(5,
-      (t(q1).length >= 20 ? 2 : t(q1).length > 0 ? 1 : 0)
-      + (t(q2).length >= 30 ? 2 : t(q2).length > 0 ? 1 : 0)
-      + (t(q3).length >= 30 ? 1 : 0)
-    );
+    // —— 3단계: Q1~Q3 전부 모수 (서술형: 응답=정답, 미응답=오답) ——
+    const stage3Checks = [];
+    pushCheck(stage3Checks, t(q1).length > 0);
+    pushCheck(stage3Checks, Boolean(q2Type) && t(q2).length > 0);
+    pushCheck(stage3Checks, t(q3).length > 0);
+    const stage3Summary = summarizeChecks(stage3Checks);
+    const gradeStage3 = stage3Summary.grade;
 
-    const toGrade = (score) => (score >= 4 ? '상' : score >= 2 ? '중' : '하');
-    const gradeStage1 = toGrade(stage1Score);
-    const gradeStage2 = toGrade(stage2Score);
-    const gradeStage3 = toGrade(stage3Score);
+    const stageComment = (grade, stage) => {
+      if (stage === 1) {
+        if (grade === '상') return '필수 문항을 모두 응답했고, 키워드·색·서술·활동이 잘 채워졌습니다.';
+        if (grade === '중') return '일부 문항이 비어 있거나 부족합니다. 빠진 활동을 채우면 상이 됩니다.';
+        return '감각적 감상 필수 문항 응답이 많이 비어 있습니다. 키워드/색/서술/활동을 채워 보세요.';
+      }
+      if (stage === 2) {
+        if (grade === '상') return '모든 분석 문항에 응답했고 정답률이 높습니다.';
+        if (grade === '중') return '일부 미응답·오답이 있습니다. 빠진 문항과 틀린 답을 점검해 보세요.';
+        return '분석 문항의 미응답·오답이 많습니다. 2단계 활동을 다시 확인해 보세요.';
+      }
+      if (grade === '상') return '심미적 감상 Q1~Q3를 모두 작성했습니다.';
+      if (grade === '중') return '일부 문항이 비어 있습니다. Q1~Q3를 모두 쓰면 상이 됩니다.';
+      return '심미적 감상 문항이 많이 비어 있습니다. Q1~Q3를 채워 보세요.';
+    };
 
     const items = [
-      {
-        label: '1단계 감각적 감상',
-        grade: gradeStage1,
-        comment: gradeStage1 === '상'
-          ? '키워드·색·서술·활동 근거가 균형 있게 제시되었습니다.'
-          : gradeStage1 === '중'
-            ? '핵심 감상 근거는 보입니다. 키워드나 서술을 조금 더 구체화해 보세요.'
-            : '감각적 감상 입력이 적습니다. 키워드/색/서술을 보강해 보세요.'
-      },
-      {
-        label: '2단계 분석적 감상',
-        grade: gradeStage2,
-        comment: gradeStage2 === '상'
-          ? '질문별 답변이 구체적이며 정답 관점과의 연결이 잘 보입니다.'
-          : gradeStage2 === '중'
-            ? '분석의 방향은 좋습니다. 근거 문장을 조금 더 자세히 써보세요.'
-            : '분석 답변이 짧거나 비어 있습니다. Q1/Q2를 보강해 보세요.'
-      },
-      {
-        label: '3단계 심미적 감상',
-        grade: gradeStage3,
-        comment: gradeStage3 === '상'
-          ? '느낌 변화, 이유, 삶 연결이 잘 이어져 가치 판단이 분명합니다.'
-          : gradeStage3 === '중'
-            ? '개인적 해석은 보입니다. 이유와 삶 연결을 조금 더 확장해 보세요.'
-            : '심미적 감상 문항의 작성 분량이 부족합니다. Q1~Q3를 채워 보세요.'
-      }
+      { label: '1단계 감각적 감상', grade: gradeStage1, comment: stageComment(gradeStage1, 1) },
+      { label: '2단계 분석적 감상', grade: gradeStage2, comment: stageComment(gradeStage2, 2) },
+      { label: '3단계 심미적 감상', grade: gradeStage3, comment: stageComment(gradeStage3, 3) }
     ];
     const stageLabelMap = {
       '1단계 감각적 감상': '감각적 감상',
@@ -337,11 +377,11 @@ function FinalCard({ go }) {
     return { ungraded: false, items, feedback };
   }, [
     selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
-    isHandel, isHaydn, isSchoenberg, isVivaldi, isChopin,
+    isHandel, isHaydn, isSchoenberg, isVivaldi, isChopin, selectedSong,
     handelLyricMeaning, handelOperaDiff, analyticalCharacters, analyticalStory,
     tonePaintingHandelState, hyTimbreState, hyThemeState, vvSonnetState, vvConcertoState,
     cpFormState, cpRhythmState, sbSprechState, sbAtonalState, voiceDesignState, pianoAnalysisState,
-    q1, q2, q3
+    step2Flags, step2State, q1, q2, q3, q2Type
   ]);
 
   const onGenerateEssay = async () => {
