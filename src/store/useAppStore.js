@@ -8,7 +8,7 @@ export const stepNames = {
   analyticalOverview: '2단계 분석적 감상',
   voiceDesign: '음색 설계',
   pianoAnalysis: '피아노 반주',
-  historyCards: '3단계 사회·역사적 맥락',
+  historyCards: '3단계 심미적 감상',
   aestheticPage: '3단계 심미적 감상',
   finalCard: '최종 감상문'
 };
@@ -29,10 +29,11 @@ export const useAppStore = create((set) => ({
     history: false,
     aesthetic: false
   },
-  q1: '',
   q2: '',
   q3: '',
   q2Type: '',
+  finalEssayText: '',
+  isGeneratingEssay: false,
   analyticalCharacters: ['', '', '', ''],
   analyticalStory: '',
   handelLyricMeaning: '',
@@ -126,10 +127,11 @@ export const useAppStore = create((set) => ({
   }),
   setSensoryDesc: (value) => set({ sensoryDesc: value }),
   toggleAi: (id) => set((s) => ({ aiOpen: { ...s.aiOpen, [id]: !s.aiOpen[id] } })),
-  setQ1: (v) => set({ q1: v }),
   setQ2: (v) => set({ q2: v }),
   setQ3: (v) => set({ q3: v }),
   setQ2Type: (v) => set({ q2Type: v }),
+  setFinalEssayText: (v) => set({ finalEssayText: v }),
+  setIsGeneratingEssay: (v) => set({ isGeneratingEssay: v }),
   setStageCompletion: (key, value = true) => set((s) => ({
     stageCompletion: { ...s.stageCompletion, [key]: value }
   })),

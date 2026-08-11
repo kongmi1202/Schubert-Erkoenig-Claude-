@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { generateFinalEssay } from '../../lib/finalEssayGenerator';
 import { SONG_CONFIG } from '../../lib/songConfig';
@@ -107,7 +107,7 @@ function FinalCard({ go }) {
   const {
     student, selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts,
     emotionResult, emotionSummary, flippedCards, flippedHistoryCardsBySong,
-    selectedSong, analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff, q1, q2, q3, q2Type,
+    selectedSong, analyticalCharacters, analyticalStory, handelLyricMeaning, handelOperaDiff, q2, q3, q2Type,
     tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
     vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState,
     voiceDesignState, pianoAnalysisState
@@ -118,7 +118,6 @@ function FinalCard({ go }) {
   const isVivaldi = selectedSong === 'vivaldi';
   const isChopin = selectedSong === 'chopin';
   const isMawang = !isHandel && !isHaydn && !isSchoenberg && !isVivaldi && !isChopin;
-  const songTitle = isHandel ? '할렐루야' : (isHaydn ? '종달새' : (isSchoenberg ? '달에 홀린 피에로' : (isVivaldi ? '여름 3악장' : (isChopin ? '환상 즉흥곡' : '마왕'))));
   const songSubtitle = isHandel ? 'Hallelujah Chorus, Handel 1741' : (isHaydn ? 'String Quartet No.67, Haydn 1790' : (isSchoenberg ? 'Pierrot Lunaire, Schoenberg 1912' : (isVivaldi ? 'Summer, Vivaldi 1725' : (isChopin ? 'Fantaisie-Impromptu Op.66, Chopin 1835' : 'Der Erlkönig, Schubert 1815'))));
   const songLabel = selectedSong === 'handel'
     ? '할렐루야 (헨델)'
@@ -201,12 +200,23 @@ function FinalCard({ go }) {
   );
   const studentLine = useMemo(() => `${student?.id || ''} ${student?.name || ''}`.trim(), [student]);
   const essayTitle = (SONG_CONFIG[selectedSong] || SONG_CONFIG.mawang)?.essayTitle || "슈베르트 '마왕' 감상문";
-  const [essayText, setEssayText] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const finalEssayText = useAppStore((s) => s.finalEssayText);
+  const isGeneratingEssay = useAppStore((s) => s.isGeneratingEssay);
+  const setFinalEssayText = useAppStore((s) => s.setFinalEssayText);
+  const setIsGeneratingEssay = useAppStore((s) => s.setIsGeneratingEssay);
   const essayParagraphs = useMemo(
-    () => (essayText ? essayText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []),
-    [essayText]
+    () => (finalEssayText ? finalEssayText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean) : []),
+    [finalEssayText]
   );
+  const [summaryCollapsed, setSummaryCollapsed] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const apply = () => setSummaryCollapsed(mq.matches);
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, []);
   const evaluation = useMemo(() => {
     const t = (v) => (v || '').trim();
 
@@ -220,7 +230,6 @@ function FinalCard({ go }) {
       || t(analyticalQ1).length > 0
       || t(analyticalQ2).length > 0
       || hasAnyStep2Response(selectedSong, step2State)
-      || t(q1).length > 0
       || t(q2).length > 0
       || t(q3).length > 0
       || Boolean(q2Type)
@@ -312,9 +321,8 @@ function FinalCard({ go }) {
     const stage2Summary = summarizeChecks(stage2Checks);
     const gradeStage2 = stage2Summary.grade;
 
-    // —— 3단계: Q1~Q3 전부 모수 (서술형: 응답=정답, 미응답=오답) ——
+    // —— 3단계: Q1~Q2 전부 모수 (서술형: 응답=정답, 미응답=오답) ——
     const stage3Checks = [];
-    pushCheck(stage3Checks, t(q1).length > 0);
     pushCheck(stage3Checks, Boolean(q2Type) && t(q2).length > 0);
     pushCheck(stage3Checks, t(q3).length > 0);
     const stage3Summary = summarizeChecks(stage3Checks);
@@ -331,9 +339,9 @@ function FinalCard({ go }) {
         if (grade === '중') return '일부 미응답·오답이 있습니다. 빠진 문항과 틀린 답을 점검해 보세요.';
         return '분석 문항의 미응답·오답이 많습니다. 2단계 활동을 다시 확인해 보세요.';
       }
-      if (grade === '상') return '심미적 감상 Q1~Q3를 모두 작성했습니다.';
-      if (grade === '중') return '일부 문항이 비어 있습니다. Q1~Q3를 모두 쓰면 상이 됩니다.';
-      return '심미적 감상 문항이 많이 비어 있습니다. Q1~Q3를 채워 보세요.';
+      if (grade === '상') return '심미적 감상 Q1~Q2를 모두 작성했습니다.';
+      if (grade === '중') return '일부 문항이 비어 있습니다. Q1~Q2를 모두 쓰면 상이 됩니다.';
+      return '심미적 감상 문항이 많이 비어 있습니다. Q1~Q2를 채워 보세요.';
     };
 
     const items = [
@@ -367,11 +375,11 @@ function FinalCard({ go }) {
     handelLyricMeaning, handelOperaDiff, analyticalCharacters, analyticalStory,
     tonePaintingHandelState, hyTimbreState, hyThemeState, vvSonnetState, vvConcertoState,
     cpFormState, cpRhythmState, sbSprechState, sbAtonalState, voiceDesignState, pianoAnalysisState,
-    step2Flags, step2State, q1, q2, q3, q2Type
+    step2Flags, step2State, q2, q3, q2Type
   ]);
 
   const onGenerateEssay = async () => {
-    setIsGenerating(true);
+    setIsGeneratingEssay(true);
     const text = await generateFinalEssay({
       student,
       selectedSong,
@@ -399,13 +407,12 @@ function FinalCard({ go }) {
       sbAtonalState,
       voiceDesignState,
       pianoAnalysisState,
-      q1,
       q2,
       q3,
       q2Type
     });
-    setEssayText(text);
-    setIsGenerating(false);
+    setFinalEssayText(text);
+    setIsGeneratingEssay(false);
   };
   const stageGrades = useMemo(() => {
     if (evaluation.ungraded) {
@@ -462,10 +469,24 @@ function FinalCard({ go }) {
   };
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">완성 · 최종 감상문</div><div className="s-title">나의 {songTitle} 감상문</div></div>
-      <div className="body voice-body">
-        <div className="summary-card">
-          <div className="summary-ey">✦ 나의 {songTitle} 감상문 · {songSubtitle}</div>
+    <div className={`stage-workspace ${summaryCollapsed ? 'listening-collapsed' : ''}`}>
+      <aside className={`listening-panel ${summaryCollapsed ? 'is-collapsed' : ''}`} aria-label="나의 감상 여정 되돌아보기">
+        <button
+          type="button"
+          className="listening-panel-toggle"
+          onClick={() => setSummaryCollapsed((v) => !v)}
+          aria-expanded={!summaryCollapsed}
+        >
+          <span className="listening-panel-toggle-title">
+            {summaryCollapsed ? '나의 감상 여정 되돌아보기 펼치기' : '나의 감상 여정 되돌아보기'}
+          </span>
+          <span className="listening-panel-toggle-chevron" aria-hidden="true">
+            {summaryCollapsed ? '▼' : '▲'}
+          </span>
+        </button>
+        <div className="listening-panel-body final-summary-panel-body">
+        <div className="summary-card final-summary-card">
+          <div className="summary-ey">✦ 나의 감상 여정 되돌아보기 · {songSubtitle}</div>
           <div className="summary-row"><div className="summary-key">학생</div><div className="summary-val">{studentLine || '—'}</div></div>
           <div className="summary-row"><div className="summary-key">악곡</div><div className="summary-val">{songLabel}</div></div>
           <div className="summary-div"></div>
@@ -770,43 +791,53 @@ function FinalCard({ go }) {
 
           <div className="summary-div"></div>
           <div className="summary-ey">③ 심미적 감상 <span style={getGradeBadgeStyle(stageGrades.stage3)}>등급 {stageGrades.stage3}</span></div>
-          <div className="summary-row"><div className="summary-key">변화</div><div className="summary-val">{q1 ? `분석해 보니 ${q1}(이)라고 느꼈다.` : '—'}</div></div>
-          <div className="summary-row"><div className="summary-key">이유</div><div className="summary-val">{q2 || '—'}</div></div>
+          <div className="summary-row"><div className="summary-key">가치 평가</div><div className="summary-val">{(q2Type && q2) ? `[${q2Type}] ${q2}` : (q2 || '—')}</div></div>
           <div className="summary-row"><div className="summary-key">삶 연결</div><div className="summary-val">{q3 || '—'}</div></div>
           <div className="fb show gold" style={{ marginTop: 10 }}>
             💬 {evaluation.feedback}
           </div>
         </div>
+        </div>
+      </aside>
 
-        <div className="sec">학생 완성 글 (1~3단계 종합)</div>
-        <div className="summary-card">
-          <div className="summary-row">
-            <div className="summary-key">생성</div>
-            <button className="btn-p" onClick={onGenerateEssay} disabled={isGenerating}>
-              {isGenerating ? '생성 중...' : '최종 감상문 만들기'}
-            </button>
+      <div className="stage-workspace-main">
+        <div className="screen active">
+          <div className="stage-header">
+            <div className="s-eyebrow">완성 · 최종 감상문</div>
+            <div className="s-title">최종 감상</div>
+            <div className="s-desc">내가 1~3단계(감각적·분석적·심미적 감상)에서 입력한 내용을 바탕으로 최종 감상문을 만들어 보세요.</div>
           </div>
-          <div className="summary-div"></div>
-          <div className="final-essay-card">
-            <div className="final-essay-title">{essayTitle}</div>
-            <div className="final-essay-student">{studentLine || '학번 이름 미입력'}</div>
-            <div className="final-essay-divider" />
-            <div className="final-essay-body">
-              {essayParagraphs.length ? (
-                essayParagraphs.map((paragraph, idx) => (
-                  <p key={`essay-p-${idx}`}>{paragraph}</p>
-                ))
-              ) : (
-                <p>버튼을 누르면 학생 입력만을 바탕으로 최종 감상문이 생성됩니다.</p>
-              )}
+          <div className="body voice-body">
+            <div className="summary-card">
+              <div className="summary-row">
+                <div className="summary-key">생성</div>
+                <button className="btn-p" onClick={onGenerateEssay} disabled={isGeneratingEssay}>
+                  {isGeneratingEssay ? '생성 중...' : '최종 감상문 만들기'}
+                </button>
+              </div>
+              <div className="summary-div"></div>
+              <div className="final-essay-card">
+                <div className="final-essay-title">{essayTitle}</div>
+                <div className="final-essay-student">{studentLine || '학번 이름 미입력'}</div>
+                <div className="final-essay-divider" />
+                <div className="final-essay-body">
+                  {essayParagraphs.length ? (
+                    essayParagraphs.map((paragraph, idx) => (
+                      <p key={`essay-p-${idx}`}>{paragraph}</p>
+                    ))
+                  ) : (
+                    <p>버튼을 누르면 학생 입력만을 바탕으로 최종 감상문이 생성됩니다.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="btn-row final-actions">
+              <button className="btn-s" onClick={() => go('aestheticPage')}>← 다시 수정</button>
+              <button className="btn-s" onClick={() => go('studentInfo')}>처음으로</button>
+              <button className="btn-p" onClick={() => window.print()}>📄 PDF 저장</button>
             </div>
           </div>
-        </div>
-
-        <div className="btn-row final-actions">
-          <button className="btn-s" onClick={() => go('aestheticPage')}>← 다시 수정</button>
-          <button className="btn-s" onClick={() => go('studentInfo')}>처음으로</button>
-          <button className="btn-p" onClick={() => window.print()}>📄 PDF 저장</button>
         </div>
       </div>
     </div>

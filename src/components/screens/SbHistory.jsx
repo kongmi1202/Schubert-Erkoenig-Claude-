@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 
 const CARDS = [
@@ -48,8 +48,6 @@ function SbHistory({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const flippedIds = flippedHistoryCardsBySong[selectedSong] || [];
   const allChecked = useMemo(() => flippedIds.length >= CARDS.length, [flippedIds]);
-  const [artCommon, setArtCommon] = useState('');
-  const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
     if (allChecked) setStageCompletion('history', true);
@@ -58,55 +56,13 @@ function SbHistory({ go }) {
   return (
     <div className="screen active" id="sb-history">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 3-A · 사회·역사적 맥락 (쇤베르크)</div>
-        <div className="s-title">역사 맥락</div>
+        <div className="s-eyebrow">STAGE 3 · 심미적 감상</div>
+        <div className="s-title">심미적 감상</div>
+        <div className="s-desc">목표: 음악의 다양한 요소들을 바탕으로 음악의 가치를 평가해 보세요.</div>
       </div>
 
       <div className="body voice-body">
-        <div className="sec">이미지 비교 섹션</div>
-        <div className="art-compare">
-          <div className="art-card">
-            <div className="art-img-ph">
-              <div style={{ fontSize: 34 }}>😱</div>
-              <div>뭉크 '절규' 1893</div>
-            </div>
-            <div className="art-info">
-              <div className="art-name">뭉크 '절규'</div>
-              <div className="art-desc">에드바르 뭉크 · 1893</div>
-            </div>
-          </div>
-          <div className="art-card">
-            <div className="art-img-ph">
-              <div style={{ fontSize: 34 }}>🎨</div>
-              <div>쇤베르크 '붉은 시선' 1910</div>
-            </div>
-            <div className="art-info">
-              <div className="art-name">쇤베르크 '붉은 시선'</div>
-              <div className="art-desc">아놀드 쇤베르크 · 1910</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="sec">느낌 서술</div>
-        <div style={{ marginBottom: 8 }}>두 그림과 달에 홀린 피에로의 공통점은 무엇인가요?</div>
-        <textarea
-          id="sb-art-common"
-          className="txt"
-          value={artCommon}
-          onChange={(e) => setArtCommon(e.target.value)}
-          placeholder="세 작품의 공통된 느낌이나 표현 방식을 써보세요..."
-        />
-        <button type="button" className="ai-btn" onClick={() => setShowHint((prev) => !prev)}>✨ 참고 예시 보기</button>
-        <div className={`ai-bubble ${showHint ? 'show' : ''}`}>
-          <div className="ai-bubble-label">참고 예시 (정답 아님 · 그대로 복사 금지)</div>
-          세 작품에서 공통으로 느껴지는 감정은 무엇인가요?
-          <br />
-          그림은 어떤 색/모양으로 감정을 보여주나요?
-          <br />
-          음악은 어떤 소리나 창법으로 감정을 들려주나요?
-        </div>
-
-        <div className="sec">표현주의 핵심 카드</div>
+        <div className="sec">1. 카드를 뒤집어 이 곡의 사회역사적 맥락을 알아보세요.</div>
         <div className="flip-grid">
           {CARDS.map((card) => (
             <button

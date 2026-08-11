@@ -41,8 +41,9 @@ function HistoryCards({ go }) {
   }, [flippedCards]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3-A · 사회·역사적 맥락</div><div className="s-title">카드를 뒤집어 내용을 확인하세요</div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3 · 심미적 감상</div><div className="s-title">심미적 감상</div><div className="s-desc">목표: 음악의 다양한 요소들을 바탕으로 음악의 가치를 평가해 보세요.</div></div>
       <div className="body">
+        <div className="sec">1. 카드를 뒤집어 이 곡의 사회역사적 맥락을 알아보세요.</div>
         <div className="flip-grid">
           {cards.map((c) => (
             <button key={c.id} className={`flip-card ${flippedCards.includes(c.id) ? 'flipped' : ''}`} onClick={() => flipHistoryCard(c.id)}>

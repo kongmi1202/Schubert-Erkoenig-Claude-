@@ -37,7 +37,21 @@ function VvOverview({ go }) {
 
       <div className="body video-page-body">
 
-        <div className="sec">1. 여름 3악장에서 묘사하는 내용은 무엇인가요?</div>
+        <div className="sec">소네트 설명</div>
+        <div className="sonnet-item">
+          <div className="sonnet-quote">
+            소네트(Sonnet)는 14행으로 된 짧은 정형시예요.
+            <br />
+            비발디의 &lt;사계&gt;는 봄·여름·가을·겨울마다 소네트를 붙여 두고,
+            <br />
+            그 시의 장면을 음악으로 그려 낸 표제음악이에요.
+            <br />
+            왼쪽 감상 가이드에서 이 곡(여름 3악장)의 소네트 내용을 확인해 보세요.
+          </div>
+        </div>
+
+
+        <div className="sec">1. 소네트를 보고, 이 곡에서 묘사하는 내용이 무엇인지 적어보세요.</div>
         <textarea
           id="vv-q1"
           className="txt"

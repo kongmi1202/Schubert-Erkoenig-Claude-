@@ -339,7 +339,6 @@ function trimStage1(raw) {
 
 function trimStage3(raw) {
   const out = {};
-  if (hasText(raw.q1)) out.q1 = clean(raw.q1);
   if (hasText(raw.q2)) out.q2 = clean(raw.q2);
   if (hasText(raw.q3)) out.q3 = clean(raw.q3);
   if (hasText(raw.q2Type)) out.q2Type = clean(raw.q2Type);
@@ -367,7 +366,6 @@ function countParagraphItems(paragraphs) {
   let paragraph4ItemCount = 0;
   const aesthetic = paragraphs.aesthetic;
   if (aesthetic) {
-    if (aesthetic.q1) paragraph4ItemCount += 1;
     if (aesthetic.q2) paragraph4ItemCount += 1;
     if (aesthetic.q3) paragraph4ItemCount += 1;
   }
@@ -422,7 +420,6 @@ function prepareEssayPayload(data) {
     paragraphs.analyticalHistoryContext = { activities: historyActivities };
   }
   const aesthetic = trimStage3({
-    q1: data.q1,
     q2: data.q2,
     q3: data.q3,
     q2Type: data.q2Type
@@ -495,8 +492,8 @@ function buildFallbackEssay(data) {
     parts.push(paragraphs.analyticalHistoryContext.activities.map(formatActivityForFallback).join(' '));
   }
   if (paragraphs.aesthetic) {
-    const { q1, q2, q3 } = paragraphs.aesthetic;
-    parts.push([q1, q2, q3].filter(Boolean).join(' '));
+    const { q2, q3 } = paragraphs.aesthetic;
+    parts.push([q2, q3].filter(Boolean).join(' '));
   }
 
   if (!parts.length) {
@@ -535,7 +532,7 @@ export async function generateFinalEssay(data) {
 2단락 paragraphs.analyticalMusicElements — 분석적 감상(음악 요소): activities (개요파악·음색·가락선·음화법·형식 등)
 3단락 paragraphs.analyticalHistoryContext — 분석적 감상(사회·역사 맥락): activities
   (각 activity의 studentResponse에 카드 본문이 담겨 있음. 제목·키워드만 나열하지 말고 본문 내용을 목록 형식이 아닌 자연스러운 문장으로 녹일 것)
-4단락 paragraphs.aesthetic — 심미적 감상: q1·q2·q3 (있는 문항만)
+4단락 paragraphs.aesthetic — 심미적 감상: q2·q3 (있는 문항만)
 
 [핵심]
 - JSON에 없는 단락·필드·활동은 한 글자도 쓰지 말 것

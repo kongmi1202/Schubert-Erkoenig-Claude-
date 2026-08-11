@@ -1149,6 +1149,37 @@ canvas{display:block;width:100%;touch-action:none}
 .final-essay-body p:last-child{
   margin-bottom:0;
 }
+.final-essay-card--panel{
+  flex:1;
+  min-height:0;
+  padding:18px 14px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.final-essay-card--panel .final-essay-title{
+  font-size:clamp(14px, 1.5vw, 18px);
+  margin-bottom:10px;
+}
+.final-essay-card--panel .final-essay-body{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  font-size:12px;
+  line-height:1.9;
+}
+.final-summary-panel-body{
+  gap:0;
+}
+.final-summary-card{
+  margin:0;
+  border:none;
+  background:transparent;
+  padding:0 0 8px;
+}
+.final-summary-card .cmp-mini-grid{
+  grid-template-columns:1fr;
+}
 
 @media print {
   .final-essay-card{
@@ -1156,6 +1187,9 @@ canvas{display:block;width:100%;touch-action:none}
     color:black;
     border:1px solid #ccc;
     padding:40px;
+  }
+  .stage-workspace.listening-collapsed .listening-panel .listening-panel-body{
+    display:flex !important;
   }
 }
 
@@ -1504,6 +1538,45 @@ canvas{display:block;width:100%;touch-action:none}
   padding: 18px;
   margin-bottom: 16px;
 }
+.sonnet-item-num{
+  margin-top:0;
+  margin-bottom:12px;
+}
+.sonnet-cat{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+  padding:14px;
+  margin-bottom:12px;
+}
+.sonnet-cat-passage{
+  border-color:rgba(184,150,62,.28);
+  background:rgba(184,150,62,.06);
+  padding:18px 16px;
+}
+.sonnet-cat-passage .sonnet-quote{
+  font-size:16px;
+  line-height:1.75;
+  margin-bottom:8px;
+}
+.sonnet-cat-passage .sonnet-quote-kr{
+  font-size:13px;
+  color:var(--text-dim);
+  margin-bottom:16px;
+}
+.sonnet-cat-passage .vv-sonnet-audio-btns{
+  gap:10px;
+}
+.sonnet-cat-passage .vv-sonnet-audio-btns .btn-s{
+  padding:10px 14px;
+  font-size:13px;
+}
+.sonnet-cat-label{
+  font-size:11px;
+  letter-spacing:.14em;
+  color:var(--purple-light);
+  margin-bottom:10px;
+  font-weight:600;
+}
 .sonnet-quote {
   font-family: 'Noto Serif KR', serif;
   font-size: 13px;
@@ -1597,6 +1670,19 @@ canvas{display:block;width:100%;touch-action:none}
   font-size: 10px;
   color: var(--text-faint);
   font-weight: 300;
+}
+
+/* vv-concerto: 3-1 / 3-2 카드 구분 */
+.vv-concerto-block{
+  margin-top:8px;
+}
+.vv-concerto-block .sonnet-item-num{
+  flex-wrap:wrap;
+  align-items:flex-start;
+  line-height:1.55;
+}
+.vv-concerto-block .sonnet-item-num::after{
+  display:none;
 }
 
 /* vv-concerto: 독주/총주 탭 카운트 */
@@ -1711,56 +1797,8 @@ canvas{display:block;width:100%;touch-action:none}
   letter-spacing: .1em;
 }
 
-/* 표현주의 이미지 비교 */
-.art-compare {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-.art-card {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  overflow: hidden;
-}
-.art-img {
-  width: 100%;
-  aspect-ratio: 3/4;
-  object-fit: cover;
-  display: block;
-  background: var(--bg3);
-}
-.art-img-ph {
-  width: 100%;
-  aspect-ratio: 3/4;
-  background: var(--bg3);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--text-faint);
-  font-size: 11px;
-  font-weight: 300;
-}
-.art-info {
-  padding: 10px 12px;
-  border-top: 1px solid var(--border);
-}
-.art-name {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 2px;
-}
-.art-desc {
-  font-size: 10px;
-  color: var(--text-dim);
-  font-weight: 300;
-}
-
 @media(max-width: 480px) {
   .compare-listen { grid-template-columns: 1fr; }
-  .art-compare    { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 900px){.video-lyrics-layout{grid-template-columns:1fr}.lyrics-panel{max-height:none}}

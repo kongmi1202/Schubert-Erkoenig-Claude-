@@ -116,15 +116,11 @@ function VvSonnet({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="fb show info" style={{ marginBottom: 16 }}>
-          💡 비발디는 소네트(시)의 내용을
-          <br />
-          음악으로 직접 묘사했어요.
-          <br />
-          구절을 읽고 음악이 어떻게 표현했는지 찾아보세요!
+        <div className="sec">
+          2. 이 곡은 소네트의 내용을 음악으로 직접 묘사했어요. 각 구절을 읽고 음악이 어떻게 표현됐는지 맞춰보세요.
         </div>
 
-        {SEGMENTS.map((segment) => {
+        {SEGMENTS.map((segment, index) => {
           const picked = selectedById[segment.id];
           const result = resultById[segment.id];
           const answerOpen = openByBodyId[segment.bodyId];
@@ -144,6 +140,7 @@ function VvSonnet({ go }) {
 
           return (
             <div key={segment.id} className="sonnet-item">
+              <div className="sec sonnet-item-num">2-{index + 1}.</div>
               <VvSonnetYoutubeAudio
                 ref={(r) => {
                   if (r) playerCtlRef.current[segment.id] = r;
@@ -158,52 +155,59 @@ function VvSonnet({ go }) {
                   else setPlayingSegmentId((cur) => (cur === segment.id ? '' : cur));
                 }}
               />
-              <div className="sonnet-quote">"{segment.quote}"</div>
-              <div className="sonnet-quote-kr">"{segment.quoteKr}"</div>
-              <div className="vv-sonnet-audio-btns">
-                <button
-                  type="button"
-                  className="btn-s"
-                  disabled={!ready}
-                  style={!ready ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                  onClick={() => playSegment(segment.id)}
-                >
-                  ▶ 재생
-                </button>
-                <button
-                  type="button"
-                  className="btn-s"
-                  disabled={!armed || !isPlaying}
-                  style={!armed || !isPlaying ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                  onClick={() => pauseSegment(segment.id)}
-                >
-                  ❚❚ 일시정지
-                </button>
-                <button
-                  type="button"
-                  className="btn-s"
-                  disabled={!armed}
-                  style={!armed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-                  onClick={() => stopSegment(segment.id)}
-                >
-                  ■ 정지
-                </button>
-              </div>
-              <div className="sonnet-q">{segment.question}</div>
-              <div id={segment.id} className="choice-list" style={{ marginBottom: 10 }}>
-                {segment.choices.map((choice) => (
+
+              <div className="sonnet-cat sonnet-cat-passage">
+                <div className="sonnet-quote">"{segment.quote}"</div>
+                <div className="sonnet-quote-kr">"{segment.quoteKr}"</div>
+                <div className="vv-sonnet-audio-btns">
                   <button
-                    key={`${segment.id}-${choice}`}
                     type="button"
-                    className={`choice-item ${picked === choice ? 'selected' : ''}`}
-                    onClick={() => selectChoice(segment.id, choice)}
+                    className="btn-s"
+                    disabled={!ready}
+                    style={!ready ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    onClick={() => playSegment(segment.id)}
                   >
-                    {picked === choice ? '●' : '○'} {choice}
+                    ▶ 재생
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className="btn-s"
+                    disabled={!armed || !isPlaying}
+                    style={!armed || !isPlaying ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    onClick={() => pauseSegment(segment.id)}
+                  >
+                    ❚❚ 일시정지
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-s"
+                    disabled={!armed}
+                    style={!armed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    onClick={() => stopSegment(segment.id)}
+                  >
+                    ■ 정지
+                  </button>
+                </div>
               </div>
 
-              <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
+              <div className="sonnet-cat">
+                <div className="sonnet-cat-label">보기</div>
+                <div className="sonnet-q">{segment.question}</div>
+                <div id={segment.id} className="choice-list" style={{ marginBottom: 0 }}>
+                  {segment.choices.map((choice) => (
+                    <button
+                      key={`${segment.id}-${choice}`}
+                      type="button"
+                      className={`choice-item ${picked === choice ? 'selected' : ''}`}
+                      onClick={() => selectChoice(segment.id, choice)}
+                    >
+                      {picked === choice ? '●' : '○'} {choice}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 12 }}>
                 <FormativeFeedbackBlock
                   key={`vv-sonnet-fb-${segment.id}-${picked || 'none'}`}
                   disabled={!picked}
