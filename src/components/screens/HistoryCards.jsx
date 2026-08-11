@@ -41,7 +41,7 @@ function HistoryCards({ go }) {
   }, [flippedCards]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-D · 사회·역사적 맥락</div><div className="s-title">카드를 뒤집어 내용을 확인하세요</div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3-A · 사회·역사적 맥락</div><div className="s-title">카드를 뒤집어 내용을 확인하세요</div></div>
       <div className="body">
         <div className="flip-grid">
           {cards.map((c) => (

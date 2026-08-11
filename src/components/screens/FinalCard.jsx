@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { generateFinalEssay } from '../../lib/finalEssayGenerator';
-import { SONG_CONFIG } from './VideoPage';
+import { SONG_CONFIG } from '../../lib/songConfig';
 import {
   formatSbAtonalStudentResponse,
   getStep2ResponseFlags,
@@ -95,14 +95,6 @@ function pushCheck(checks, answered, isCorrect = answered) {
   });
 }
 
-function isSensoryActivityDone(activity, artifacts, t) {
-  if (activity === '체육') return Boolean(artifacts?.pePhoto) && t(artifacts?.peAnswer).length > 0;
-  if (activity === '과학') return Boolean(artifacts?.scienceSelected?.length) && t(artifacts?.scienceAnswer).length > 0;
-  if (activity === '사회') return Boolean(artifacts?.mapAddress) && t(artifacts?.mapAnswer).length > 0;
-  if (activity === '수학') return Boolean(artifacts?.mathDrawing) && t(artifacts?.mathAnswer).length > 0;
-  return false;
-}
-
 function resolveMawangVoiceTargets(voiceDesignState, step2Flags) {
   const selected = (voiceDesignState?.selectedChars || []).filter(Boolean);
   if (selected.length >= 2) return selected.slice(0, 2);
@@ -142,11 +134,11 @@ function FinalCard({ go }) {
           ? '달에 홀린 피에로 (쇤베르크)'
           : '—')))));
   const analyticalQ1Label = isHandel
-    ? 'Q1 가사 내용'
-    : (isHaydn ? 'Q1 악기 구성' : (isSchoenberg ? 'Q1 편성' : (isVivaldi ? 'Q1 장면 묘사' : (isChopin ? 'Q1 악기 편성' : 'Q1 등장인물'))));
+    ? '1 가사 내용'
+    : (isHaydn ? '1 악기 구성' : (isSchoenberg ? '1 편성' : (isVivaldi ? '1 장면 묘사' : (isChopin ? '1 악기 편성' : '1 등장인물'))));
   const analyticalQ2Label = isHandel
-    ? 'Q2 오페라와의 차이'
-    : (isHaydn ? 'Q2 떠오르는 동물' : (isSchoenberg ? 'Q2 분위기' : (isVivaldi ? 'Q2 분위기' : (isChopin ? 'Q2 분위기 변화' : 'Q2 줄거리'))));
+    ? '2 오페라와의 차이'
+    : (isHaydn ? '2 떠오르는 동물' : (isSchoenberg ? '2 분위기' : (isVivaldi ? '2 분위기' : (isChopin ? '2 분위기 변화' : '2 줄거리'))));
   const showAnalyticalQ2 = !isVivaldi;
   const analyticalAnswerCharacters = ['해설자', '아버지', '아들', '마왕'];
   const analyticalAnswerStory = '폭풍우 치는 밤, 아버지가 아픈 아들을 가슴에 안고 집으로 달려간다. 아들은 마왕의 유혹을 두려워하지만 아버지는 이를 부정한다. 집에 도착했을 때 아들은 이미 죽어 있다.';
@@ -220,13 +212,11 @@ function FinalCard({ go }) {
 
     const analyticalQ1 = isHandel ? handelLyricMeaning : analyticalCharacters.filter((c) => t(c).length > 0).join(', ');
     const analyticalQ2 = isHandel ? handelOperaDiff : analyticalStory;
-    const selectedActivities = sensoryArtifacts?.selectedActivities || [];
 
     const hasAnyInput = (
       selectedKeywords.length > 0
       || selectedColors.length > 0
       || t(sensoryDesc).length > 0
-      || selectedActivities.length > 0
       || t(analyticalQ1).length > 0
       || t(analyticalQ2).length > 0
       || hasAnyStep2Response(selectedSong, step2State)
@@ -244,15 +234,11 @@ function FinalCard({ go }) {
       };
     }
 
-    // —— 1단계: 필수 문항 전부 모수 (미응답=오답, 서술형은 응답=정답) ——
+    // —— 1단계: 필수 문항(키워드/색/서술) 전부 모수 ——
     const stage1Checks = [];
     pushCheck(stage1Checks, selectedKeywords.length > 0);
     pushCheck(stage1Checks, selectedColors.length >= 2);
     pushCheck(stage1Checks, t(sensoryDesc).length > 0);
-    for (let i = 0; i < 2; i += 1) {
-      const activity = selectedActivities[i];
-      pushCheck(stage1Checks, Boolean(activity) && isSensoryActivityDone(activity, sensoryArtifacts, t));
-    }
     const stage1Summary = summarizeChecks(stage1Checks);
     const gradeStage1 = stage1Summary.grade;
 
@@ -336,9 +322,9 @@ function FinalCard({ go }) {
 
     const stageComment = (grade, stage) => {
       if (stage === 1) {
-        if (grade === '상') return '필수 문항을 모두 응답했고, 키워드·색·서술·활동이 잘 채워졌습니다.';
-        if (grade === '중') return '일부 문항이 비어 있거나 부족합니다. 빠진 활동을 채우면 상이 됩니다.';
-        return '감각적 감상 필수 문항 응답이 많이 비어 있습니다. 키워드/색/서술/활동을 채워 보세요.';
+        if (grade === '상') return '필수 문항을 모두 응답했고, 키워드·색·서술이 잘 채워졌습니다.';
+        if (grade === '중') return '일부 문항이 비어 있거나 부족합니다. 키워드·색·서술을 보완해 보세요.';
+        return '감각적 감상 필수 문항 응답이 많이 비어 있습니다. 키워드/색/서술을 채워 보세요.';
       }
       if (stage === 2) {
         if (grade === '상') return '모든 분석 문항에 응답했고 정답률이 높습니다.';
@@ -487,12 +473,6 @@ function FinalCard({ go }) {
           <div className="chip-row">{selectedKeywords.length ? selectedKeywords.map((k) => <span key={k} className="review-chip">{k}</span>) : <span className="review-empty">키워드 없음</span>}</div>
           <div className="swatch-row">{selectedColors.length ? selectedColors.map((c) => <span key={c} className="review-swatch" title={c} style={{ background: colorMap[c] || '#555' }} />) : <span className="review-empty">색상 없음</span>}</div>
           <div className="fb show info">{sensoryDesc || '서술 없음'}</div>
-          <div className="artifact-grid">
-            {sensoryArtifacts?.pePhoto ? <div className="artifact-card"><div className="small-note">체육 사진</div><img src={sensoryArtifacts.pePhoto} alt="체육 사진" className="captured-img" /></div> : null}
-            {sensoryArtifacts?.mathDrawing ? <div className="artifact-card"><div className="small-note">수학 그림</div><img src={sensoryArtifacts.mathDrawing} alt="수학 그림" className="captured-img" /></div> : null}
-            {sensoryArtifacts?.scienceSelected?.length ? <div className="artifact-card"><div className="small-note">과학 선택</div><div className="chip-row">{sensoryArtifacts.scienceSelected.map((s) => <span key={s} className="review-chip">{s}</span>)}</div></div> : null}
-            {sensoryArtifacts?.mapAddress ? <div className="artifact-card"><div className="small-note">사회 선택 장소</div><div className="map-address">{sensoryArtifacts.mapAddress}</div></div> : null}
-          </div>
 
           <div className="summary-div"></div>
           <div className="summary-ey">② 분석적 감상</div>

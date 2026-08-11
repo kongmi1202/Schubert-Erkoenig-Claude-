@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import SensoryStage1Review from '../SensoryStage1Review';
 
 const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
 const q2Answer =
@@ -33,23 +32,14 @@ function SbOverview({ go }) {
   return (
     <div className="screen active" id="sb-overview">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-A · 분석적 감상 (쇤베르크)</div>
-        <div className="s-title">개요 파악</div>
+        <div className="s-eyebrow">STAGE 2 · 분석적 감상</div>
+        <div className="s-title">분석적 감상</div>
+        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
 
       <div className="body video-page-body">
-        <SensoryStage1Review ids={{ keywordsId: 'rv-kw-sb', sensoryDescId: 'rv-desc-sb' }} />
 
-        <div className="sec">해설 영상</div>
-        <div className="video-wrap" style={{ marginBottom: 20 }}>
-          <iframe
-            src="https://www.youtube.com/embed/wEW4mxAbank"
-            title="쇤베르크 달에 홀린 피에로 개요 영상"
-            allowFullScreen
-          />
-        </div>
-
-        <div className="sec">Q1. 이 음악을 연주하는 악기들(또는 연주 형태)과 성악가의 성종(성부)은?</div>
+        <div className="sec">1. 이 음악을 연주하는 악기들(또는 연주 형태)과 성악가의 성종(성부)은?</div>
         <textarea
           className="txt"
           value={q1}
@@ -76,7 +66,7 @@ function SbOverview({ go }) {
           </div>
         </div>
 
-        <div className="sec">Q2. 이 음악의 전체적인 분위기는 어떤가요?</div>
+        <div className="sec">2. 이 음악의 전체적인 분위기는 어떤가요?</div>
         <textarea
           className="txt"
           value={q2}

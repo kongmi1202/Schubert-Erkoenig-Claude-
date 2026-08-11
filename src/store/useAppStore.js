@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { createEmptyMawangVoiceDesign } from '../lib/voiceDesignAnswers';
 
-export const screenOrder = ['intro','studentInfo','songSelect','videoPage','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
+export const screenOrder = ['intro','studentInfo','songSelect','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
 
 export const stepNames = {
   sensoryPage: '1단계 감각적 감상',
   analyticalOverview: '2단계 분석적 감상',
   voiceDesign: '음색 설계',
   pianoAnalysis: '피아노 반주',
-  historyCards: '역사적 맥락',
+  historyCards: '3단계 사회·역사적 맥락',
   aestheticPage: '3단계 심미적 감상',
   finalCard: '최종 감상문'
 };
@@ -22,7 +22,6 @@ export const useAppStore = create((set) => ({
   aiOpen: {},
   answerCheckOpen: false,
   stageCompletion: {
-    video: false,
     sensory: false,
     analytical: false,
     voice: false,

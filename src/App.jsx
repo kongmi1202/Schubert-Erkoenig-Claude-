@@ -3,7 +3,6 @@ import { screenOrder, stepNames } from './store/useAppStore';
 import Intro from './components/screens/Intro';
 import StudentInfo from './components/screens/StudentInfo';
 import SongSelect from './components/screens/SongSelect';
-import VideoPage from './components/screens/VideoPage';
 import SensoryPage from './components/screens/SensoryPage';
 import AnalyticalOverview from './components/screens/AnalyticalOverview';
 import VoiceDesign from './components/screens/VoiceDesign';
@@ -32,13 +31,13 @@ import AestheticPage from './components/screens/AestheticPage';
 import FinalCard from './components/screens/FinalCard';
 import BottomWidgetBar from './components/BottomWidgetBar';
 import HelpButton from './components/HelpButton';
+import ListeningPanel from './components/ListeningPanel';
 import { useAppStore } from './store/useAppStore';
 
 const screens = {
   intro: Intro,
   studentInfo: StudentInfo,
   songSelect: SongSelect,
-  videoPage: VideoPage,
   sensoryPage: SensoryPage,
   analyticalOverview: AnalyticalOverview,
   voiceDesign: VoiceDesign,
@@ -48,10 +47,20 @@ const screens = {
   finalCard: FinalCard
 };
 
+const STAGE_SCREENS = [
+  'sensoryPage',
+  'analyticalOverview',
+  'voiceDesign',
+  'pianoAnalysis',
+  'historyCards',
+  'aestheticPage'
+];
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState('intro');
   const selectedSong = useAppStore((s) => s.selectedSong);
   const [raindrops, setRaindrops] = useState([]);
+  const [listeningCollapsed, setListeningCollapsed] = useState(false);
 
   useEffect(() => {
     setRaindrops(
@@ -69,6 +78,14 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentScreen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const apply = () => setListeningCollapsed(mq.matches);
+    apply();
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
+  }, [selectedSong]);
 
   const idx = useMemo(() => screenOrder.indexOf(currentScreen), [currentScreen]);
   const progress = (idx / (screenOrder.length - 1)) * 100;
@@ -108,11 +125,13 @@ function App() {
   const helpStep = useMemo(() => {
     if (currentScreen === 'intro') return 'intro';
     if (currentScreen === 'sensoryPage') return 'step1';
-    if (['analyticalOverview', 'voiceDesign', 'pianoAnalysis', 'historyCards'].includes(currentScreen)) return 'step2';
-    if (currentScreen === 'aestheticPage') return 'step3';
+    if (['analyticalOverview', 'voiceDesign', 'pianoAnalysis'].includes(currentScreen)) return 'step2';
+    if (['historyCards', 'aestheticPage'].includes(currentScreen)) return 'step3';
     if (currentScreen === 'finalCard') return 'final';
     return 'intro';
   }, [currentScreen]);
+
+  const showListeningShell = STAGE_SCREENS.includes(currentScreen) && Boolean(selectedSong);
 
   return (
     <>
@@ -145,9 +164,21 @@ function App() {
         </div>
       </div>
 
-      <Current go={setCurrentScreen} />
-      <HelpButton currentStep={helpStep} />
+      {showListeningShell ? (
+        <div className={`stage-workspace ${listeningCollapsed ? 'listening-collapsed' : ''}`}>
+          <ListeningPanel
+            collapsed={listeningCollapsed}
+            onToggle={() => setListeningCollapsed((v) => !v)}
+          />
+          <div className="stage-workspace-main">
+            <Current go={setCurrentScreen} />
+          </div>
+        </div>
+      ) : (
+        <Current go={setCurrentScreen} />
+      )}
 
+      <HelpButton currentStep={helpStep} />
       <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
     </>
   );

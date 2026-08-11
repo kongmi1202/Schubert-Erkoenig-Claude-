@@ -190,9 +190,9 @@ function TonePaintingHandel({ go }) {
   return (
     <div className="screen active">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-B · 분석적 감상 (할렐루야)</div>
-        <div className="s-title">음화법(Tone Painting) 찾기</div>
-        <div className="s-desc">음악 요소: 음색, 가락</div>
+        <div className="s-eyebrow">STAGE 2 · 분석적 감상</div>
+        <div className="s-title">분석적 감상</div>
+        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
 
       <div className="body voice-body">

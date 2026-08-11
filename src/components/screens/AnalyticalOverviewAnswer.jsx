@@ -11,7 +11,7 @@ function AnalyticalOverviewAnswer({ go }) {
     <div className="screen active">
       <div className="stage-header"><div className="s-eyebrow">STAGE 2-A · 정답 비교</div><div className="s-title">정답을 확인해보세요</div></div>
       <div className="body">
-        <div className="sec">Q1. 등장인물 비교</div>
+        <div className="sec">1. 등장인물 비교</div>
         <div className="review-card">
           <div className="review-grid">
             <div>
@@ -25,7 +25,7 @@ function AnalyticalOverviewAnswer({ go }) {
           </div>
         </div>
 
-        <div className="sec">Q2. 줄거리 비교</div>
+        <div className="sec">2. 줄거리 비교</div>
         <div className="review-card">
           <div className="review-section-title">내 답변</div>
           <div className="review-item" style={{ marginBottom: 14 }}>{userStory.trim() || '입력 없음'}</div>

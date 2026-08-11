@@ -129,7 +129,6 @@ export function isStage2Complete(stageCompletion) {
     stageCompletion?.analytical
     && stageCompletion?.voice
     && stageCompletion?.piano
-    && stageCompletion?.history
   );
 }
 

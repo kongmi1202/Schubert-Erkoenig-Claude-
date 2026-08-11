@@ -40,7 +40,7 @@ function HistoryCardsHandel({ go }) {
   return (
     <div className="screen active">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-D · 분석적 감상 (할렐루야)</div>
+        <div className="s-eyebrow">STAGE 3-A · 사회·역사적 맥락 (할렐루야)</div>
         <div className="s-title">역사적 맥락 카드</div>
         <div className="s-desc">카드를 클릭(탭)해 앞뒤를 확인해보세요.</div>
       </div>
@@ -80,7 +80,7 @@ function HistoryCardsHandel({ go }) {
               go('aestheticPage');
             }}
           >
-            3단계로 이동 →
+            다음: 가치 판단 →
           </button>
         </div>
       </div>

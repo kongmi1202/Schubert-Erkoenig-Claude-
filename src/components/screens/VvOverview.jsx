@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import SensoryStage1Review from '../SensoryStage1Review';
 
 function VvOverview({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -31,36 +30,14 @@ function VvOverview({ go }) {
   return (
     <div className="screen active" id="vv-overview">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-A · 분석적 감상 (비발디)</div>
-        <div className="s-title">개요 파악</div>
+        <div className="s-eyebrow">STAGE 2 · 분석적 감상</div>
+        <div className="s-title">분석적 감상</div>
+        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
 
       <div className="body video-page-body">
-        <SensoryStage1Review ids={{ keywordsId: 'rv-kw-vv', sensoryDescId: 'rv-desc-vv' }} />
 
-        <div className="sec">영상</div>
-        <div className="video-wrap" style={{ marginBottom: 20 }}>
-          <iframe
-            src="https://www.youtube.com/embed/5XRSiC3CV7I"
-            title="비발디 사계 여름 3악장 개요 영상"
-            allowFullScreen
-          />
-        </div>
-
-        <div className="sec">소네트</div>
-        <div className="sonnet-item">
-          <div className="sonnet-quote">
-            아, 그러나 그의 두려움은 얼마나 정당한가!
-            <br />
-            하늘은 천둥 치고 번개 번뜩이며,
-            <br />
-            쏟아지는 우박은 자라나는 곡식의 이삭과
-            <br />
-            기세등등하게 피어있던 꽃들을 꺾어버린다.
-          </div>
-        </div>
-
-        <div className="sec">Q1. 여름 3악장에서 묘사하는 내용은 무엇인가요?</div>
+        <div className="sec">1. 여름 3악장에서 묘사하는 내용은 무엇인가요?</div>
         <textarea
           id="vv-q1"
           className="txt"

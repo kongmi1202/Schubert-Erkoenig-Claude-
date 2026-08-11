@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import SensoryStage1Review from '../SensoryStage1Review';
 
 const HANDEL_ANSWER_Q1 =
   '성경(요한계시록)을 바탕으로 한 종교적 내용이에요. 할렐루야, King of Kings 등 신의 위대함을 찬양하는 내용이 중심입니다.';
@@ -30,19 +29,14 @@ function AnalyticalOverviewHandel({ go }) {
   return (
     <div className="screen active">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-A · 분석적 감상 (할렐루야)</div>
-        <div className="s-title">전체적인 개요 파악</div>
+        <div className="s-eyebrow">STAGE 2 · 분석적 감상</div>
+        <div className="s-title">분석적 감상</div>
+        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
 
       <div className="body">
-        <SensoryStage1Review />
 
-        <div className="sec">할렐루야 해설 영상</div>
-        <div className="video-wrap">
-          <iframe src="https://www.youtube.com/embed/hIQ37oUDNYg" title="할렐루야 해설 영상" allowFullScreen />
-        </div>
-
-        <div className="sec">Q1. 이 음악의 가사는 어떤 내용인가요?</div>
+        <div className="sec">1. 이 음악의 가사는 어떤 내용인가요?</div>
         <textarea
           className="txt"
           value={q1Text}
@@ -66,13 +60,13 @@ function AnalyticalOverviewHandel({ go }) {
         <div className={`answer-compare-slide ${q1Open ? 'open' : ''}`}>
           <div className="answer-compare-inner">
             <div className="review-card">
-              <div className="review-section-title">Q1 정답</div>
+              <div className="review-section-title">1 정답</div>
               <div className="review-item">{HANDEL_ANSWER_Q1}</div>
             </div>
           </div>
         </div>
 
-        <div className="sec">Q2. 이 음악은 오페라와 어떤 차이가 있나요?</div>
+        <div className="sec">2. 이 음악은 오페라와 어떤 차이가 있나요?</div>
         <textarea
           className="txt"
           value={q2Text}

@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/useAppStore';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   PIANO_LH_SCENE_CORRECT,
   PIANO_RH_SCENE_CORRECT
@@ -30,7 +30,7 @@ const colorMap = {
 function AestheticPage({ go }) {
   const {
     q1, q2, q3, q2Type, setQ1, setQ2, setQ3, setQ2Type,
-    selectedKeywords, selectedColors, sensoryDesc, sensoryArtifacts, analyticalCharacters, analyticalStory, setStageCompletion,
+    selectedKeywords, selectedColors, sensoryDesc, analyticalCharacters, analyticalStory, setStageCompletion,
     selectedSong, handelLyricMeaning, handelOperaDiff, emotionResult, emotionSummary, voiceDesignState, pianoAnalysisState,
     tonePaintingHandelState, melodyCanvasHandelState, hyTimbreState, hyThemeState,
     vvSonnetState, vvConcertoState, cpFormState, cpRhythmState, sbSprechState, sbAtonalState
@@ -120,11 +120,11 @@ function AestheticPage({ go }) {
   const q1WritingHint = '처음 느낌과 분석 후 느낌이 어떻게 달라졌는지 한 문장으로 써보세요.';
   const q2WritingHint = '고른 분석 요소가 왜 이 곡을 특별하게 만드는지 이유를 한 문장으로 써보세요.';
   const analyticalQ1Label = isHandel
-    ? 'Q1 가사 내용 비교'
-    : (isHaydn ? 'Q1 악기 구성 비교' : (isSchoenberg ? 'Q1 편성 비교' : (isVivaldi ? 'Q1 장면 묘사 비교' : (isChopin ? 'Q1 악기 편성 비교' : 'Q1 등장인물 비교'))));
+    ? '1 가사 내용 비교'
+    : (isHaydn ? '1 악기 구성 비교' : (isSchoenberg ? '1 편성 비교' : (isVivaldi ? '1 장면 묘사 비교' : (isChopin ? '1 악기 편성 비교' : '1 등장인물 비교'))));
   const analyticalQ2Label = isHandel
-    ? 'Q2 오페라와의 차이 비교'
-    : (isHaydn ? 'Q2 떠오르는 동물 비교' : (isSchoenberg ? 'Q2 분위기 비교' : (isVivaldi ? 'Q2 분위기 비교' : (isChopin ? 'Q2 분위기 변화 비교' : 'Q2 줄거리 비교'))));
+    ? '2 오페라와의 차이 비교'
+    : (isHaydn ? '2 떠오르는 동물 비교' : (isSchoenberg ? '2 분위기 비교' : (isVivaldi ? '2 분위기 비교' : (isChopin ? '2 분위기 변화 비교' : '2 줄거리 비교'))));
   const showAnalyticalQ2 = !isVivaldi;
   const q2Options = isHandel
     ? [
@@ -175,25 +175,8 @@ function AestheticPage({ go }) {
         { key: 'disgust', label: '혐오', emoji: '😒', value: Number(emotionResult.disgust) || 0 }
       ].sort((a, b) => b.value - a.value).slice(0, 3)
     : [];
-  useEffect(() => {
-    const updateById = (id, text) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = text;
-    };
-    const keywordText = selectedKeywords.length ? selectedKeywords.join(', ') : '없음';
-    const descText = sensoryDesc || '없음';
-    updateById('rv-kw-hy', keywordText);
-    updateById('rv-desc-hy', descText);
-    updateById('rv-kw-sb', keywordText);
-    updateById('rv-desc-sb', descText);
-    updateById('rv-kw-vv', keywordText);
-    updateById('rv-desc-vv', descText);
-    updateById('rv-kw-cp', keywordText);
-    updateById('rv-desc-cp', descText);
-  }, [selectedKeywords, sensoryDesc]);
-
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3 · 심미적 감상</div><div className="s-title">나의 음악적 가치 판단</div><div className="s-desc">감각적·분석적 감상을 종합하여 이 음악을 평가해보세요.</div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 3-B · 심미적 감상</div><div className="s-title">나의 음악적 가치 판단</div><div className="s-desc">감각·분석 감상과 사회·역사 맥락을 종합하여 이 음악을 평가해보세요.</div></div>
       <div className="body voice-body">
         <div className="sec">나의 감상 여정 돌아보기</div>
         <div className="review-card">
@@ -212,13 +195,6 @@ function AestheticPage({ go }) {
 
               <div className="review-item">서술</div>
               <div className="fb show info">{sensoryDesc || '없음'}</div>
-
-              <div className="artifact-grid">
-                {sensoryArtifacts.pePhoto ? <div className="artifact-card"><div className="review-item">체육 사진</div><img src={sensoryArtifacts.pePhoto} alt="체육 활동 사진" className="captured-img" />{sensoryArtifacts.peAnswer ? <div className="small-note">{sensoryArtifacts.peAnswer}</div> : null}</div> : null}
-                {sensoryArtifacts.mathDrawing ? <div className="artifact-card"><div className="review-item">수학 도형 그림</div><img src={sensoryArtifacts.mathDrawing} alt="수학 활동 그림" className="captured-img" />{sensoryArtifacts.mathAnswer ? <div className="small-note">{sensoryArtifacts.mathAnswer}</div> : null}</div> : null}
-                {sensoryArtifacts.scienceSelected?.length ? <div className="artifact-card"><div className="review-item">과학 선택</div><div className="chip-row">{sensoryArtifacts.scienceSelected.map((s) => <span key={s} className="review-chip">{s}</span>)}</div>{sensoryArtifacts.scienceAnswer ? <div className="small-note">{sensoryArtifacts.scienceAnswer}</div> : null}</div> : null}
-                {sensoryArtifacts.mapAddress ? <div className="artifact-card"><div className="review-item">사회 선택 장소</div><div className="map-address">{sensoryArtifacts.mapAddress}</div>{sensoryArtifacts.mapAnswer ? <div className="small-note">{sensoryArtifacts.mapAnswer}</div> : null}</div> : null}
-              </div>
             </div>
 
             <div className="journey-block">

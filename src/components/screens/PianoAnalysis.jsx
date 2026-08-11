@@ -205,7 +205,7 @@ function PianoAnalysis({ go }) {
   }, [sceneSnapshot]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2-C · 분석적 감상 — 음계 · 리듬꼴</div><div className="s-title">{isErlkonig ? '피아노 전주 분석하기' : '할렐루야 반주 흐름 분석하기'}</div><div className="s-desc">{isErlkonig ? '오른손과 왼손 반주를 각각 듣고 가락선으로 표현해보세요.' : '고음/저음 반주의 흐름을 각각 듣고 가락선으로 표현해보세요.'}<br />음악 요소: <strong>음계, 리듬꼴</strong></div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2 · 분석적 감상</div><div className="s-title">분석적 감상</div><div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div></div>
       <div className="body voice-body">
         <div className="sec">오른손 반주</div>
         <audio

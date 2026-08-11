@@ -54,7 +54,7 @@ function SongSelect({ go }) {
 
   const onSelect = (songId) => {
     setSelectedSong(songId);
-    go('videoPage');
+    go('sensoryPage');
   };
 
   return (

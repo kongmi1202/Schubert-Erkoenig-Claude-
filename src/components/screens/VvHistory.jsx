@@ -58,7 +58,7 @@ function VvHistory({ go }) {
   return (
     <div className="screen active" id="vv-history">
       <div className="stage-header">
-        <div className="s-eyebrow">STAGE 2-D · 분석적 감상 (비발디)</div>
+        <div className="s-eyebrow">STAGE 3-A · 사회·역사적 맥락 (비발디)</div>
         <div className="s-title">역사 맥락</div>
       </div>
 
@@ -92,7 +92,7 @@ function VvHistory({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('pianoAnalysis')}>← 이전: vv-concerto</button>
-          <button className="btn-p" onClick={() => { setStageCompletion('history', true); go('aestheticPage'); }}>다음: 3단계(s3) →</button>
+          <button className="btn-p" onClick={() => { setStageCompletion('history', true); go('aestheticPage'); }}>다음: 가치 판단 →</button>
         </div>
       </div>
     </div>
