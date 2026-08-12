@@ -441,13 +441,10 @@ function HyTheme({ go }) {
           <div ref={t2YtHostRef} />
         </div>
 
-        <div className="sec">두 주제의 특징을 찾아보세요</div>
-        <div className="fb show info" style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
-          {`💡 두 주제를 각각 들으며
-아래 보기 카드 중 알맞은 것을
-각 주제 칸에 넣어보세요.
-여러 개를 넣어도 좋아요!`}
-        </div>
+        <div className="sec">4. 이 곡은 2개의 주제를 가지고 있어요. 각 주제의 특징을 찾아보세요.</div>
+
+        <div className="sonnet-item">
+        <div className="sec sonnet-item-num">4-1. 각 주제를 듣고, 아래 보기 카드 중 알맞은 것을 각 주제 칸에 넣어보세요.</div>
 
         <div
           style={{
@@ -703,8 +700,10 @@ function HyTheme({ go }) {
             </div>
           </div>
         </div>
+        </div>
 
-        <div className="sec">파트 3 — 건반 그림 + 도 수 맞추기</div>
+        <div className="sonnet-item">
+        <div className="sec sonnet-item-num">4-2. 각 주제는 다른 조성을 가지고 있어요. 각 주제의 조성이 몇 도 차이가 나는지 선택해보세요.</div>
         <div className="keyboard-wrap">
           <div className="keyboard-label">피아노 건반으로 보는 두 주제의 조성</div>
           <div className="small-note" style={{ marginBottom: 10, lineHeight: 1.65, color: 'var(--text-dim)' }}>
@@ -746,20 +745,9 @@ function HyTheme({ go }) {
             ))}
           </div>
           <div className="keyboard-note">
-            {matchChecked ? (
-              <>
-                제1주제: <strong style={{ color: '#6b9fd4' }}>G장조(사장조)</strong> · 제2주제:{' '}
-                <strong style={{ color: '#d4aa4a' }}>D장조(라장조)</strong>
-                <br />
-                G에서 D까지 몇 도 차이일까요?
-              </>
-            ) : (
-              <>
-                주제 특징 활동을 완료하면 두 주제의 조성이 공개됩니다.
-                <br />
-                먼저 보기 배치와 정답 확인을 마무리해 주세요.
-              </>
-            )}
+            제1주제: <strong style={{ color: '#8ec0f5' }}>G장조(사장조)</strong> · 제2주제:{' '}
+            <strong style={{ color: '#e8c56a' }}>D장조(라장조)</strong>
+            <span className="keyboard-note-q">G에서 D까지 몇 도 차이일까요?</span>
           </div>
         </div>
 
@@ -812,6 +800,7 @@ function HyTheme({ go }) {
               5도 차이 조성을 사용하는 것이 특징이에요.
             </div>
           </div>
+        </div>
         </div>
 
         {canProceed ? (

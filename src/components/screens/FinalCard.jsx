@@ -152,9 +152,9 @@ function FinalCard({ go }) {
   const chopinAnswerQ1 = '피아노 독주예요. 다른 악기 없이 피아노 한 대가 선율과 반주를 모두 표현해요.';
   const chopinAnswerQ2 = '빠르고 격렬한 A구간과 느리고 서정적인 B구간이 대비되어, 곡의 분위기가 극적으로 바뀌어요.';
   const handelToneSegments = [
-    { id: 's1', title: '구간 1', answer: '음이 점점 높아진다' },
-    { id: 's2', title: '구간 2', answer: '강조와 확신을 표현한다' },
-    { id: 's3', title: '구간 3', answer: '선율이 끝없이 이어진다' }
+    { id: 's1', title: '3-1.', answer: '음이 점점 높아진다' },
+    { id: 's2', title: '3-2.', answer: '강조와 확신을 표현한다' },
+    { id: 's3', title: '3-3.', answer: '선율이 끝없이 이어진다' }
   ];
   const handelToneOptionsById = {
     s1: ['음이 점점 높아진다', '음이 갑자기 낮아진다', '리듬이 빨라진다', '선율이 길게 이어진다'],

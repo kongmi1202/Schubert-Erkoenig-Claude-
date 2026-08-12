@@ -168,11 +168,7 @@ function HyTimbre({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="fb show info" style={{ marginBottom: 16 }}>
-          현악 4중주는 제1바이올린, 제2바이올린, 비올라, 첼로
-          <br />
-          4개의 현악기로 연주해요. 각 악기는 음높이와 음색이 달라요.
-        </div>
+        <div className="sec">3. 이 곡은 현악4중주로, 제1바이올린, 제2바이올린, 비올라, 첼로 4개의 현악기로 연주해요. 각 악기는 음높이와 음색이 달라요. 각 구간을 듣고 어떤 악기의 음색인지, 이 악기는 어떤 역할을 하는지 선택해보세요.</div>
 
         {SEGMENTS.map((segment) => {
           const picked = selectedByGrid[segment.gridId];

@@ -1204,18 +1204,18 @@ canvas{display:block;width:100%;touch-action:none}
 .tone-opt-h.ng{border-color:var(--crimson);background:var(--crimson-pale);color:#e0a0a0;}
 
 .degree-opts-h{display:flex;gap:10px;margin-bottom:14px;}
-.degree-opt-h{flex:1;padding:12px;border:1px solid var(--border);
-  background:var(--surface);cursor:pointer;text-align:center;
-  font-size:14px;font-weight:300;color:var(--text-dim);transition:all .2s;}
-.degree-opt-h:hover{border-color:#4a7fc1;}
-.degree-opt-h.sel{border-color:#4a7fc1;background:rgba(74,127,193,.12);color:#6b9fd4;}
+.degree-opt-h{flex:1;padding:14px 12px;border:1px solid var(--border2);
+  background:var(--surface2);cursor:pointer;text-align:center;
+  font-size:18px;font-weight:700;color:var(--text);transition:all .2s;}
+.degree-opt-h:hover{border-color:#6b9fd4;background:rgba(74,127,193,.14);color:#9ec5f0;}
+.degree-opt-h.sel{border-color:#6b9fd4;background:rgba(74,127,193,.22);color:#c7ddf8;}
 .degree-opt-h.ok{border-color:var(--green);background:var(--green-pale);color:#a0e0b8;}
 .degree-opt-h.ng{border-color:var(--crimson);background:var(--crimson-pale);color:#e0a0a0;}
 
 .keyboard-wrap{background:var(--bg3);border:1px solid var(--border);
   padding:18px;margin-bottom:14px;}
-.keyboard-label{font-size:10px;letter-spacing:.2em;color:#4a7fc1;
-  font-weight:300;margin-bottom:12px;}
+.keyboard-label{font-size:12px;letter-spacing:.12em;color:#7eb0e8;
+  font-weight:600;margin-bottom:12px;}
 .keyboard{display:flex;align-items:flex-end;gap:2px;height:120px;margin-bottom:12px;}
 .key-w{flex:1;height:120px;background:#e8e8e8;border:1px solid #ccc;
   border-radius:0 0 4px 4px;position:relative;cursor:default;
@@ -1236,8 +1236,10 @@ canvas{display:block;width:100%;touch-action:none}
 .keyboard-wrap .key-b{cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .keyboard-wrap .key-b:focus-visible{outline:2px solid #fde047;outline-offset:1px;}
 .keyboard-wrap .key-b.is-pressed{background:#444;}
-.keyboard-note{font-size:11px;color:var(--text-dim);font-weight:300;
-  line-height:1.7;text-align:center;}
+.keyboard-note{font-size:15px;color:var(--text);font-weight:500;
+  line-height:1.7;margin-top:4px;text-align:center;}
+.keyboard-note strong{font-weight:700;}
+.keyboard-note-q{display:block;margin-top:8px;font-size:16px;font-weight:700;color:var(--purple-light);}
 
 .feel-grid-h{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .feel-card-h{padding:14px;border:1px solid var(--border);background:var(--surface);}

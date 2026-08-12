@@ -1,6 +1,6 @@
 export const SONG_CONFIG = {
   mawang: {
-    videoUrl: 'https://www.youtube.com/embed/BXeE7rIAiTM',
+    videoUrl: 'https://www.youtube.com/embed/cDyadF3Zc6g',
     videoTitle: "슈베르트의 '마왕'을 감상해보세요",
     panelLabel: '가사',
     cardAnalysis: '음색 대비, 인물별 선율과 리듬, 이야기 전개',

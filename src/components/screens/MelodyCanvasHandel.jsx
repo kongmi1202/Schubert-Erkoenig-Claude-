@@ -147,10 +147,8 @@ function MelodyCanvasHandel({ go }) {
         <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
       <div className="body voice-body">
-        <div className="sec">A 구간</div>
-        <div className="segment-guide-text">
-          A구간을 듣고 가락의 움직임을 선으로 표현해보세요.
-        </div>
+        <div className="sec">4. 이 곡에서는 다같이 노래하는 구간과 차례로 노래하는 구간이 있어요. 각 구간을 가락선 악보로 표현해 보세요.</div>
+        <div className="sec">4-1. 아래 영상을 재생하여 A 구간을 듣고, 각 가락(Melody)의 움직임을 선으로 표현해보세요.</div>
         <div className="audio-bar voice-audio-bar">
           <div className="voice-audio-main">
             <div className="voice-audio-yt">
@@ -240,10 +238,7 @@ function MelodyCanvasHandel({ go }) {
           </div>
         ) : null}
 
-        <div className="sec">B 구간</div>
-        <div className="segment-guide-text">
-          B구간을 듣고 성부가 번갈아 움직이는 흐름을 선으로 표현해보세요.
-        </div>
+        <div className="sec">4-2. 아래 영상을 재생하여 B 구간을 듣고, 각 가락(Melody)의 움직임을 선으로 표현해보세요.</div>
         <div className="audio-bar voice-audio-bar">
           <div className="voice-audio-main">
             <div className="voice-audio-yt">

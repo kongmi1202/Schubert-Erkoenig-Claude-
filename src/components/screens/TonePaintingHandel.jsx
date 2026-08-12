@@ -8,7 +8,7 @@ import { useAppStore } from '../../store/useAppStore';
 const SEGMENTS = [
   {
     id: 's1',
-    title: '구간 1',
+    title: '3-1.',
     start: 126,
     end: 171,
     lyric: 'King of Kings / 왕 중의 왕',
@@ -25,7 +25,7 @@ const SEGMENTS = [
   },
   {
     id: 's2',
-    title: '구간 2',
+    title: '3-2.',
     start: 0,
     end: 26,
     lyric: 'Hallelujah (반복) / 할렐루야',
@@ -42,7 +42,7 @@ const SEGMENTS = [
   },
   {
     id: 's3',
-    title: '구간 3',
+    title: '3-3.',
     start: 191,
     end: 220,
     lyric: 'For ever and ever / 영원히 영원히',
@@ -196,10 +196,7 @@ function TonePaintingHandel({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="fb show info" style={{ marginBottom: 16 }}>
-          음화법(Tone Painting)이란? 가사의 의미를 음악으로 직접 묘사하는 기법이에요.
-          활동 후에 직접 발견해보세요!
-        </div>
+        <div className="sec">3. 이 곡은 음 화법(Tone Painting)을 사용하여 가사의 의미를 음악으로 직접 묘사했어요. 각 구간에서 가사를 음악으로 어떻게 표현했는지 살펴 보세요.</div>
 
         <div className="sec">구간 목차</div>
         <div className="char-tabs" style={{ marginBottom: 12 }}>
