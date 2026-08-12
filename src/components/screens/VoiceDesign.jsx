@@ -316,155 +316,164 @@ function VoiceDesign({ go }) {
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2 · 분석적 감상</div><div className="s-title">분석적 감상</div><div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div></div>
       <div className="body voice-body">
-        <div className="sec">{isErlkonig ? '3. 이 곡은 한 명의 가수가 4명의 등장인물을 다른 선율, 음계, 음색으로 표현해요. 아래 영상을 감상하고, 가수가 각 등장인물을 어떻게 표현하고 있는지 목소리를 설계해보세요.' : '성부 선택 · 설계할 대상 전환'}</div>
-        <div className="char-tabs">
-          {chars.map((c) => (
-            <button
-              key={c.name}
-              type="button"
-              className={`char-tab ${selectedCharacter === c.name ? 'active' : ''} ${selectedChars.includes(c.name) ? 'picked' : ''}`}
-              onClick={() => toggleChar(c.name)}
-            >
-              <span>{c.icon}</span> {c.name}
-            </button>
-          ))}
-        </div>
-        <div className="small-note">
-          편집 중: {selectedCharacter} · 강조된 두 명: {selectedChars.join(', ')} · 네 인물 중{' '}
-          {VOICE_CHAR_NAMES.filter((n) => isCharacterFilled(n)).length}
-          명 완료 (2명 이상이면 다음 단계 가능)
-        </div>
+        <div className="sec">{isErlkonig ? '3. 이 곡은 한 명의 가수가 4명의 등장인물을 다른 선율, 음계, 음색으로 표현해요. 아래 보기에서 인물을 골라 영상을 통해 그 인물의 목소리를 감상하고, 가수가 각 등장인물을 어떻게 표현하고 있는지 목소리를 설계해보세요.' : '성부 선택 · 설계할 대상 전환'}</div>
 
-        <div className="char-card voice-char-card">
-          <div className="char-emoji">{active.icon}</div>
-          <div>
-            <div className="char-name">{active.name}</div>
-            <div className="char-lyric">{active.lyric}</div>
+        <div className="sonnet-item voice-activity-block">
+          <div className="sec sonnet-item-num">[보기] 인물 고르기</div>
+          <div className="char-tabs">
+            {chars.map((c) => (
+              <button
+                key={c.name}
+                type="button"
+                className={`char-tab ${selectedCharacter === c.name ? 'active' : ''} ${selectedChars.includes(c.name) ? 'picked' : ''}`}
+                onClick={() => toggleChar(c.name)}
+              >
+                <span>{c.icon}</span> {c.name}
+              </button>
+            ))}
+          </div>
+          <div className="small-note" style={{ marginTop: 10 }}>
+            지금 {selectedCharacter} 설계 중 · 완료 {VOICE_CHAR_NAMES.filter((n) => isCharacterFilled(n)).length}명
+            (2명 이상 끝내면 다음으로)
           </div>
         </div>
 
-        <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-            <div className="aud-title-sm">{active.audioTitle}</div>
-            <button className="btn-s" type="button" onClick={() => setSegmentReplaySignal((k) => k + 1)}>다시 듣기</button>
-          </div>
-          <SegmentYoutubePlayer
-            videoId={videoId}
-            start={active.start}
-            end={active.end}
-            title={`${active.name} 구간 영상`}
-            replaySignal={segmentReplaySignal}
-          />
-        </div>
-
-        <div className="voice-design-panel">
-          <div className="voice-design-panel-head">
-            <span className="voice-design-panel-icon" aria-hidden="true">🎙️</span>
+        <div className="sonnet-item voice-activity-block">
+          <div className="sec sonnet-item-num">[감상] {selectedCharacter} 목소리 듣기</div>
+          <div className="char-card voice-char-card">
+            <div className="char-emoji">{active.icon}</div>
             <div>
-              <div className="voice-design-panel-title">음색 설계</div>
-              <div className="voice-design-panel-desc">듣고 느낀 대로 세 가지를 골라 {active.name}의 목소리를 설계해 보세요.</div>
+              <div className="char-name">{active.name}</div>
+              <div className="char-lyric">{active.lyric}</div>
             </div>
           </div>
 
-          {designCategories.map((category) => (
-            <div key={category.key} className="vd-item">
-              <div className="vd-label">
-                {category.key}
-                <span className="tip-wrap">
-                  <span className="q-mini">?</span>
-                  <span className="tip-bubble">{category.tip}</span>
-                </span>
-              </div>
-              <div className={`vd-opts vd-opts--${category.cols}`}>
-                {category.options.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`vd-opt vd-opt--${category.tone} ${category.key === '선율' ? 'vd-opt--melody' : ''} ${isSel(category.key, option.value) ? 'sel' : ''}`}
-                    onClick={() => selectDesign(category.key, option.value)}
-                  >
-                    <VoiceDesignOptionIcon option={option} />
-                    <span className="vd-opt-label">{option.value}</span>
-                    <span className="vd-opt-hint">{option.hint}</span>
-                  </button>
-                ))}
-              </div>
+          <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+              <div className="aud-title-sm">{active.audioTitle}</div>
+              <button className="btn-s" type="button" onClick={() => setSegmentReplaySignal((k) => k + 1)}>다시 듣기</button>
             </div>
-          ))}
+            <SegmentYoutubePlayer
+              videoId={videoId}
+              start={active.start}
+              end={active.end}
+              title={`${active.name} 구간 영상`}
+              replaySignal={segmentReplaySignal}
+            />
+          </div>
         </div>
 
-        {canShowAnswerCheck ? (
-          <>
-            <FormativeFeedbackBlock
-              key={`voice-fb-${currentSnapshot}`}
-              getFeedback={getVoiceFeedback}
-              onRequested={onFeedbackRequested}
-              onResult={() => {
-                setVoiceAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
-              }}
-            />
-            <button
-              type="button"
-              className="answer-check-toggle"
-              onClick={() => setShowCompare((v) => !v)}
-              aria-expanded={showCompare}
-              disabled={!canOpenAnswerCheck}
-              style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">{canOpenAnswerCheck ? `정답 확인하기 · ${selectedCharacter}` : '피드백 반영 후 정답 확인하기'}</span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">
-                {showCompare ? '▲' : '▼'}
-              </span>
-            </button>
-            {voiceAiGate?.feedbackCompleted &&
-            voiceAiGate.wasCorrectWhenFeedbackRequested &&
-            currentSnapshot === voiceAiGate.responseAtFeedback ? (
-              <div className="small-note" style={{ marginTop: 8 }}>
-                좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
-              </div>
-            ) : null}
-
-            <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
-              <div className="answer-compare-inner voice-compare-panel">
-                <div className="voice-compare-head">
-                  <span className="voice-compare-badge">{active.icon}</span>
-                  <span className="voice-compare-title">{selectedCharacter} 음색 설계 비교</span>
-                </div>
-                <table className="cmp-table cmp-table-voice">
-                  <thead>
-                    <tr>
-                      <th className="col-element">요소</th>
-                      <th>나의 설계</th>
-                      <th>정답</th>
-                      <th className="col-mark" aria-label="일치 여부" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {designKeys.map((key) => {
-                      const mine = voiceDesign[selectedCharacter]?.[key] || '';
-                      const correct = answerKey[selectedCharacter]?.[key] ?? '—';
-                      const match = mine && mine === correct;
-                      return (
-                        <tr key={key}>
-                          <td className="row-label col-element">{key}</td>
-                          <td>{mine || '—'}</td>
-                          <td className="voice-correct-cell">{correct}</td>
-                          <td className="col-mark">
-                            <span className={`voice-compare-mark ${match ? 'ok' : 'bad'}`} aria-label={match ? '일치' : '불일치 또는 미선택'}>
-                              {match ? '✓' : '✗'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-                <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
-            <div className="fb show info">💬 위 정답은 {isErlkonig ? '시와 음악 해설' : '곡의 성부/화성 해설'}에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
+        <div className="sonnet-item voice-activity-block">
+          <div className="sec sonnet-item-num">[문제] {selectedCharacter} 목소리 설계하기</div>
+          <div className="voice-design-panel">
+            <div className="voice-design-panel-head">
+              <span className="voice-design-panel-icon" aria-hidden="true">🎙️</span>
+              <div>
+                <div className="voice-design-panel-title">음색 설계</div>
+                <div className="voice-design-panel-desc">듣고 느낀 대로 골라 {active.name}의 목소리를 설계해 보세요.</div>
               </div>
             </div>
-          </>
-        ) : null}
+
+            {designCategories.map((category) => (
+              <div key={category.key} className="vd-item">
+                <div className="vd-label">
+                  {category.key}
+                  <span className="tip-wrap">
+                    <span className="q-mini">?</span>
+                    <span className="tip-bubble">{category.tip}</span>
+                  </span>
+                </div>
+                <div className={`vd-opts vd-opts--${category.cols}`}>
+                  {category.options.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`vd-opt vd-opt--${category.tone} ${category.key === '선율' ? 'vd-opt--melody' : ''} ${isSel(category.key, option.value) ? 'sel' : ''}`}
+                      onClick={() => selectDesign(category.key, option.value)}
+                    >
+                      <VoiceDesignOptionIcon option={option} />
+                      <span className="vd-opt-label">{option.value}</span>
+                      <span className="vd-opt-hint">{option.hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {canShowAnswerCheck ? (
+            <>
+              <FormativeFeedbackBlock
+                key={`voice-fb-${currentSnapshot}`}
+                getFeedback={getVoiceFeedback}
+                onRequested={onFeedbackRequested}
+                onResult={() => {
+                  setVoiceAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+                }}
+              />
+              <button
+                type="button"
+                className="answer-check-toggle"
+                onClick={() => setShowCompare((v) => !v)}
+                aria-expanded={showCompare}
+                disabled={!canOpenAnswerCheck}
+                style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+              >
+                <span className="answer-check-toggle-label">{canOpenAnswerCheck ? `정답 확인하기 · ${selectedCharacter}` : '피드백 반영 후 정답 확인하기'}</span>
+                <span className="answer-check-toggle-chevron" aria-hidden="true">
+                  {showCompare ? '▲' : '▼'}
+                </span>
+              </button>
+              {voiceAiGate?.feedbackCompleted &&
+              voiceAiGate.wasCorrectWhenFeedbackRequested &&
+              currentSnapshot === voiceAiGate.responseAtFeedback ? (
+                <div className="small-note" style={{ marginTop: 8 }}>
+                  좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
+                </div>
+              ) : null}
+
+              <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
+                <div className="answer-compare-inner voice-compare-panel">
+                  <div className="voice-compare-head">
+                    <span className="voice-compare-badge">{active.icon}</span>
+                    <span className="voice-compare-title">{selectedCharacter} 음색 설계 비교</span>
+                  </div>
+                  <table className="cmp-table cmp-table-voice">
+                    <thead>
+                      <tr>
+                        <th className="col-element">요소</th>
+                        <th>나의 설계</th>
+                        <th>정답</th>
+                        <th className="col-mark" aria-label="일치 여부" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {designKeys.map((key) => {
+                        const mine = voiceDesign[selectedCharacter]?.[key] || '';
+                        const correct = answerKey[selectedCharacter]?.[key] ?? '—';
+                        const match = mine && mine === correct;
+                        return (
+                          <tr key={key}>
+                            <td className="row-label col-element">{key}</td>
+                            <td>{mine || '—'}</td>
+                            <td className="voice-correct-cell">{correct}</td>
+                            <td className="col-mark">
+                              <span className={`voice-compare-mark ${match ? 'ok' : 'bad'}`} aria-label={match ? '일치' : '불일치 또는 미선택'}>
+                                {match ? '✓' : '✗'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
+                  <div className="fb show info">💬 위 정답은 {isErlkonig ? '시와 음악 해설' : '곡의 성부/화성 해설'}에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
 
         {canCheckAnswer ? (
           <ArtSongTakeaway

@@ -166,7 +166,7 @@ function FinalCard({ go }) {
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
   const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
-  const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
+  const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '오른손 4박과 왼손 3박이 동시에 진행된다' };
   const step2State = useMemo(() => ({
     analyticalCharacters,
     analyticalStory,
@@ -314,8 +314,6 @@ function FinalCard({ go }) {
       });
       pushCheck(stage2Checks, step2Flags.pianoRhScene, gradePianoRhScene(pianoAnalysisState?.rhScene));
       pushCheck(stage2Checks, step2Flags.pianoLhScene, gradePianoLhScene(pianoAnalysisState?.lhScene));
-      pushCheck(stage2Checks, step2Flags.pianoRhDrawing);
-      pushCheck(stage2Checks, step2Flags.pianoLhDrawing);
     }
 
     const stage2Summary = summarizeChecks(stage2Checks);
@@ -741,7 +739,7 @@ function FinalCard({ go }) {
               ) : null}
               {step2Flags.rhythmPoly ? (
               <div className="cmp-mini-grid">
-                <div className="fb show info">2-C 양손 느낌: {cpRhythmState?.selectedByGroup?.['cp-poly-q'] || '없음'}</div>
+                <div className="fb show info">2-C 양손 리듬 겹침: {cpRhythmState?.selectedByGroup?.['cp-poly-q'] || '없음'}</div>
                 <div className="fb show gold">정답: {cpRhythmCorrect['cp-poly-q']}</div>
               </div>
               ) : null}

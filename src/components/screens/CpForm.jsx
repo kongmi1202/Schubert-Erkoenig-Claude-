@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { normalizeFormativeChoice } from '../../lib/compareFeedback';
 import {
-  canOpenAnswerAfterFormativeAiGate,
-  normalizeFormativeChoice
-} from '../../lib/compareFeedback';
-import { getCpFormAbaDiscoveryFixedFeedback } from '../../lib/fixedFormativeFeedback';
+  getCpFormAbaDiscoveryFixedFeedback,
+  getCpFormSegmentFixedFeedback
+} from '../../lib/fixedFormativeFeedback';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const FORM_CARDS = [
@@ -42,29 +42,8 @@ const CP_FORM_DISCOVERY_CHOICES = [
   '연주자가 쉬기 위해'
 ];
 
-const DISCOVERY_FEEDBACK_OK = `맞아요! ABA 형식에서 가운데 B구간은
-앞뒤 A·A'와 다른 셈여림과 속도로
-느낌을 나란히 보여 주는 역할을 해요.`;
-
-const DISCOVERY_FEEDBACK_NG = `선택한 보기를
-질문과 다시 맞춰 보세요.
-세 구간의 셈여림과 빠르기를
-귀로만 비교해 보세요.`;
-
-function segmentCompareBody(cardId, labelOk, featureOk) {
-  if (!labelOk) {
-    return '이 구간의 라벨과 맞지 않아요. 빠르기와 셈여림이 어떤지 다시 들어보세요.';
-  }
-  if (!featureOk) {
-    return '이 구간의 특징과 맞지 않아요. 음악이 빠른지 느린지, 강한지 부드러운지 다시 들어보세요.';
-  }
-  if (cardId === 'cp-f1') {
-    return '맞아요! A구간은 빠르고 강한 셈여림(ff)으로 긴장감과 에너지를 만들어요.';
-  }
-  if (cardId === 'cp-f2') {
-    return '맞아요! B구간은 느리고 부드러운 셈여림(pp)으로 A구간과 극적으로 대비돼요.';
-  }
-  return "맞아요! A'구간은 처음처럼 빠르고 강하게 돌아오지만 마지막에 조용히 마무리돼요.";
+function segmentResponseKey(label, feature) {
+  return `${label || ''}|${feature || ''}`;
 }
 
 function AbaDiagram() {
@@ -109,16 +88,11 @@ function CpForm({ go }) {
 
   const [formAnswers, setFormAnswers] = useState(() => cpFormState?.formAnswers || {});
   const [featureById, setFeatureById] = useState(() => cpFormState?.featureById || {});
-  const [segmentUiById, setSegmentUiById] = useState(() => ({
-    'cp-f1': { revealed: false, open: false },
-    'cp-f2': { revealed: false, open: false },
-    'cp-f3': { revealed: false, open: false }
-  }));
+  const [segmentFbDoneById, setSegmentFbDoneById] = useState({});
 
   const [discoveryChoice, setDiscoveryChoice] = useState(() => cpFormState?.discoveryChoice || '');
   const [discoveryQuizResult, setDiscoveryQuizResult] = useState(() => cpFormState?.discoveryQuizResult || '');
-  const [discoveryAnsOpen, setDiscoveryAnsOpen] = useState(false);
-  const [discoveryAiGate, setDiscoveryAiGate] = useState(null);
+  const [discoveryFbDone, setDiscoveryFbDone] = useState(false);
 
   const [currentSegmentId, setCurrentSegmentId] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -129,47 +103,26 @@ function CpForm({ go }) {
 
   function selFormLabel(_el, cardId, label) {
     setFormAnswers((prev) => ({ ...prev, [cardId]: label }));
-    setSegmentUiById((prev) => ({
-      ...prev,
-      [cardId]: { revealed: false, open: false }
-    }));
+    setSegmentFbDoneById((prev) => {
+      const next = { ...prev };
+      delete next[cardId];
+      return next;
+    });
   }
 
   function selFeature(cardId, value) {
     setFeatureById((prev) => ({ ...prev, [cardId]: value }));
-    setSegmentUiById((prev) => ({
-      ...prev,
-      [cardId]: { revealed: false, open: false }
-    }));
-  }
-
-  function checkSegment(cardId) {
-    const label = formAnswers[cardId];
-    const feat = featureById[cardId];
-    if (!label || !feat) return;
-    setSegmentUiById((prev) => {
-      const cur = prev[cardId] || { revealed: false, open: false };
-      if (!cur.revealed) {
-        return { ...prev, [cardId]: { revealed: true, open: true } };
-      }
-      return { ...prev, [cardId]: { ...cur, open: !cur.open } };
+    setSegmentFbDoneById((prev) => {
+      const next = { ...prev };
+      delete next[cardId];
+      return next;
     });
   }
 
   function pickDiscovery(choice) {
     setDiscoveryChoice(choice);
-    setDiscoveryAiGate(null);
+    setDiscoveryFbDone(false);
     setDiscoveryQuizResult('');
-    setDiscoveryAnsOpen(false);
-  }
-
-  function checkDiscoveryAnswer() {
-    if (!discoveryChoice) return;
-    const ok =
-      normalizeFormativeChoice(discoveryChoice) === normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
-    setDiscoveryQuizResult(ok ? 'ok' : 'ng');
-    setDiscoveryAnsOpen((prev) => !prev);
-    setStageCompletion('voice', true);
   }
 
   const stopWatcher = () => {
@@ -211,27 +164,15 @@ function CpForm({ go }) {
     setIsPlaying(true);
   };
 
-  const allSegmentsRevealed = useMemo(
-    () => FORM_CARDS.every((c) => segmentUiById[c.id]?.revealed),
-    [segmentUiById]
+  const allSegmentsFbDone = useMemo(
+    () => FORM_CARDS.every((c) => segmentFbDoneById[c.id]),
+    [segmentFbDoneById]
   );
-
-  const canOpenDiscoveryAnswerCheck =
-    !!discoveryChoice &&
-    discoveryAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: discoveryAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: discoveryAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: discoveryAiGate.responseAtFeedback,
-      currentResponse: discoveryChoice
-    });
 
   const discoveryCorrect =
     normalizeFormativeChoice(discoveryChoice) === normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
 
-  const canProceed =
-    allSegmentsRevealed && discoveryCorrect && discoveryQuizResult === 'ok';
-
+  const canProceed = allSegmentsFbDone && discoveryFbDone && discoveryCorrect;
 
   useEffect(() => {
     setCpFormState({
@@ -328,22 +269,18 @@ function CpForm({ go }) {
           aria-hidden="true"
           style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}
         />
-        <div className="fb show info">
-          💡 음악은 여러 구간으로 나뉘어요.
-          <br />
-          각 구간을 듣고 A, B, A&apos; 중 어떤 이름을 붙여야 할지 맞춰보세요!
-        </div>
+        <div className="sec">3. 이 곡은 총 3개의 구간으로 나뉘어요. 각 구간을 듣고 A, B, A&apos; 중 어떤 이름을 붙여야 할지 맞춰보세요.</div>
 
         <div className="form-puzzle-grid">
           {FORM_CARDS.map((card, zoneIndex) => {
             const zone = zoneIndex + 1;
             const picked = formAnswers[card.id];
             const featPick = featureById[card.id];
-            const ui = segmentUiById[card.id] || { revealed: false, open: false };
-            const { revealed, open } = ui;
+            const fbDone = !!segmentFbDoneById[card.id];
             const labelOk = picked === formCorrect[card.id];
             const featureOk = featPick === featureCorrect[card.id];
             const segReady = Boolean(picked && featPick);
+            const responseKey = segmentResponseKey(picked, featPick);
 
             return (
               <div key={card.id} className={`form-puzzle-card cp-form-zone cp-form-zone--${zone}`}>
@@ -367,13 +304,25 @@ function CpForm({ go }) {
                 </div>
 
                 <div className="cp-form-segment-block cp-form-segment-labels">
-                  <div className="cp-form-segment-block-title">② A · B · A&apos; 이름 맞추기</div>
+                  <div className="cp-form-segment-block-title">
+                    ② A · B · A&apos; 이름 맞추기
+                    <span className="tip-wrap" tabIndex={0} aria-label="구간 이름 안내">
+                      <span className="q-mini" aria-hidden="true">?</span>
+                      <span className="tip-bubble tip-bubble--form-labels">
+                        A: 첫 번째 구간
+                        <br />
+                        B: A와 다른 구간
+                        <br />
+                        A&apos;: A와 비슷한 구간
+                      </span>
+                    </span>
+                  </div>
                   <div className="form-puzzle-label-opts">
                   {['A', 'B', "A'"].map((label) => {
                     const isSelected = picked === label;
                     const selClass = isSelected ? (label === 'A' ? 'sel-A' : label === 'B' ? 'sel-B' : 'sel-Ap') : '';
                     const resultClass =
-                      revealed && isSelected ? (picked === formCorrect[card.id] ? 'ok' : 'ng') : '';
+                      fbDone && isSelected ? (picked === formCorrect[card.id] ? 'ok' : 'ng') : '';
                     return (
                       <button
                         key={`${card.id}-${label}`}
@@ -394,7 +343,7 @@ function CpForm({ go }) {
                   {FEATURE_OPTS.map((opt) => {
                     const isSel = featPick === opt;
                     let cls = 'choice-btn';
-                    if (revealed && isSel) cls += featureOk ? ' ok' : ' ng';
+                    if (fbDone && isSel) cls += featureOk ? ' ok' : ' ng';
                     else if (isSel) cls += ' sel';
                     return (
                       <button
@@ -416,31 +365,23 @@ function CpForm({ go }) {
                   </div>
                 ) : null}
 
-                <button
-                  type="button"
-                  className="answer-check-toggle"
-                  style={{ marginTop: 12 }}
-                  onClick={() => checkSegment(card.id)}
-                  aria-expanded={open}
-                  disabled={!segReady}
-                  id={`cp-form-seg-check-${card.id}`}
-                >
-                  <span className="answer-check-toggle-label">정답 확인하기</span>
-                  <span className="answer-check-toggle-chevron" aria-hidden="true">
-                    {open ? '▲' : '▼'}
-                  </span>
-                </button>
-                <div className={`answer-compare-slide ${open ? 'open' : ''}`}>
-                  <div className="answer-compare-inner">
-                    {revealed ? (
-                      <div
-                        className={`fb show ${labelOk && featureOk ? 'ok' : 'ng'}`}
-                        style={{ whiteSpace: 'pre-line' }}
-                      >
-                        {segmentCompareBody(card.id, labelOk, featureOk)}
-                      </div>
-                    ) : null}
-                  </div>
+                <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
+                  <FormativeFeedbackBlock
+                    key={`cp-form-seg-fb-${card.id}-${responseKey || 'none'}`}
+                    disabled={!segReady}
+                    getFeedback={() =>
+                      getCpFormSegmentFixedFeedback({
+                        cardId: card.id,
+                        label: picked || '',
+                        feature: featPick || '',
+                        correctLabel: formCorrect[card.id],
+                        correctFeature: featureCorrect[card.id]
+                      })
+                    }
+                    onResult={() => {
+                      setSegmentFbDoneById((prev) => ({ ...prev, [card.id]: true }));
+                    }}
+                  />
                 </div>
                 </div>
               </div>
@@ -448,7 +389,7 @@ function CpForm({ go }) {
           })}
         </div>
 
-        {allSegmentsRevealed ? (
+        {allSegmentsFbDone ? (
           <>
             <div className="sec" style={{ marginTop: 22 }}>
               형식의 의미를 찾아보세요
@@ -481,59 +422,22 @@ function CpForm({ go }) {
                     correctAnswer: CP_FORM_DISCOVERY_CORRECT
                   })
                 }
-                onRequested={() => {
-                  setDiscoveryAiGate({
-                    feedbackCompleted: false,
-                    responseAtFeedback: discoveryChoice,
-                    wasCorrectWhenFeedbackRequested:
-                      normalizeFormativeChoice(discoveryChoice) ===
-                      normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT)
-                  });
-                }}
                 onResult={() => {
-                  setDiscoveryAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+                  const ok =
+                    normalizeFormativeChoice(discoveryChoice) ===
+                    normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
+                  setDiscoveryFbDone(true);
+                  setDiscoveryQuizResult(ok ? 'ok' : 'ng');
+                  if (ok) setStageCompletion('voice', true);
                 }}
               />
             </div>
 
-            <button
-              id="cp-form-discovery-check-btn"
-              type="button"
-              className="answer-check-toggle"
-              onClick={() => checkDiscoveryAnswer()}
-              aria-expanded={discoveryAnsOpen}
-              disabled={!canOpenDiscoveryAnswerCheck}
-              style={!canOpenDiscoveryAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">
-                {canOpenDiscoveryAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-              </span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">
-                {discoveryAnsOpen ? '▲' : '▼'}
-              </span>
-            </button>
-            <div
-              id="cp-form-discovery-check-body"
-              className={`answer-compare-slide ${discoveryAnsOpen ? 'open' : ''}`}
-            >
-              <div className="answer-compare-inner">
-                {discoveryQuizResult ? (
-                  <>
-                    <div
-                      className={`fb show ${discoveryQuizResult === 'ok' ? 'ok' : 'ng'}`}
-                      style={{ whiteSpace: 'pre-line' }}
-                    >
-                      {discoveryQuizResult === 'ok' ? DISCOVERY_FEEDBACK_OK : DISCOVERY_FEEDBACK_NG}
-                    </div>
-                    {discoveryQuizResult === 'ok' ? <AbaDiagram /> : null}
-                  </>
-                ) : null}
-              </div>
-            </div>
+            {discoveryFbDone && discoveryCorrect ? <AbaDiagram /> : null}
           </>
         ) : null}
 
-        {allSegmentsRevealed ? (
+        {allSegmentsFbDone && discoveryFbDone && discoveryCorrect ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">환상 즉흥곡의 특징 ①</div>

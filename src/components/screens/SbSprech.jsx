@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { getSbSprechFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const SEGMENTS = {
   normal: {
@@ -37,76 +39,6 @@ const isNormalVocalCorrect = (value) => getSliderToneText(value) === TONE_SING_F
 
 const isSprechstimmeCorrect = (value) => getSliderToneText(value) === TONE_SPEAK_NEAR;
 
-const getNormalWrongHint = (value) => {
-  const tone = getSliderToneText(value);
-  if (tone === TONE_SING_NEAR) {
-    return (
-      <>
-        ✗ 다시 들어보세요! 음이 한 음으로
-        <br />
-        얼마나 오래 이어지는지 집중해 보세요.
-        <br />
-        더 노래처럼 들리면 슬라이더를 조금 더 옮겨 보세요.
-      </>
-    );
-  }
-  if (tone === TONE_SPEAK_FULL || tone === TONE_SPEAK_NEAR || tone === TONE_CENTER) {
-    return (
-      <>
-        ✗ 다시 들어보세요! 송어 구간을 다시 들으며,
-        <br />
-        말하기와 노래하기 중 어디에 가깝게
-        <br />
-        들리는지 스스로 비교해 보세요.
-      </>
-    );
-  }
-  return (
-    <>
-      ✗ 다시 들어보세요! 일반 성악에서
-      <br />
-      음이 안정적으로 이어지는지 집중해 보세요.
-      <br />
-      들으며 슬라이더를 조금씩 조정해 보세요.
-    </>
-  );
-};
-
-const getSprechWrongHint = (value) => {
-  const tone = getSliderToneText(value);
-  if (tone === TONE_SPEAK_FULL) {
-    return (
-      <>
-        ✗ 다시 들어보세요! 피에로 구간을 다시 들으며,
-        <br />
-        말하기와 노래하기 중 어디쯤인지
-        <br />
-        스스로 비교해 보세요.
-      </>
-    );
-  }
-  if (tone === TONE_SING_NEAR || tone === TONE_SING_FULL) {
-    return (
-      <>
-        ✗ 다시 들어보세요! 이 구간은
-        <br />
-        노래보다 말하기에 가깝게 들리지 않나요?
-        <br />
-        음이 고정되지 않는 느낌을 기준으로 맞춰 보세요.
-      </>
-    );
-  }
-  return (
-    <>
-      ✗ 다시 들어보세요! 음이 정확하게
-      <br />
-      유지되는지, 바로 변하는지 비교해 보세요.
-      <br />
-      들으며 슬라이더를 조금씩 조정해 보세요.
-    </>
-  );
-};
-
 const SLIDER_DEFAULT = 50;
 const SPRECH_CORRECT_SUMMARY = '송어(일반 성악): 완전히 노래하기 / 피에로(슈프레흐슈팀메): 말하기에 가까워요';
 
@@ -127,8 +59,6 @@ function SbSprech({ go }) {
   const [normalChecked, setNormalChecked] = useState(() => Boolean(savedSprech?.normalChecked));
   const [sprechChecked, setSprechChecked] = useState(() => Boolean(savedSprech?.sprechChecked));
   const [bothCorrect, setBothCorrect] = useState(false);
-  const [normalOpen, setNormalOpen] = useState(false);
-  const [sprechOpen, setSprechOpen] = useState(false);
   const currentSegmentRef = useRef('');
   const ytHostRef = useRef(null);
   const ytPlayerRef = useRef(null);
@@ -307,13 +237,8 @@ function SbSprech({ go }) {
           aria-hidden="true"
           style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', pointerEvents: 'none' }}
         />
-        <div className="sec">비교 듣기</div>
-        <div className="fb show info">
-          💡 두 구간을 들으며 말하기와
-          <br />
-          노래하기 중 어느 쪽에 더 가까운지
-          <br />
-          슬라이더를 움직여보세요!
+        <div className="sec">
+          3. 두 구간을 들으며 말하기와 노래하기 중 어느 쪽에 더 가까운지 슬라이더를 움직여보세요.
         </div>
         <div className="compare-listen">
           <div className="cl-card tonal">
@@ -335,44 +260,28 @@ function SbSprech({ go }) {
                 onChange={(e) => {
                   setNormalValue(Number(e.target.value));
                   setNormalChecked(false);
-                  setNormalOpen(false);
                 }}
                 className="sb-tone-slider"
                 style={{ '--slider-value': `${normalValue}%` }}
               />
               <div className="sb-slider-state">{getSliderToneText(normalValue)}</div>
             </div>
-            <button
-              id="ans-sp-normal-btn"
-              type="button"
-              className="answer-check-toggle"
-              onClick={() => {
-                if (!canCheckNormal) return;
-                setNormalChecked(true);
-                setNormalOpen((prev) => !prev);
-                setStageCompletion('voice', true);
-              }}
-              aria-expanded={normalOpen}
-              disabled={!canCheckNormal}
-              style={!canCheckNormal ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">정답 확인하기</span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">{normalOpen ? '▲' : '▼'}</span>
-            </button>
-            <div id="ans-sp-normal-body" className={`answer-compare-slide ${normalOpen ? 'open' : ''}`}>
-              <div className="answer-compare-inner">
-                {normalIsCorrect ? (
-                  <div className="fb show ok">
-                    ✓ 맞아요! 일반 성악은 음을 정확하게
-                    <br />
-                    유지하며 노래해요. 음이 흔들리지 않고
-                    <br />
-                    그대로 이어지는 것이 일반 성악의 특징이에요.
-                  </div>
-                ) : (
-                  <div className="fb show ng">{getNormalWrongHint(normalValue)}</div>
-                )}
-              </div>
+            <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
+              <FormativeFeedbackBlock
+                key={`sb-sprech-normal-fb-${normalValue}`}
+                disabled={!canCheckNormal}
+                getFeedback={() =>
+                  getSbSprechFixedFeedback({
+                    kind: 'normal',
+                    hasMoved: canCheckNormal,
+                    isCorrect: normalIsCorrect
+                  })
+                }
+                onResult={() => {
+                  setNormalChecked(true);
+                  setStageCompletion('voice', true);
+                }}
+              />
             </div>
           </div>
           <div className="cl-card atonal">
@@ -394,42 +303,28 @@ function SbSprech({ go }) {
                 onChange={(e) => {
                   setSprechValue(Number(e.target.value));
                   setSprechChecked(false);
-                  setSprechOpen(false);
                 }}
                 className="sb-tone-slider"
                 style={{ '--slider-value': `${sprechValue}%` }}
               />
               <div className="sb-slider-state">{getSliderToneText(sprechValue)}</div>
             </div>
-            <button
-              id="ans-sp-sprech-btn"
-              type="button"
-              className="answer-check-toggle"
-              onClick={() => {
-                if (!canCheckSprech) return;
-                setSprechChecked(true);
-                setSprechOpen((prev) => !prev);
-                setStageCompletion('voice', true);
-              }}
-              aria-expanded={sprechOpen}
-              disabled={!canCheckSprech}
-              style={!canCheckSprech ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">정답 확인하기</span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">{sprechOpen ? '▲' : '▼'}</span>
-            </button>
-            <div id="ans-sp-sprech-body" className={`answer-compare-slide ${sprechOpen ? 'open' : ''}`}>
-              <div className="answer-compare-inner">
-                {sprechIsCorrect ? (
-                  <div className="fb show ok">
-                    ✓ 맞아요! 슈프레흐슈팀메는 음에 닿을락 말락 말하기에 더 가까워요.
-                    <br />
-                    말과 노래의 경계를 허무는 기법이에요.
-                  </div>
-                ) : (
-                  <div className="fb show ng">{getSprechWrongHint(sprechValue)}</div>
-                )}
-              </div>
+            <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
+              <FormativeFeedbackBlock
+                key={`sb-sprech-sprech-fb-${sprechValue}`}
+                disabled={!canCheckSprech}
+                getFeedback={() =>
+                  getSbSprechFixedFeedback({
+                    kind: 'sprech',
+                    hasMoved: canCheckSprech,
+                    isCorrect: sprechIsCorrect
+                  })
+                }
+                onResult={() => {
+                  setSprechChecked(true);
+                  setStageCompletion('voice', true);
+                }}
+              />
             </div>
           </div>
         </div>
@@ -455,7 +350,7 @@ function SbSprech({ go }) {
                   <br />
                   각 구간을 다시 듣고 슬라이더를 조정한 뒤
                   <br />
-                  정답 확인하기를 눌러 보세요.
+                  피드백 보기를 눌러 보세요.
                 </>
               )}
             </div>

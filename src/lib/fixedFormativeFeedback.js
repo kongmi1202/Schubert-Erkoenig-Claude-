@@ -63,6 +63,152 @@ export function getCpFormAbaDiscoveryFixedFeedback({ userChoice, correctAnswer }
   );
 }
 
+const CP_FORM_SEGMENT_CORRECT_BODY = {
+  'cp-f1':
+    '이 구간은 형식의 첫 부분(A)이에요. 빠르기(템포)가 빠르고 셈여림(ff)이 강하게 들려 긴장감·에너지를 만듭니다.',
+  'cp-f2':
+    '이 구간은 A와 대비되는 가운데 부분(B)이에요. 빠르기가 느리고 셈여림(pp)이 부드럽게 들려 앞 구간과 극적으로 달라집니다.',
+  'cp-f3':
+    "이 구간은 A와 비슷한 마지막 부분(A')이에요. 다시 빠르고 강하게 돌아오지만, 끝에서는 셈여림이 조용히 줄어들어요."
+};
+
+/**
+ * 쇼팽 ABA 구간 카드 — 이름(A/B/A') + 특징(빠르기·셈여림) 형성적 피드백
+ * @returns {{ kind: 'voice-sections', ... } | { kind: 'plain', text: string }}
+ */
+export function getCpFormSegmentFixedFeedback({
+  cardId,
+  label,
+  feature,
+  correctLabel,
+  correctFeature
+}) {
+  const pickedLabel = String(label || '').trim();
+  const pickedFeature = String(feature || '').trim();
+  if (!pickedLabel || !pickedFeature) {
+    return {
+      kind: 'plain',
+      text: '구간 이름(A·B·A\u2019)과 특징을 모두 고른 뒤 피드백 보기를 눌러 주세요.'
+    };
+  }
+
+  const labelOk = pickedLabel === correctLabel;
+  const featureOk = pickedFeature === correctFeature;
+  const allMatch = labelOk && featureOk;
+  const matchedCount = (labelOk ? 1 : 0) + (featureOk ? 1 : 0);
+
+  const sections = [
+    {
+      field: 'label',
+      label: '구간 이름',
+      focus: '형식 · A / B / A\u2019',
+      tone: 'pitch',
+      status: labelOk ? 'ok' : 'miss',
+      studentPick: pickedLabel,
+      note: labelOk
+        ? '구간 이름 선택이 맞아요.'
+        : `네가 고른 「${pickedLabel}」은 이 구간의 형식 위치와 잘 맞지 않아요.`,
+      hint: labelOk
+        ? ''
+        : '앞·뒤 구간과 비교해, 이 구간이 처음과 비슷한지·가운데처럼 다른지·다시 돌아오는 느낌인지 들어 보세요.',
+      example: labelOk
+        ? ''
+        : '빠르기·셈여림이 비슷한 구간끼리 같은 이름, 확 달라지면 다른 이름을 떠올려 보세요.'
+    },
+    {
+      field: 'feature',
+      label: '구간 특징',
+      focus: '빠르기 · 셈여림',
+      tone: 'timbre',
+      status: featureOk ? 'ok' : 'miss',
+      studentPick: pickedFeature,
+      note: featureOk
+        ? '구간 특징 선택이 맞아요.'
+        : `네가 고른 「${pickedFeature}」은 이 구간의 소리 특징과 잘 맞지 않아요.`,
+      hint: featureOk
+        ? ''
+        : '같은 구간을 다시 들으며 빠르기(템포)와 셈여림(소리의 세기)만 귀로 비교해 보세요.',
+      example: featureOk
+        ? ''
+        : '빠른지·느린지, 강하게 밀어붙이는지·부드럽게 감싸는지 한 문장으로 말한 뒤 보기를 다시 고르세요.'
+    }
+  ];
+
+  if (allMatch) {
+    return {
+      kind: 'voice-sections',
+      isCorrect: true,
+      verification: '검증: ✓',
+      character: cardId,
+      summary: '구간 이름과 특징이 모두 맞아요.',
+      sections,
+      footer: CP_FORM_SEGMENT_CORRECT_BODY[cardId] || '형식·빠르기·셈여림이 어떻게 맞물리는지 다시 들어 보세요.'
+    };
+  }
+
+  return {
+    kind: 'voice-sections',
+    isCorrect: false,
+    verification: '검증: ✗',
+    character: cardId,
+    summary: `구간 선택을 항목별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
+    sections,
+    footer: '정답 이름·특징 문구는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
+  };
+}
+
+/**
+ * 쇼팽 폴리리듬 활동 — 오른손/왼손 묶음·양손 겹침 객관식 형성적 피드백
+ */
+export function getCpRhythmFixedFeedback({ groupId, userChoice, correctAnswer }) {
+  if (!normalizeFormativeChoice(userChoice)) {
+    return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
+  }
+  const isCorrect =
+    normalizeFormativeChoice(userChoice) === normalizeFormativeChoice(correctAnswer);
+
+  if (groupId === 'cp-rh-q') {
+    if (isCorrect) {
+      return verification(
+        true,
+        '오른손 선율은 16분음표가 짧게 이어져요. 한 박 안에 음표가 몇 개씩 묶이는지 귀와 악보를 함께 확인해 보세요.'
+      );
+    }
+    return verification(
+      false,
+      '',
+      '오른손만 다시 들으며, 한 박 안에서 음표가 몇 개씩 묶여 빠르게 이어지는지 손으로 세어 보세요. 다시 들어보세요.'
+    );
+  }
+
+  if (groupId === 'cp-lh-q') {
+    if (isCorrect) {
+      return verification(
+        true,
+        '왼손 반주는 셋잇단음표로 묶여요. 오른손보다 조금 넓게 움직이는 리듬꼴을 귀로 비교해 보세요.'
+      );
+    }
+    return verification(
+      false,
+      '',
+      '왼손만 다시 들으며, 한 묶음에 음표가 몇 개씩 모이는지 손바닥으로 박을 맞춰 세어 보세요. 다시 들어보세요.'
+    );
+  }
+
+  // cp-poly-q
+  if (isCorrect) {
+    return verification(
+      true,
+      '서로 다른 리듬꼴이 동시에 겹치는 것을 폴리리듬이라고 해요. 오른손·왼손의 박자가 같은지·다른지 격자표와 함께 다시 들어 보세요.'
+    );
+  }
+  return verification(
+    false,
+    '',
+    '양손을 함께 들으며, 두 손이 같은 박으로 맞추는지·서로 다른 묶음으로 겹치는지·번갈아만 나오는지 비교해 보세요. 다시 들어보세요.'
+  );
+}
+
 export function getTonePaintingFixedFeedback({ segmentTitle, selectedIndex, correctIndex, correctElaboration }) {
   if (selectedIndex === null || selectedIndex === undefined) {
     return `${segmentTitle}에서 먼저 보기 중 하나를 선택한 뒤 피드백 보기를 눌러 주세요.`;
@@ -327,3 +473,40 @@ export function getHyThemePart3FixedFeedback({ selectedDeg }) {
     '시작음 G와 목표음 D를 건반에서 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.'
   );
 }
+
+/**
+ * 쇤베르크 슈프레흐슈팀메 — 말하기↔노래하기 슬라이더 형성적 피드백
+ * @param {'normal' | 'sprech'} kind
+ */
+export function getSbSprechFixedFeedback({ kind, hasMoved, isCorrect }) {
+  if (!hasMoved) {
+    return '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.';
+  }
+
+  if (kind === 'normal') {
+    if (isCorrect) {
+      return verification(
+        true,
+        '일반 성악은 음높이(피치)를 안정적으로 유지하며 노래해요. 음이 흔들리지 않고 이어지는지 다시 들어 보세요.'
+      );
+    }
+    return verification(
+      false,
+      '',
+      '송어 구간을 다시 들으며, 음이 한자리에 오래 머무는지·말하기처럼 짧게 끊기는지 비교해 보세요. 다시 들어보세요.'
+    );
+  }
+
+  if (isCorrect) {
+    return verification(
+      true,
+      '슈프레흐슈팀메는 말과 노래의 경계에 있어요. 음에 닿을락 말락 하며 말하기에 더 가깝게 들리는지 확인해 보세요.'
+    );
+  }
+  return verification(
+    false,
+    '',
+    '피에로 구간을 다시 들으며, 음이 고정되어 이어지는지·바로 흔들리며 말처럼 들리는지 비교해 보세요. 다시 들어보세요.'
+  );
+}
+

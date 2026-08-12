@@ -903,7 +903,12 @@ canvas{display:block;width:100%;touch-action:none}
   content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
   border:6px solid transparent;border-top-color:var(--border2);
 }
-.tip-wrap:hover .tip-bubble{display:block}
+.tip-wrap:hover .tip-bubble,
+.tip-wrap:focus-within .tip-bubble{display:block}
+.tip-bubble--form-labels{
+  min-width:200px;
+  text-align:left;
+}
 .vd-opt.sel{border-color:var(--purple);background:var(--purple-pale);color:var(--purple-light)}
 .tone-q-label{
   font-size:11px;
@@ -1320,13 +1325,19 @@ canvas{display:block;width:100%;touch-action:none}
 .cl-card.tonal  { border-left: 3px solid var(--green); }
 .cl-card.atonal { border-left: 3px solid var(--crimson); }
 .cl-label {
-  font-size: 10px;
-  letter-spacing: .2em;
-  font-weight: 300;
+  font-size: 15px;
+  letter-spacing: .06em;
+  font-weight: 700;
   margin-bottom: 10px;
+  line-height: 1.4;
 }
 .cl-card.tonal  .cl-label { color: #90e0b0; }
 .cl-card.atonal .cl-label { color: #e09090; }
+.sb-atonal-activity{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+}
 .sb-slider-wrap{
   padding:20px 0;
   position:relative;
@@ -1543,6 +1554,31 @@ canvas{display:block;width:100%;touch-action:none}
 .sonnet-item-num{
   margin-top:0;
   margin-bottom:12px;
+}
+.sonnet-item .score-img-wrap{
+  margin-bottom:12px;
+}
+.sonnet-item .poly-grid-wrap{
+  margin-top:14px;
+}
+.cp-rhythm-q{
+  margin:0 0 12px;
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
+  line-height:1.5;
+}
+.sonnet-item .choice-list{
+  margin-bottom:12px;
+}
+.sonnet-item .answer-check-toggle{
+  margin-top:4px;
+}
+.voice-activity-block .voice-char-card{
+  margin-top:0;
+}
+.voice-activity-block .voice-design-panel{
+  margin-top:4px;
 }
 .sonnet-cat{
   border:1px solid var(--border);
@@ -1808,6 +1844,7 @@ canvas{display:block;width:100%;touch-action:none}
 @media (max-width: 480px) { .palette{grid-template-columns:repeat(6,1fr)} .flip-grid,.review-grid,.cc-grid,.scene-grid,.artifact-grid,.cmp-mini-grid{grid-template-columns:1fr} .sci-grid{grid-template-columns:repeat(2,1fr)} .song-select-title{font-size:34px} .song-select-composer{font-size:18px} .song-select-tags{font-size:16px} }
 
 /* Chopin: Fantaisie-Impromptu screens */
+/* Chopin: Fantaisie-Impromptu screens */
 /* 형식 퍼즐 카드 */
 .form-puzzle-grid {
   display: flex;
@@ -1927,6 +1964,10 @@ canvas{display:block;width:100%;touch-action:none}
   color: #f0e8ff;
   margin-bottom: 12px;
   line-height: 1.45;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .cp-form-segment-play .cp-form-segment-play-row {
   margin-bottom: 0;

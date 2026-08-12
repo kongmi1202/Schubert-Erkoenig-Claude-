@@ -129,10 +129,13 @@ function SbAtonal({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="sec">1) 비교 듣기</div>
+        <div className="sec">
+          4. 두 곡을 들으며 아래 카드 중 알맞은 것을 각 곡 칸에 넣어보세요.
+        </div>
         <audio id="sb-tonal-source" ref={tonalRef} src={AUDIO_SRC.tonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'tonal' ? '' : p))} />
         <audio id="sb-atonal-source" ref={atonalRef} src={AUDIO_SRC.atonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'atonal' ? '' : p))} />
-        <div className="compare-listen" style={{ marginBottom: 18 }}>
+        <div className="sb-atonal-activity">
+        <div className="compare-listen" style={{ marginBottom: 14 }}>
           <div className="cl-card tonal">
             <div className="cl-label" style={{ fontSize: 16, fontWeight: 700, color: '#9fd0ff' }}>슈베르트 "송어"</div>
             <button id="sb-tonal-aud" type="button" className="btn-s" onClick={() => playAudio('tonal')}>
@@ -145,12 +148,6 @@ function SbAtonal({ go }) {
               {playing === 'atonal' ? '❚❚ 일시정지' : '▶ 재생'}
             </button>
           </div>
-        </div>
-
-        <div className="sec">2) 카드 선택</div>
-        <div className="fb show info" style={{ marginBottom: 12, whiteSpace: 'pre-line', borderLeft: '4px solid #8b5cf6' }}>
-          {`💡 두 곡을 들으며 아래 카드 중 알맞은 것을
-각 곡 칸에 넣어보세요.`}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
@@ -182,7 +179,6 @@ function SbAtonal({ go }) {
           })}
         </div>
 
-        <div className="sec" style={{ marginTop: 4 }}>3) 곡 칸에 배치</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div
             role="button"
@@ -291,6 +287,7 @@ function SbAtonal({ go }) {
               </div>
             )}
           </div>
+        </div>
         </div>
 
         <CompareAiFeedbackBlock

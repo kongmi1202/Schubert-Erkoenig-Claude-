@@ -56,7 +56,7 @@ const VV_SONNET_CORRECT = {
 
 const CP_FORM_CORRECT = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
 const CP_FEATURE_CORRECT = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
-const CP_RHYTHM_CORRECT = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '복잡하고 긴장감이 있다' };
+const CP_RHYTHM_CORRECT = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '오른손 4박과 왼손 3박이 동시에 진행된다' };
 
 const EMOTION_LABELS = {
   sadness: '슬픔',
@@ -271,11 +271,8 @@ export function buildStep2EssayEntries(data) {
       rhythm['cp-rh-q'] === CP_RHYTHM_CORRECT['cp-rh-q']);
     push('rhythmLh', '폴리리듬 왼손', rhythm['cp-lh-q'], CP_RHYTHM_CORRECT['cp-lh-q'],
       rhythm['cp-lh-q'] === CP_RHYTHM_CORRECT['cp-lh-q']);
-    push('rhythmPoly', '폴리리듬 양손 느낌', rhythm['cp-poly-q'], CP_RHYTHM_CORRECT['cp-poly-q'],
+    push('rhythmPoly', '폴리리듬 양손 겹침', rhythm['cp-poly-q'], CP_RHYTHM_CORRECT['cp-poly-q'],
       rhythm['cp-poly-q'] === CP_RHYTHM_CORRECT['cp-poly-q']);
-    if (hasText(data.cpRhythmState?.polyDesc)) {
-      entries.push(makeEntry('폴리리듬 서술', clean(data.cpRhythmState.polyDesc)));
-    }
     return entries;
   }
 
@@ -305,9 +302,6 @@ export function buildStep2EssayEntries(data) {
       formatPianoSceneCorrectAnswer({ rh: flags.pianoRhScene, lh: flags.pianoLhScene }),
       rhOk && lhOk
     ));
-  }
-  if (flags.pianoRhDrawing || flags.pianoLhDrawing) {
-    entries.push(makeEntry('피아노 가락선 그리기', '오른손·왼손 가락선을 직접 그려 보았다.'));
   }
   return entries;
 }

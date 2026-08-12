@@ -113,9 +113,7 @@ export function getStep2ResponseFlags(selectedSong, state) {
     voice아들: hasVoiceCharResponse(voiceDesign, '아들'),
     voice마왕: hasVoiceCharResponse(voiceDesign, '마왕'),
     pianoRhScene: hasText(piano.rhScene),
-    pianoLhScene: hasText(piano.lhScene),
-    pianoRhDrawing: hasText(piano.savedPreview?.rh),
-    pianoLhDrawing: hasText(piano.savedPreview?.lh)
+    pianoLhScene: hasText(piano.lhScene)
   };
 }
 

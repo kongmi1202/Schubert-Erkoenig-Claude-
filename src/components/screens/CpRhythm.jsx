@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateCpRhythmPolyMoodFeedback } from '../../lib/compareFeedback';
+import { getCpRhythmFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const AUDIO_SRC = {
   'cp-rh': '/audio/cp-rh.mp3',
@@ -9,21 +9,34 @@ const AUDIO_SRC = {
   'cp-both': '/audio/cp-both.mp3'
 };
 
+const POLY_CORRECT = '오른손 4박과 왼손 3박이 동시에 진행된다';
+
 const CHOICES = {
   'cp-rh-q': ['2개씩', '3개씩', '4개씩'],
   'cp-lh-q': ['2개씩', '3개씩', '4개씩'],
-  'cp-poly-q': ['단순하고 편안하다', '복잡하고 긴장감이 있다', '느리고 서정적이다', '규칙적이고 반복된다']
+  'cp-poly-q': [
+    '같은 박자로 함께 맞춰 연주한다',
+    POLY_CORRECT,
+    '한 손씩 번갈아 연주한다',
+    '두 손이 같은 음표 묶음으로 움직인다'
+  ]
 };
+
+const QUIZ_META = {
+  'cp-rh-q': { correct: '4개씩' },
+  'cp-lh-q': { correct: '3개씩' },
+  'cp-poly-q': { correct: POLY_CORRECT }
+};
+
+const QUIZ_IDS = ['cp-rh-q', 'cp-lh-q', 'cp-poly-q'];
 
 function CpRhythm({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const cpRhythmState = useAppStore((s) => s.cpRhythmState);
   const setCpRhythmState = useAppStore((s) => s.setCpRhythmState);
   const [selectedByGroup, setSelectedByGroup] = useState(() => cpRhythmState?.selectedByGroup || {});
-  const [resultByGroup, setResultByGroup] = useState({});
-  const [openByBodyId, setOpenByBodyId] = useState({});
+  const [fbDoneByGroup, setFbDoneByGroup] = useState({});
   const [playingId, setPlayingId] = useState('');
-  const [polyDesc, setPolyDesc] = useState(() => cpRhythmState?.polyDesc || '');
   const audioRefs = useRef({
     'cp-rh': null,
     'cp-lh': null,
@@ -32,16 +45,11 @@ function CpRhythm({ go }) {
 
   function selectChoice(groupId, value) {
     setSelectedByGroup((prev) => ({ ...prev, [groupId]: value }));
-    setResultByGroup((prev) => ({ ...prev, [groupId]: '' }));
-  }
-
-  function checkTP(groupId, correct, _btnId, bodyId) {
-    const picked = selectedByGroup[groupId];
-    if (!picked) return;
-    const isCorrect = picked === correct;
-    setResultByGroup((prev) => ({ ...prev, [groupId]: isCorrect ? 'ok' : 'ng' }));
-    setOpenByBodyId((prev) => ({ ...prev, [bodyId]: !prev[bodyId] }));
-    setStageCompletion('piano', true);
+    setFbDoneByGroup((prev) => {
+      const next = { ...prev };
+      delete next[groupId];
+      return next;
+    });
   }
 
   const stopOthers = (exceptId) => {
@@ -68,16 +76,40 @@ function CpRhythm({ go }) {
     }
   };
 
-  const allChecked = useMemo(
-    () => ['cp-rh-q', 'cp-lh-q', 'cp-poly-q'].every((groupId) => !!resultByGroup[groupId]),
-    [resultByGroup]
+  const allFbDone = useMemo(
+    () => QUIZ_IDS.every((groupId) => !!fbDoneByGroup[groupId]),
+    [fbDoneByGroup]
   );
-  const canProceed = allChecked && polyDesc.trim().length > 0;
-  const canRequestPolyAi = polyDesc.trim().length >= 5;
+  const canProceed = allFbDone;
 
   useEffect(() => {
-    setCpRhythmState({ selectedByGroup, polyDesc });
-  }, [selectedByGroup, polyDesc, setCpRhythmState]);
+    setCpRhythmState({ selectedByGroup });
+  }, [selectedByGroup, setCpRhythmState]);
+
+  function renderFeedback(groupId) {
+    const meta = QUIZ_META[groupId];
+    const picked = selectedByGroup[groupId];
+
+    return (
+      <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
+        <FormativeFeedbackBlock
+          key={`cp-rhythm-fb-${groupId}-${picked || 'none'}`}
+          disabled={!picked}
+          getFeedback={() =>
+            getCpRhythmFixedFeedback({
+              groupId,
+              userChoice: picked || '',
+              correctAnswer: meta.correct
+            })
+          }
+          onResult={() => {
+            setFbDoneByGroup((prev) => ({ ...prev, [groupId]: true }));
+            setStageCompletion('piano', true);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="screen active" id="cp-rhythm">
@@ -88,40 +120,36 @@ function CpRhythm({ go }) {
       </div>
 
       <div className="body voice-body">
-        <div className="fb show info">
-          💡 피아노는 오른손과 왼손이
-          <br />
-          서로 다른 역할을 해요.
-          <br />
-          이 곡에서 두 손은 서로 다른
-          <br />
-          리듬으로 연주한답니다!
-        </div>
+        <div className="sec">4. 이 곡은 오른손과 왼손이 서로 다른 리듬으로 연주해요. 각 손이 어떤 리듬을 연주하는지 맞춰보세요.</div>
 
-        <div className="sec">오른손 리듬</div>
-        <div className="score-img-wrap">
-          <img className="score-img" src="/images/chopin-rh.png" alt="환상 즉흥곡 오른손 악보" />
-          <div className="score-img-caption">오른손 악보 — 16분음표</div>
-        </div>
-        <audio
-          id="cp-rh"
-          ref={(el) => {
-            audioRefs.current['cp-rh'] = el;
-          }}
-          src={AUDIO_SRC['cp-rh']}
-          preload="metadata"
-          onEnded={() => setPlayingId((prev) => (prev === 'cp-rh' ? '' : prev))}
-        />
-        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
-          <button type="button" className="aud-btn" onClick={() => togglePlay('cp-rh')}>
-            {playingId === 'cp-rh' ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">오른손만 듣기</div>
+        <div className="sec">4-1. 오른손 리듬</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[보기]</div>
+          <div className="score-img-wrap">
+            <img className="score-img" src="/images/chopin-rh.png" alt="환상 즉흥곡 오른손 악보" />
+            <div className="score-img-caption">오른손 악보 — 16분음표</div>
+          </div>
+          <audio
+            id="cp-rh"
+            ref={(el) => {
+              audioRefs.current['cp-rh'] = el;
+            }}
+            src={AUDIO_SRC['cp-rh']}
+            preload="metadata"
+            onEnded={() => setPlayingId((prev) => (prev === 'cp-rh' ? '' : prev))}
+          />
+          <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
+            <button type="button" className="aud-btn" onClick={() => togglePlay('cp-rh')}>
+              {playingId === 'cp-rh' ? '❚❚' : '▶'}
+            </button>
+            <div>
+              <div className="aud-title-sm">오른손만 듣기</div>
+            </div>
           </div>
         </div>
-        <div className="review-card" style={{ marginBottom: 10 }}>
-          <div style={{ marginBottom: 12 }}>오른손 음표는 몇 개씩 묶여 있나요?</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[문제]</div>
+          <div className="cp-rhythm-q">오른손 음표는 몇 개씩 묶여 있나요?</div>
           <div id="cp-rh-q" className="choice-list">
             {CHOICES['cp-rh-q'].map((choice) => (
               <button
@@ -134,53 +162,37 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
+          {renderFeedback('cp-rh-q')}
         </div>
-        <button
-          id="ans-cp-rh-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => checkTP('cp-rh-q', '4개씩', 'ans-cp-rh-btn', 'ans-cp-rh-body')}
-          aria-expanded={!!openByBodyId['ans-cp-rh-body']}
-          disabled={!selectedByGroup['cp-rh-q']}
-          style={!selectedByGroup['cp-rh-q'] ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{openByBodyId['ans-cp-rh-body'] ? '▲' : '▼'}</span>
-        </button>
-        <div id="ans-cp-rh-body" className={`answer-compare-slide ${openByBodyId['ans-cp-rh-body'] ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className={`fb show ${resultByGroup['cp-rh-q'] === 'ok' ? 'ok' : 'info'}`}>
-              오른손은 16분음표 4개씩 묶여
-              <br />
-              빠르게 달려가요.
+
+        <div className="sec">4-2. 왼손 리듬</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[보기]</div>
+          <div className="score-img-wrap">
+            <img className="score-img" src="/images/chopin-lh.png" alt="환상 즉흥곡 왼손 악보" />
+            <div className="score-img-caption">왼손 악보 — 셋잇단음표</div>
+          </div>
+          <audio
+            id="cp-lh"
+            ref={(el) => {
+              audioRefs.current['cp-lh'] = el;
+            }}
+            src={AUDIO_SRC['cp-lh']}
+            preload="metadata"
+            onEnded={() => setPlayingId((prev) => (prev === 'cp-lh' ? '' : prev))}
+          />
+          <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
+            <button type="button" className="aud-btn" onClick={() => togglePlay('cp-lh')}>
+              {playingId === 'cp-lh' ? '❚❚' : '▶'}
+            </button>
+            <div>
+              <div className="aud-title-sm">왼손만 듣기</div>
             </div>
           </div>
         </div>
-
-        <div className="sec">왼손 리듬</div>
-        <div className="score-img-wrap">
-          <img className="score-img" src="/images/chopin-lh.png" alt="환상 즉흥곡 왼손 악보" />
-          <div className="score-img-caption">왼손 악보 — 셋잇단음표</div>
-        </div>
-        <audio
-          id="cp-lh"
-          ref={(el) => {
-            audioRefs.current['cp-lh'] = el;
-          }}
-          src={AUDIO_SRC['cp-lh']}
-          preload="metadata"
-          onEnded={() => setPlayingId((prev) => (prev === 'cp-lh' ? '' : prev))}
-        />
-        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
-          <button type="button" className="aud-btn" onClick={() => togglePlay('cp-lh')}>
-            {playingId === 'cp-lh' ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">왼손만 듣기</div>
-          </div>
-        </div>
-        <div className="review-card" style={{ marginBottom: 10 }}>
-          <div style={{ marginBottom: 12 }}>왼손 음표는 몇 개씩 묶여 있나요?</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[문제]</div>
+          <div className="cp-rhythm-q">왼손 음표는 몇 개씩 묶여 있나요?</div>
           <div id="cp-lh-q" className="choice-list">
             {CHOICES['cp-lh-q'].map((choice) => (
               <button
@@ -193,97 +205,80 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
+          {renderFeedback('cp-lh-q')}
         </div>
-        <button
-          id="ans-cp-lh-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => checkTP('cp-lh-q', '3개씩', 'ans-cp-lh-btn', 'ans-cp-lh-body')}
-          aria-expanded={!!openByBodyId['ans-cp-lh-body']}
-          disabled={!selectedByGroup['cp-lh-q']}
-          style={!selectedByGroup['cp-lh-q'] ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{openByBodyId['ans-cp-lh-body'] ? '▲' : '▼'}</span>
-        </button>
-        <div id="ans-cp-lh-body" className={`answer-compare-slide ${openByBodyId['ans-cp-lh-body'] ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className={`fb show ${resultByGroup['cp-lh-q'] === 'ok' ? 'ok' : 'info'}`}>
-              왼손은 셋잇단음표 3개씩 묶여
-              <br />
-              오른손보다 조금 느리게 움직여요.
+
+        <div className="sec">4-3. 두 손이 합쳐지면?</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[보기]</div>
+          <div className="score-img-wrap">
+            <img className="score-img" src="/images/chopin-both.png" alt="환상 즉흥곡 양손 악보" />
+            <div className="score-img-caption">양손 악보 — 오른손 4박 + 왼손 3박</div>
+          </div>
+          <audio
+            id="cp-both"
+            ref={(el) => {
+              audioRefs.current['cp-both'] = el;
+            }}
+            src={AUDIO_SRC['cp-both']}
+            preload="metadata"
+            onEnded={() => setPlayingId((prev) => (prev === 'cp-both' ? '' : prev))}
+          />
+          <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
+            <button type="button" className="aud-btn" onClick={() => togglePlay('cp-both')}>
+              {playingId === 'cp-both' ? '❚❚' : '▶'}
+            </button>
+            <div>
+              <div className="aud-title-sm">양손 합쳐서 듣기</div>
+            </div>
+          </div>
+
+          <div className="poly-grid-wrap">
+            <div className="poly-grid-label">리듬 격자 — 12칸 (4×3)</div>
+            <table className="poly-grid-table">
+              <tbody>
+                <tr>
+                  <td className="row-label">오른손 (4박)</td>
+                  <td className="note-both">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td className="note-lh">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td className="note-lh">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td className="note-lh">♩</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td className="row-label">왼손 (3박)</td>
+                  <td className="note-both">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td className="note-rh">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td className="note-rh">♩</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="poly-legend">
+              <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(74,127,193,.18)' }}></span>오른손 (4박)</div>
+              <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(196,146,42,.18)' }}></span>왼손 (3박)</div>
+              <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(192,57,43,.22)' }}></span>두 손이 동시에 연주</div>
             </div>
           </div>
         </div>
-
-        <div className="sec">두 손이 합쳐지면?</div>
-        <div className="score-img-wrap">
-          <img className="score-img" src="/images/chopin-both.png" alt="환상 즉흥곡 양손 악보" />
-          <div className="score-img-caption">양손 악보 — 오른손 4박 + 왼손 3박</div>
-        </div>
-        <audio
-          id="cp-both"
-          ref={(el) => {
-            audioRefs.current['cp-both'] = el;
-          }}
-          src={AUDIO_SRC['cp-both']}
-          preload="metadata"
-          onEnded={() => setPlayingId((prev) => (prev === 'cp-both' ? '' : prev))}
-        />
-        <div className="audio-bar voice-audio-bar" style={{ justifyContent: 'flex-start' }}>
-          <button type="button" className="aud-btn" onClick={() => togglePlay('cp-both')}>
-            {playingId === 'cp-both' ? '❚❚' : '▶'}
-          </button>
-          <div>
-            <div className="aud-title-sm">양손 합쳐서 듣기</div>
-          </div>
-        </div>
-
-        <div className="poly-grid-wrap">
-          <div className="poly-grid-label">리듬 격자 — 12칸 (4×3)</div>
-          <table className="poly-grid-table">
-            <tbody>
-              <tr>
-                <td className="row-label">오른손 (4박)</td>
-                <td className="note-both">♩</td>
-                <td></td>
-                <td></td>
-                <td className="note-lh">♩</td>
-                <td></td>
-                <td></td>
-                <td className="note-lh">♩</td>
-                <td></td>
-                <td></td>
-                <td className="note-lh">♩</td>
-                <td></td>
-                <td></td>
-              </tr>
-              <tr>
-                <td className="row-label">왼손 (3박)</td>
-                <td className="note-both">♩</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td className="note-rh">♩</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td className="note-rh">♩</td>
-                <td></td>
-                <td></td>
-                <td></td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="poly-legend">
-            <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(74,127,193,.18)' }}></span>오른손 (4박)</div>
-            <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(196,146,42,.18)' }}></span>왼손 (3박)</div>
-            <div className="poly-legend-item"><span className="poly-legend-dot" style={{ background: 'rgba(192,57,43,.22)' }}></span>두 손이 동시에 연주</div>
-          </div>
-        </div>
-
-        <div className="review-card" style={{ marginBottom: 10 }}>
-          <div style={{ marginBottom: 12 }}>두 손이 함께 연주될 때 어떤 느낌인가요?</div>
+        <div className="sonnet-item">
+          <div className="sec sonnet-item-num">[문제]</div>
+          <div className="cp-rhythm-q">두 손 리듬이 어떻게 겹치나요?</div>
           <div id="cp-poly-q" className="choice-list">
             {CHOICES['cp-poly-q'].map((choice) => (
               <button
@@ -296,62 +291,8 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
+          {renderFeedback('cp-poly-q')}
         </div>
-        <button
-          id="ans-cp-poly-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={() => checkTP('cp-poly-q', '복잡하고 긴장감이 있다', 'ans-cp-poly-btn', 'ans-cp-poly-body')}
-          aria-expanded={!!openByBodyId['ans-cp-poly-body']}
-          disabled={!selectedByGroup['cp-poly-q']}
-          style={!selectedByGroup['cp-poly-q'] ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">정답 확인하기</span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{openByBodyId['ans-cp-poly-body'] ? '▲' : '▼'}</span>
-        </button>
-        <div id="ans-cp-poly-body" className={`answer-compare-slide ${openByBodyId['ans-cp-poly-body'] ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className={`fb show ${resultByGroup['cp-poly-q'] === 'ok' ? 'ok' : 'info'}`}>
-              오른손 4박과 왼손 3박이 동시에 진행되어
-              <br />
-              복잡하고 긴장된 느낌을 만들어요.
-              <br />
-              이처럼 두 가지 이상의 박자가
-              <br />
-              동시에 나타나는 것을
-              <br />
-              폴리리듬이라고 해요.
-            </div>
-          </div>
-        </div>
-
-        <div className="sec">폴리리듬이 이 곡의 분위기에 어떤 영향을 준다고 생각하나요?</div>
-        <textarea
-          id="cp-poly-desc"
-          className="txt"
-          value={polyDesc}
-          onChange={(e) => setPolyDesc(e.target.value)}
-          placeholder="폴리리듬을 들으며 느껴진 분위기를 한두 문장으로 써보세요."
-        />
-        <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 8 }}>
-          <CompareAiFeedbackBlock
-            key={`cp-poly-mood-${polyDesc.trim().slice(0, 80)}`}
-            disabled={!canRequestPolyAi}
-            requestFn={() =>
-              generateCpRhythmPolyMoodFeedback({
-                userText: polyDesc,
-                selectedRhGrouping: selectedByGroup['cp-rh-q'] || '',
-                selectedLhGrouping: selectedByGroup['cp-lh-q'] || '',
-                selectedBothFeel: selectedByGroup['cp-poly-q'] || ''
-              })
-            }
-          />
-        </div>
-        {!canRequestPolyAi ? (
-          <div className="small-note" style={{ marginBottom: 10 }}>
-            한두 문장 이상 쓴 뒤 AI 맞춤형 피드백을 받을 수 있어요.
-          </div>
-        ) : null}
 
         {canProceed ? (
           <div className="feat-card">

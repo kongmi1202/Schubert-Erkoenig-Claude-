@@ -30,70 +30,16 @@ function connectPianoBoost(el, ctxRef, wiredRef) {
   return ctx;
 }
 
-function setupDraw(canvas, getBrush) {
-  const ctx = canvas.getContext('2d');
-  let drawing = false;
-  const pos = (e) => {
-    const r = canvas.getBoundingClientRect();
-    const p = e.touches ? e.touches[0] : e;
-    return { x: (p.clientX - r.left) * (canvas.width / r.width), y: (p.clientY - r.top) * (canvas.height / r.height) };
-  };
-  const down = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-  const move = (e) => {
-    if (!drawing) return;
-    const p = pos(e);
-    const brush = getBrush();
-    ctx.lineWidth = brush.erase ? 24 : brush.size;
-    ctx.strokeStyle = brush.erase ? '#1a1520' : brush.color;
-    ctx.lineCap = 'round';
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  };
-  const up = () => { drawing = false; };
-  canvas.addEventListener('mousedown', down);
-  canvas.addEventListener('mousemove', move);
-  canvas.addEventListener('mouseup', up);
-  canvas.addEventListener('mouseleave', up);
-  canvas.addEventListener('touchstart', down, { passive: true });
-  canvas.addEventListener('touchmove', move, { passive: true });
-  canvas.addEventListener('touchend', up, { passive: true });
-  return () => {
-    canvas.removeEventListener('mousedown', down);
-    canvas.removeEventListener('mousemove', move);
-    canvas.removeEventListener('mouseup', up);
-    canvas.removeEventListener('mouseleave', up);
-    canvas.removeEventListener('touchstart', down);
-    canvas.removeEventListener('touchmove', move);
-    canvas.removeEventListener('touchend', up);
-  };
-}
-
 function PianoAnalysis({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const pianoAnalysisState = useAppStore((s) => s.pianoAnalysisState);
   const setPianoAnalysisState = useAppStore((s) => s.setPianoAnalysisState);
-  const rhRef = useRef(null);
-  const lhRef = useRef(null);
-  const [ready, setReady] = useState(false);
-  const [rhBrush, setRhBrush] = useState({ color: '#a78bfa', size: 2, erase: false });
-  const [lhBrush, setLhBrush] = useState({ color: '#f87171', size: 2, erase: false });
-  const [savedPreview, setSavedPreview] = useState(() => pianoAnalysisState?.savedPreview || { rh: '', lh: '' });
-  const [saved, setSaved] = useState(() => ({
-    rh: !!(pianoAnalysisState?.savedPreview?.rh),
-    lh: !!(pianoAnalysisState?.savedPreview?.lh)
-  }));
   const [rhPlaying, setRhPlaying] = useState(false);
   const [lhPlaying, setLhPlaying] = useState(false);
   const [rhScene, setRhScene] = useState(() => pianoAnalysisState?.rhScene || '');
   const [lhScene, setLhScene] = useState(() => pianoAnalysisState?.lhScene || '');
-  const [showCompare, setShowCompare] = useState(false);
-  const [hasOpenedScoreCompare, setHasOpenedScoreCompare] = useState(false);
-  const [rhGuideOpen, setRhGuideOpen] = useState(true);
-  const [lhGuideOpen, setLhGuideOpen] = useState(true);
   const [sceneFeedbackKey, setSceneFeedbackKey] = useState(0);
   const rhAudioRef = useRef(null);
   const lhAudioRef = useRef(null);
@@ -161,34 +107,10 @@ function PianoAnalysis({ go }) {
   }, []);
 
   useEffect(() => {
-    const cleanups = [];
-    if (rhRef.current) cleanups.push(setupDraw(rhRef.current, () => rhBrush));
-    if (lhRef.current) cleanups.push(setupDraw(lhRef.current, () => lhBrush));
-    setReady(true);
-    return () => cleanups.forEach((fn) => fn());
-  }, [rhBrush, lhBrush]);
+    setPianoAnalysisState({ rhScene, lhScene });
+  }, [rhScene, lhScene, setPianoAnalysisState]);
 
-  useEffect(() => {
-    setPianoAnalysisState({ savedPreview, rhScene, lhScene });
-  }, [savedPreview, rhScene, lhScene, setPianoAnalysisState]);
-
-  const clearCanvas = (canvasRef, key) => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    setSaved((prev) => ({ ...prev, [key]: false }));
-    setSavedPreview((prev) => ({ ...prev, [key]: '' }));
-  };
-
-  const saveDrawing = (canvasRef, key) => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const dataUrl = c.toDataURL('image/png');
-    setSaved((prev) => ({ ...prev, [key]: true }));
-    setSavedPreview((prev) => ({ ...prev, [key]: dataUrl }));
-  };
-  const canCheckAnswer = saved.rh && saved.lh && !!rhScene && !!lhScene;
+  const canCheckAnswer = !!rhScene && !!lhScene;
   const sceneSnapshot = useMemo(
     () => JSON.stringify({ rhScene, lhScene }),
     [rhScene, lhScene]
@@ -197,16 +119,19 @@ function PianoAnalysis({ go }) {
     () => getPianoSceneFixedFeedback({ rhScene, lhScene }),
     [rhScene, lhScene]
   );
-  const canOpenScoreCompare = canCheckAnswer;
-  const canShowSceneFeedback = canCheckAnswer && hasOpenedScoreCompare;
 
   useEffect(() => {
     setSceneFeedbackKey((k) => k + 1);
   }, [sceneSnapshot]);
 
+  useEffect(() => {
+    if (canCheckAnswer) setStageCompletion('piano', true);
+  }, [canCheckAnswer, setStageCompletion]);
+
   return (
     <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2 · 분석적 감상</div><div className="s-title">분석적 감상</div><div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div></div>
       <div className="body voice-body">
+        <div className="sec">4. 이 곡의 피아노 반주는 노래의 장면을 묘사해요. 각 손의 반주를 듣고 어떤 장면을 표현하는지 맞춰보세요.</div>
         <div className="sec">오른손 반주</div>
         <audio
           ref={rhAudioRef}
@@ -227,45 +152,6 @@ function PianoAnalysis({ go }) {
             <div className="aud-sub">빠른 셋잇단음표 패턴</div>
           </div>
         </div>
-        <div className="piano-guide">
-          <button type="button" className="piano-guide-head" onClick={() => setRhGuideOpen((v) => !v)} aria-expanded={rhGuideOpen}>
-            <span>💡 가락선 악보란?</span>
-            <span aria-hidden="true">{rhGuideOpen ? '▲' : '▼'}</span>
-          </button>
-          {rhGuideOpen ? (
-            <div className="piano-guide-body">
-            <p>음악의 높낮이와 흐름을 <strong>선으로</strong> 표현하는 방법이에요.</p>
-            <p>악보를 몰라도 괜찮아요! 음악을 들으며 느껴지는 대로 그려보세요.</p>
-            <div className="piano-guide-grid">
-              <div className="piano-guide-chip">🔼 음이 높아지면 → 선을 위로</div>
-              <div className="piano-guide-chip">🔽 음이 낮아지면 → 선을 아래로</div>
-              <div className="piano-guide-chip">⚡ 음이 빠르면 → 짧게 자주 그려요</div>
-              <div className="piano-guide-chip">〰️ 음이 느리면 → 길게 천천히 그려요</div>
-            </div>
-            <div className="piano-guide-example">
-              <div className="piano-guide-example-title">예시</div>
-              <svg viewBox="0 0 760 90" className="piano-guide-svg" role="img" aria-label="빠르고 촘촘하게 오르내리는 선 예시">
-                <polyline points="10,62 55,54 95,40 135,48 180,32 225,45 275,30 325,40 375,25 425,35 475,28 525,40 575,32 625,45 675,35 730,48" />
-              </svg>
-              <div className="piano-guide-caption">빠르고 촘촘하게 오르내리는 선을 떠올려요.</div>
-            </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="small-note">오른손 반주를 들으며 가락선을 그려보세요</div>
-        <div className="palette-bar">
-          {['#a78bfa', '#f87171', '#34d399', '#fbbf24', '#60a5fa'].map((c) => (
-            <button key={c} className={`pal-color-btn ${rhBrush.color === c && !rhBrush.erase ? 'active' : ''}`} style={{ background: c }} onClick={() => setRhBrush((b) => ({ ...b, color: c, erase: false }))} />
-          ))}
-          <button className={`pal-size ${rhBrush.size === 2 ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, size: 2, erase: false }))}>얇음</button>
-          <button className={`pal-size ${rhBrush.size === 4 ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, size: 4, erase: false }))}>중간</button>
-          <button className={`pal-size ${rhBrush.size === 7 ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, size: 7, erase: false }))}>굵음</button>
-          <button className={`pal-tool ${rhBrush.erase ? 'active' : ''}`} onClick={() => setRhBrush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-          <button className="pal-tool" onClick={() => clearCanvas(rhRef, 'rh')}>전체 지우기</button>
-          <button className="btn-p" onClick={() => saveDrawing(rhRef, 'rh')}>저장</button>
-        </div>
-        <div className="canvas-wrap"><canvas ref={rhRef} width="900" height="170" /></div>
-        {saved.rh ? <div className="small-note">오른손 가락선이 저장되었습니다.</div> : null}
         <div className="sec">오른손 반주와 어울리는 장면</div>
         <div className="scene-grid">
           {PIANO_RH_SCENE_OPTIONS.map((item) => (
@@ -296,45 +182,6 @@ function PianoAnalysis({ go }) {
             <div className="aud-sub">느리고 강한 베이스</div>
           </div>
         </div>
-        <div className="piano-guide">
-          <button type="button" className="piano-guide-head" onClick={() => setLhGuideOpen((v) => !v)} aria-expanded={lhGuideOpen}>
-            <span>💡 가락선 악보 그리는 법</span>
-            <span aria-hidden="true">{lhGuideOpen ? '▲' : '▼'}</span>
-          </button>
-          {lhGuideOpen ? (
-            <div className="piano-guide-body">
-            <p>오른손과 같은 방법으로 왼손 반주를 선으로 표현해보세요.</p>
-            <p>왼손 반주는 오른손과 어떻게 다른지 느껴보세요!</p>
-            <div className="piano-guide-grid">
-              <div className="piano-guide-chip">🔼 음이 높아지면 → 선을 위로</div>
-              <div className="piano-guide-chip">🔽 음이 낮아지면 → 선을 아래로</div>
-              <div className="piano-guide-chip">⚡ 음이 빠르면 → 짧게 자주 그려요</div>
-              <div className="piano-guide-chip">〰️ 음이 느리면 → 길게 천천히 그려요</div>
-            </div>
-            <div className="piano-guide-example">
-              <div className="piano-guide-example-title">예시</div>
-              <svg viewBox="0 0 760 90" className="piano-guide-svg piano-guide-svg-lh" role="img" aria-label="강하게 도약했다가 내려오는 선 예시">
-                <polyline points="10,52 85,52 85,80 160,80 160,52 235,52 235,80 310,80 310,52 385,52 385,80 460,80 460,52 535,52 535,80 610,80 610,52 685,52 685,80 760,80" />
-              </svg>
-              <div className="piano-guide-caption">강하게 도약했다가 내려오는 선을 떠올려요.</div>
-            </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="small-note">왼손 반주를 들으며 가락선을 그려보세요</div>
-        <div className="palette-bar">
-          {['#f87171', '#a78bfa', '#fbbf24', '#34d399', '#60a5fa'].map((c) => (
-            <button key={c} className={`pal-color-btn ${lhBrush.color === c && !lhBrush.erase ? 'active' : ''}`} style={{ background: c }} onClick={() => setLhBrush((b) => ({ ...b, color: c, erase: false }))} />
-          ))}
-          <button className={`pal-size ${lhBrush.size === 2 ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, size: 2, erase: false }))}>얇음</button>
-          <button className={`pal-size ${lhBrush.size === 4 ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, size: 4, erase: false }))}>중간</button>
-          <button className={`pal-size ${lhBrush.size === 7 ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, size: 7, erase: false }))}>굵음</button>
-          <button className={`pal-tool ${lhBrush.erase ? 'active' : ''}`} onClick={() => setLhBrush((b) => ({ ...b, erase: !b.erase }))}>지우개</button>
-          <button className="pal-tool" onClick={() => clearCanvas(lhRef, 'lh')}>전체 지우기</button>
-          <button className="btn-p" onClick={() => saveDrawing(lhRef, 'lh')}>저장</button>
-        </div>
-        <div className="canvas-wrap"><canvas ref={lhRef} width="900" height="170" /></div>
-        {saved.lh ? <div className="small-note">왼손 가락선이 저장되었습니다.</div> : null}
         <div className="sec">왼손 반주와 어울리는 장면</div>
         <div className="scene-grid">
           {PIANO_LH_SCENE_OPTIONS.map((item) => (
@@ -345,85 +192,11 @@ function PianoAnalysis({ go }) {
           ))}
         </div>
 
-        {!ready ? <div className="small-note">캔버스 로딩 중...</div> : null}
-
         {canCheckAnswer ? (
-          <button
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => {
-              setShowCompare((v) => !v);
-              setHasOpenedScoreCompare(true);
-              setStageCompletion('piano', true);
-            }}
-            aria-expanded={showCompare}
-            disabled={!canOpenScoreCompare}
-            style={!canOpenScoreCompare ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          >
-            <span className="answer-check-toggle-label">가락선 비교하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">
-              {showCompare ? '▲' : '▼'}
-            </span>
-          </button>
-        ) : null}
-
-        <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="sec">오른손 가락선 비교</div>
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {savedPreview.rh ? (
-                    <img src={savedPreview.rh} alt="오른손 가락선 저장 이미지" className="cv-drawing-image" />
-                  ) : (
-                    <div className="small-note">아직 저장된 그림이 없어요.</div>
-                  )}
-                </div>
-              </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 악보</div>
-                <div className="cv-panel score-panel">
-                  <img src="/assets/rh-score.png" alt="오른손 모범 악보" className="score-image" />
-                  <a href="/assets/rh-score.png" target="_blank" rel="noreferrer" className="score-link">원본 보기</a>
-                </div>
-              </div>
-            </div>
-            <div className="fb show info">{isErlkonig ? '오른손: 제자리에서 빠르고 규칙적으로 반복되는 셋잇단음표.' : '고음 반주: 밝은 화성과 반복 동기가 위쪽에서 반짝이며 울려요.'}</div>
-
-            <div className="sec">왼손 가락선 비교</div>
-            <div className="cv-compare">
-              <div className="cv-box">
-                <div className="cv-label">내가 그린 선</div>
-                <div className="cv-panel">
-                  {savedPreview.lh ? (
-                    <img src={savedPreview.lh} alt="왼손 가락선 저장 이미지" className="cv-drawing-image" />
-                  ) : (
-                    <div className="small-note">아직 저장된 그림이 없어요.</div>
-                  )}
-                </div>
-              </div>
-              <div className="cv-box">
-                <div className="cv-label">모범 악보</div>
-                <div className="cv-panel score-panel">
-                  <img src="/assets/lh-score.png" alt="왼손 모범 악보" className="score-image" />
-                  <a href="/assets/lh-score.png" target="_blank" rel="noreferrer" className="score-link">원본 보기</a>
-                </div>
-              </div>
-            </div>
-            <div className="fb show info">{isErlkonig ? '왼손: 강하게 오르내리는 베이스.' : '저음 반주: 반복 베이스와 화성 진행이 바닥을 단단하게 받쳐 장엄함을 만들어요.'}</div>
-          </div>
-        </div>
-
-        {canShowSceneFeedback ? (
           <FormativeFeedbackBlock
             key={`piano-scene-fb-${sceneFeedbackKey}`}
             getFeedback={getSceneFeedback}
           />
-        ) : canCheckAnswer ? (
-          <div className="small-note" style={{ marginTop: 8 }}>
-            가락선 비교하기를 먼저 열어 본 뒤, 장면 피드백을 받을 수 있어요.
-          </div>
         ) : null}
 
         {canCheckAnswer ? (

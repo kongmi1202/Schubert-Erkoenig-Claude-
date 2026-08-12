@@ -89,8 +89,7 @@ export const useAppStore = create((set) => ({
     discoveryQuizResult: ''
   },
   cpRhythmState: {
-    selectedByGroup: {},
-    polyDesc: ''
+    selectedByGroup: {}
   },
   sbSprechState: {
     normalValue: 50,
