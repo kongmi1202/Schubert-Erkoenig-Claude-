@@ -37,7 +37,7 @@ function Intro({ go }) {
       <div className="intro-stages">
         <div className="intro-stage">① 감각적 감상</div><div className="intro-stage">② 분석적 감상</div><div className="intro-stage">③ 심미적 감상</div>
       </div>
-      <button className="btn-enter" onClick={() => go('studentInfo')}>학습 시작하기</button>
+      <button className="btn-enter" onClick={() => go('programGuide')}>학습 시작하기</button>
     </div>
   );
 }

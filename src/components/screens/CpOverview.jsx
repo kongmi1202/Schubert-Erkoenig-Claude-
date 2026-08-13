@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 
 const CP_OVERVIEW_Q2_HINT = '앞부분과 중간부에서 빠르기·세기·분위기가 어떻게 달라지는지 대비해서 적어 보세요.';
 
@@ -11,17 +15,11 @@ function CpOverview({ go }) {
   const setAnalyticalStory = useAppStore((s) => s.setAnalyticalStory);
   const q1 = analyticalCharacters?.[0] || '';
   const q2 = analyticalStory || '';
-  const [q1Open, setQ1Open] = useState(false);
-  const [q2Open, setQ2Open] = useState(false);
 
-  const isAllFilled = useMemo(() => Boolean(q1.trim() && q2.trim()), [q1, q2]);
-
-  useEffect(() => {
-    if (!isAllFilled) {
-      setQ1Open(false);
-      setQ2Open(false);
-    }
-  }, [isAllFilled]);
+  const canOpenQ1 = useMemo(() => Boolean(q1.trim()), [q1]);
+  const canOpenQ2 = useMemo(() => Boolean(q2.trim()), [q2]);
+  const isAllFilled = canOpenQ1 && canOpenQ2;
+  const overviewData = { analyticalCharacters, analyticalStory };
 
   return (
     <div className="screen active" id="cp-overview">
@@ -41,27 +39,13 @@ function CpOverview({ go }) {
           onChange={(e) => setAnalyticalCharacter(0, e.target.value)}
           placeholder="악기 편성을 적어보세요."
         />
-        {isAllFilled ? (
-          <button
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => setQ1Open((prev) => !prev)}
-            aria-expanded={q1Open}
-          >
-            <span className="answer-check-toggle-label">정답 확인하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
-          </button>
-        ) : null}
-        <div className={`answer-compare-slide ${isAllFilled && q1Open ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="fb show info">
-              피아노 독주예요.
-              <br />
-              오케스트라나 다른 악기 없이
-              <br />
-              피아노 한 대가 모든 것을 표현해요.
-            </div>
-          </div>
+        <div className="compare-ai-feedback" style={{ marginTop: 8, marginBottom: 12 }}>
+          <FormativeFeedbackBlock
+            key={`cp-overview-q1-${q1.trim() || 'none'}`}
+            disabled={!canOpenQ1}
+            getFeedback={() => getOverviewFixedFeedback({ song: 'chopin', question: 'q1', data: overviewData })}
+            onResult={() => setStageCompletion('analytical', true)}
+          />
         </div>
 
         <div className="sec">2. 이 음악의 전체적인 분위기는 어떤가요? 곡을 들으며 느낌이 바뀌는 부분이 있었나요?</div>
@@ -75,29 +59,20 @@ function CpOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 힌트: {CP_OVERVIEW_Q2_HINT}
         </div>
-        {isAllFilled ? (
-          <button
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => setQ2Open((prev) => !prev)}
-            aria-expanded={q2Open}
-          >
-            <span className="answer-check-toggle-label">정답 확인하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
-          </button>
-        ) : null}
-        <div className={`answer-compare-slide ${isAllFilled && q2Open ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="fb show info">
-              이 곡은 빠르고 격렬한 부분과
-              <br />
-              느리고 서정적인 부분이 교차해요.
-              <br />
-              이런 대비가 이 곡의 핵심이에요.
-              <br />
-              다음 활동에서 이 구조를 분석해봐요!
-            </div>
-          </div>
+        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
+          <CompareAiFeedbackBlock
+            key={`cp-overview-q2-${q2.trim() || 'none'}`}
+            disabled={!canOpenQ2}
+            requestFn={() =>
+              generateOverviewOpenTextFeedback({
+                song: 'chopin',
+                question: 'q2',
+                data: overviewData,
+                fallbackText: getOverviewFixedFeedback({ song: 'chopin', question: 'q2', data: overviewData })
+              })
+            }
+            onResult={() => setStageCompletion('analytical', true)}
+          />
         </div>
 
         <div className="btn-row">

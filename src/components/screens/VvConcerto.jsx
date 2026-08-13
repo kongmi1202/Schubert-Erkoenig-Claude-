@@ -1,25 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { canOpenAnswerAfterFormativeAiGate, normalizeFormativeChoice } from '../../lib/compareFeedback';
+import { normalizeFormativeChoice } from '../../lib/compareFeedback';
 import { getVvConcertoFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const VV_CONCERTO_Q = 'vv-concerto-q';
 const VV_CONCERTO_CORRECT = '독주와 총주가 번갈아 나온다';
 const VV_CONCERTO_CHOICES = ['독주만 계속 나온다', '총주만 계속 나온다', VV_CONCERTO_CORRECT];
-
-const FEEDBACK_OK = `맞아요! 독주와 총주가
-번갈아가며 대화하듯 연주하는 것이
-바이올린 협주곡의 핵심이에요.
-독주자는 화려하게 선율을 이끌고
-그룹은 든든하게 받쳐주며
-서로 주고받는 구조를
-리토르넬로(ritornello)라고 해요.`;
-
-const FEEDBACK_NG = `영상을 다시 보며
-독주와 총주가 몇 번씩
-번갈아 나오는지
-확인해보세요!`;
 
 function VvConcerto({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -31,26 +18,11 @@ function VvConcerto({ go }) {
   const [selectedByGroup, setSelectedByGroup] = useState(() => ({
     [VV_CONCERTO_Q]: vvConcertoState?.discoveryChoice || ''
   }));
-  const [resultByGroup, setResultByGroup] = useState(() => ({
-    [VV_CONCERTO_Q]: vvConcertoState?.quizResult || ''
-  }));
-  const [ansOpen, setAnsOpen] = useState(false);
-  const [concertoAiGate, setConcertoAiGate] = useState(null);
+  const [fbDone, setFbDone] = useState(false);
 
   function selectChoice(groupId, value) {
     setSelectedByGroup((prev) => ({ ...prev, [groupId]: value }));
-    setResultByGroup((prev) => ({ ...prev, [groupId]: '' }));
-    setAnsOpen(false);
-    setConcertoAiGate(null);
-  }
-
-  function checkTP(groupId, correct, _btnId, bodyId) {
-    const picked = selectedByGroup[groupId];
-    if (!picked) return;
-    const isCorrect = normalizeFormativeChoice(picked) === normalizeFormativeChoice(correct);
-    setResultByGroup((prev) => ({ ...prev, [groupId]: isCorrect ? 'ok' : 'ng' }));
-    setAnsOpen((prev) => !prev);
-    setStageCompletion('piano', true);
+    setFbDone(false);
   }
 
   const resetCounts = () => {
@@ -58,28 +30,20 @@ function VvConcerto({ go }) {
     setTuttiCount(0);
   };
 
+  const picked = selectedByGroup[VV_CONCERTO_Q];
+  const isCorrect =
+    normalizeFormativeChoice(picked) === normalizeFormativeChoice(VV_CONCERTO_CORRECT);
+
   useEffect(() => {
     setVvConcertoState({
       soloCount,
       tuttiCount,
       discoveryChoice: selectedByGroup[VV_CONCERTO_Q] || '',
-      quizResult: resultByGroup[VV_CONCERTO_Q] || '',
+      quizResult: fbDone && isCorrect ? 'ok' : '',
       selectedBySegment: {},
       score: 0
     });
-  }, [soloCount, tuttiCount, selectedByGroup, resultByGroup, setVvConcertoState]);
-
-  const result = resultByGroup[VV_CONCERTO_Q];
-  const picked = selectedByGroup[VV_CONCERTO_Q];
-  const canOpenAnswerCheck =
-    !!picked &&
-    concertoAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: concertoAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: concertoAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: concertoAiGate.responseAtFeedback,
-      currentResponse: picked
-    });
+  }, [soloCount, tuttiCount, selectedByGroup, fbDone, isCorrect, setVvConcertoState]);
 
   return (
     <div className="screen active" id="vv-concerto">
@@ -150,46 +114,15 @@ function VvConcerto({ go }) {
                   correctAnswer: VV_CONCERTO_CORRECT
                 })
               }
-              onRequested={() => {
-                setConcertoAiGate({
-                  feedbackCompleted: false,
-                  responseAtFeedback: picked,
-                  wasCorrectWhenFeedbackRequested:
-                    normalizeFormativeChoice(picked) === normalizeFormativeChoice(VV_CONCERTO_CORRECT)
-                });
-              }}
               onResult={() => {
-                setConcertoAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+                setFbDone(true);
+                setStageCompletion('piano', true);
               }}
             />
           </div>
-
-          <button
-            id="ans-vv-concerto-btn"
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => checkTP(VV_CONCERTO_Q, VV_CONCERTO_CORRECT, 'ans-vv-concerto-btn', 'ans-vv-concerto-body')}
-            aria-expanded={ansOpen}
-            disabled={!canOpenAnswerCheck}
-            style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          >
-            <span className="answer-check-toggle-label">
-              {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-            </span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">{ansOpen ? '▲' : '▼'}</span>
-          </button>
-          <div id="ans-vv-concerto-body" className={`answer-compare-slide ${ansOpen ? 'open' : ''}`}>
-            <div className="answer-compare-inner">
-              {result ? (
-                <div className={`fb show ${result === 'ok' ? 'ok' : 'ng'}`} style={{ whiteSpace: 'pre-line' }}>
-                  {result === 'ok' ? FEEDBACK_OK : FEEDBACK_NG}
-                </div>
-              ) : null}
-            </div>
-          </div>
         </div>
 
-        {result === 'ok' ? (
+        {fbDone && isCorrect ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>

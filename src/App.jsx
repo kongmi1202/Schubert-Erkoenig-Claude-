@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { screenOrder, stepNames } from './store/useAppStore';
 import Intro from './components/screens/Intro';
+import ProgramGuide from './components/screens/ProgramGuide';
 import StudentInfo from './components/screens/StudentInfo';
 import SongSelect from './components/screens/SongSelect';
 import SensoryPage from './components/screens/SensoryPage';
@@ -36,6 +37,7 @@ import { useAppStore } from './store/useAppStore';
 
 const screens = {
   intro: Intro,
+  programGuide: ProgramGuide,
   studentInfo: StudentInfo,
   songSelect: SongSelect,
   sensoryPage: SensoryPage,
@@ -123,7 +125,7 @@ function App() {
   }, [currentScreen, selectedSong]);
 
   const helpStep = useMemo(() => {
-    if (currentScreen === 'intro') return 'intro';
+    if (currentScreen === 'intro' || currentScreen === 'programGuide') return 'intro';
     if (currentScreen === 'sensoryPage') return 'step1';
     if (['analyticalOverview', 'voiceDesign', 'pianoAnalysis'].includes(currentScreen)) return 'step2';
     if (['historyCards', 'aestheticPage'].includes(currentScreen)) return 'step3';

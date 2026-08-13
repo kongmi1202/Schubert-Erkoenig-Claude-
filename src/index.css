@@ -54,6 +54,158 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .intro-stages{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:52px}
 .intro-stage{padding:8px 20px;border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.06)}
 
+/* 프로그램 안내 (학번 입력 전) */
+.program-guide-body{
+  max-width:1200px;
+  margin:0 auto;
+  padding-top:8px;
+}
+.pg-flow-scroll{
+  overflow-x:auto;
+  margin-bottom:28px;
+  padding-bottom:8px;
+  -webkit-overflow-scrolling:touch;
+  display:flex;
+  justify-content:center;
+}
+.pg-flow{
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  margin-bottom:0;
+  min-width:min-content;
+}
+.pg-flow--horizontal{
+  flex-direction:row;
+  align-items:center;
+  padding:4px 2px;
+}
+.pg-flow-step{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  flex-shrink:0;
+}
+.pg-flow-step .pg-stage-card{
+  width:148px;
+  flex-shrink:0;
+}
+.pg-flow-node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  padding:14px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  width:148px;
+  min-height:148px;
+  flex-shrink:0;
+  text-align:center;
+}
+.pg-flow-node--start{
+  border-color:rgba(139,92,246,.35);
+  background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(139,92,246,.04));
+}
+.pg-flow-node--end{
+  border-color:rgba(184,150,62,.4);
+  background:linear-gradient(135deg,rgba(184,150,62,.12),rgba(184,150,62,.04));
+}
+.pg-flow-icon{font-size:24px;line-height:1}
+.pg-flow-label{font-size:14px;font-weight:700;color:var(--text);line-height:1.35}
+.pg-flow-sub{font-size:11px;color:var(--text-dim);line-height:1.4}
+.pg-flow-arrow{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  height:36px;
+  color:var(--purple-light);
+  opacity:.7;
+  flex-shrink:0;
+}
+.pg-flow-arrow--h{
+  flex-direction:row;
+  align-items:center;
+  width:28px;
+  height:auto;
+  padding:0 2px;
+}
+.pg-flow-arrow-line{
+  width:2px;
+  flex:1;
+  background:linear-gradient(to bottom,var(--purple),rgba(139,92,246,.2));
+}
+.pg-flow-arrow--h .pg-flow-arrow-line{
+  width:auto;
+  height:2px;
+  flex:1;
+  background:linear-gradient(to right,var(--purple),rgba(139,92,246,.2));
+}
+.pg-flow-arrow-head{font-size:14px;line-height:1;font-weight:700}
+.pg-flow-arrow--h .pg-flow-arrow-head{margin-top:0;margin-left:-1px}
+.pg-stage-card{
+  flex:1;
+  padding:14px 10px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  min-height:148px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
+.pg-stage-card::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+}
+.pg-stage-card--crimson::before{background:linear-gradient(90deg,var(--crimson),var(--crimson-light))}
+.pg-stage-card--purple::before{background:linear-gradient(90deg,var(--purple),var(--purple-light))}
+.pg-stage-card--gold::before{background:linear-gradient(90deg,var(--gold),var(--gold-light))}
+.pg-stage-card--crimson{border-color:rgba(192,57,43,.25)}
+.pg-stage-card--purple{border-color:rgba(139,92,246,.25)}
+.pg-stage-card--gold{border-color:rgba(184,150,62,.3)}
+.pg-stage-num{
+  font-size:11px;
+  letter-spacing:.15em;
+  color:var(--text-dim);
+  margin-bottom:6px;
+}
+.pg-stage-icon{font-size:26px;line-height:1;margin-bottom:8px}
+.pg-stage-title{
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:4px;
+  color:var(--text);
+  line-height:1.35;
+}
+.pg-stage-goal{
+  font-size:11px;
+  font-weight:700;
+  color:var(--purple-light);
+  margin-bottom:8px;
+}
+.pg-stage-items{
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  font-size:10px;
+  line-height:1.4;
+  color:var(--text-dim);
+}
+.pg-stage-items li{
+  padding:4px 8px;
+  border-radius:4px;
+  background:rgba(255,255,255,.04);
+}
+
 .stage-header{padding:52px 24px 32px;text-align:center;border-bottom:1px solid var(--border);background:linear-gradient(to bottom,var(--bg2),var(--bg))}
 .s-title{font-family:'IM Fell English',serif;font-size:clamp(22px,5vw,38px);margin-bottom:10px}
 .s-desc{
@@ -196,7 +348,7 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   color:var(--text-dim);
 }
 .listening-panel-body{
-  flex:1;
+  flex:1 1 0%;
   min-height:0;
   overflow-x:hidden;
   overflow-y:auto;
@@ -207,6 +359,9 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   flex-direction:column;
   gap:10px;
   scrollbar-gutter:stable;
+}
+.listening-panel-body > *{
+  flex-shrink:0;
 }
 .listening-panel-title{
   flex:0 0 auto;
@@ -283,9 +438,12 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   }
   .listening-panel:not(.is-collapsed){
     max-height:70vh;
+    overflow:hidden;
   }
   .listening-panel:not(.is-collapsed) .listening-panel-body{
     padding-bottom:20px;
+    max-height:calc(70vh - 52px);
+    overflow-y:auto;
   }
   .listening-video{
     max-height:150px;
@@ -1181,6 +1339,8 @@ canvas{display:block;width:100%;touch-action:none}
   border:none;
   background:transparent;
   padding:0 0 8px;
+  flex:0 0 auto;
+  overflow:visible;
 }
 .final-summary-card .cmp-mini-grid{
   grid-template-columns:1fr;
@@ -1840,7 +2000,10 @@ canvas{display:block;width:100%;touch-action:none}
 }
 
 @media (max-width: 900px){.video-lyrics-layout{grid-template-columns:1fr}.lyrics-panel{max-height:none}}
-@media (max-width: 700px){.cv-compare{grid-template-columns:1fr}.song-select-grid{grid-template-columns:1fr 1fr}}
+@media (max-width: 700px){
+  .cv-compare{grid-template-columns:1fr}
+  .song-select-grid{grid-template-columns:1fr 1fr}
+}
 @media (max-width: 480px) { .palette{grid-template-columns:repeat(6,1fr)} .flip-grid,.review-grid,.cc-grid,.scene-grid,.artifact-grid,.cmp-mini-grid{grid-template-columns:1fr} .sci-grid{grid-template-columns:repeat(2,1fr)} .song-select-title{font-size:34px} .song-select-composer{font-size:18px} .song-select-tags{font-size:16px} }
 
 /* Chopin: Fantaisie-Impromptu screens */

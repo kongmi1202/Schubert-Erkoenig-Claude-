@@ -2,6 +2,12 @@ import { getApiKeySetupMessage, requestOpenAiText } from './openaiClient';
 import {
   evaluateMawangOverviewQ1,
   evaluateMawangOverviewQ2,
+  evaluateOverviewQuestion,
+  gradeOverviewQ1,
+  gradeOverviewQ2,
+  getOverviewStudentQ1,
+  getOverviewStudentQ2,
+  includesAnyToken,
   MAWANG_Q1_ROLE_ALIASES,
   resolveMawangCharacterRole
 } from './overviewGrading';
@@ -343,7 +349,7 @@ function buildMawangOverviewStructuredFeedback(userCharacterSlots, userStory, q1
       }
     ],
     footer: q1.isCorrect && q2.isCorrect
-      ? '정답 확인하기에서 모범 해설과 비교해 보세요.'
+      ? ''
       : '정답 이름·모범 문장은 알려 주지 않아요. 힌트만 보고 다시 고쳐 보세요.'
   };
 }
@@ -454,6 +460,124 @@ Q2가 틀리면 처음-중간-끝 점검 힌트만. 끝은 "다시 들어보세�
     pickBody(parsed.q1Body, q1.isCorrect, q1Fallback),
     pickBody(parsed.q2Body, q2.isCorrect, q2Fallback)
   );
+}
+
+const OVERVIEW_OPEN_AI_META = {
+  'handel:q1': {
+    workTitle: "헨델 <할렐루야>",
+    questionTitle: '가사는 어떤 내용인가요?',
+    listenHint: '가사에서 누구를 기리는지, 후렴이 어떤 내용을 전하는지',
+    forbiddenWhenWrong: ['요한계시록', '성경']
+  },
+  'handel:q2': {
+    workTitle: "헨델 <할렐루야>",
+    questionTitle: '오페라와 어떤 차이가 있나요?',
+    listenHint: '무대에서 배우가 의상·연기를 하는지, 합창과 연주만으로 내용을 전하는지',
+    forbiddenWhenWrong: ['의상·연기 없음', '교회·콘서트홀']
+  },
+  'haydn:q2': {
+    workTitle: "하이든 '종달새'",
+    questionTitle: '어떤 동물을 떠올리게 하나요? 이유는 무엇인가요?',
+    listenHint: '제1바이올린의 높고 가벼운 선율이 어떤 동물 소리처럼 들리는지',
+    forbiddenWhenWrong: ['종달새']
+  },
+  'vivaldi:q1': {
+    workTitle: '비발디 <사계> 여름 3악장',
+    questionTitle: '소네트가 묘사하는 내용은 무엇인가요?',
+    listenHint: '왼쪽 감상 가이드의 소네트를 다시 읽고, 날씨·장면이 어떻게 그려지는지',
+    forbiddenWhenWrong: ['폭풍우', '우박']
+  },
+  'chopin:q2': {
+    workTitle: '쇼팽 <환상 즉흥곡>',
+    questionTitle: '전체 분위기와 느낌이 바뀌는 부분',
+    listenHint: '앞부분과 중간부의 빠르기·세기·분위기가 같은지 다른지',
+    forbiddenWhenWrong: ['격렬한 A', '서정적인 B']
+  },
+  'schoenberg:q2': {
+    workTitle: '쇤베르크 <달에 홀린 피에로>',
+    questionTitle: '전체적인 분위기는 어떤가요?',
+    listenHint: '달빛 속 장면이 편안한지 긴장되는지, 느낌을 형용사로 적어 보았는지',
+    forbiddenWhenWrong: ['표현주의', '몽환적이며 신비로운']
+  }
+};
+
+function isOverviewOpenNonAttempt(text) {
+  const t = String(text || '').trim();
+  if (t.length <= 2) return true;
+  return /^(모름|몰라|모르겠|잘\s*모르|글쎄|없음|\.+)$/i.test(t.replace(/\s/g, ''));
+}
+
+function overviewAiVerificationMatches(text, isCorrect) {
+  const raw = String(text || '').trim();
+  const hasOk = /검증\s*[:：]\s*✓/.test(raw);
+  const hasNg = /검증\s*[:：]\s*✗/.test(raw);
+  if (!hasOk && !hasNg) return false;
+  return isCorrect ? hasOk && !hasNg : hasNg && !hasOk;
+}
+
+function overviewAiLeakedAnswer(aiText, studentText, forbiddenWhenWrong) {
+  return (forbiddenWhenWrong || []).some((token) => {
+    if (!token) return false;
+    return includesAnyToken(aiText, [token]) && !includesAnyToken(studentText, [token]);
+  });
+}
+
+/**
+ * 개요 파악 서술형 — 학생 문장에 맞춘 형성적 AI 피드백
+ * 실패·정답 유출 시 fallbackText(고정 힌트)를 반환한다.
+ */
+export async function generateOverviewOpenTextFeedback({ song, question, data, fallbackText }) {
+  const meta = OVERVIEW_OPEN_AI_META[`${song}:${question}`];
+  const fallback = String(fallbackText || '').trim()
+    || '답을 조금 더 쓴 뒤 다시 눌러 주세요.';
+  if (!meta) return fallback;
+
+  const studentText = question === 'q1'
+    ? getOverviewStudentQ1(song, data)
+    : getOverviewStudentQ2(song, data);
+  const trimmed = String(studentText || '').trim();
+  if (isOverviewOpenNonAttempt(trimmed)) return fallback;
+
+  const grouped = evaluateOverviewQuestion(song, question, data);
+  const isCorrect = grouped ? grouped.isCorrect : (question === 'q1' ? gradeOverviewQ1(song, data) : gradeOverviewQ2(song, data)) === true;
+  const missingHints = (grouped?.missingGroups || []).map((group) => group.hint).filter(Boolean);
+  const forbidden = [
+    ...(meta.forbiddenWhenWrong || []),
+    ...((grouped?.missingGroups || []).flatMap((group) => group.keywords || []))
+  ];
+
+  const missingBlock = missingHints.length
+    ? `빠진 내용 축(정답 단어·키워드는 쓰지 말 것. 아래 방향으로만 유도):\n${missingHints.map((hint) => `· ${hint}`).join('\n')}`
+    : '빠진 축 없음.';
+
+  const taskPrompt = `너는 초등·중학생 음악 수업을 돕는 선생님이야. ${meta.workTitle} 개요 파악 — 「${meta.questionTitle}」에 대한 형성적 피드백이다.
+
+바로 위에 붙은 공통 블록 [피드백 설계 원칙]을 따른다. 다만 이 과제는 학생이 문장으로 쓴 답이므로, 학생 표현을 「」로 한 번 짧게 인용해도 된다.
+
+학생 응답:
+${trimmed}
+
+내부 판정(학생 출력 금지): ${isCorrect ? '맞음 → 검증 ✓' : '틀림 → 검증 ✗'}
+충족한 축: ${grouped ? `${grouped.matchedGroups.length}/${grouped.matchedGroups.length + grouped.missingGroups.length}` : '(해당 없음)'}
+${missingBlock}
+다시 들을 초점(정답 문장이 아님): ${meta.listenHint}
+
+[정답 유출 금지]
+· 오답일 때 다음을 본문에 쓰지 말 것: ${forbidden.join(', ') || '(해당 없음)'}
+· "정답은 ○○", 모범 문장 통째 복사, "이렇게 써야 한다" 금지.
+· 학생이 이미 쓴 단어만 인용 가능.
+
+규칙:
+· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 판정과 일치.
+· 검증 ✓: 학생 표현을 짧게 받은 뒤 관련 음악 개념으로 2~3문장 정교화.
+· 검증 ✗: 학생 문장에서 부족한 축만 듣기·쓰기 힌트. 검증 다음 1~3문장. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+
+  const aiText = await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback);
+  const trimmedAi = String(aiText || '').trim();
+  if (!trimmedAi) return fallback;
+  if (!overviewAiVerificationMatches(trimmedAi, isCorrect)) return fallback;
+  if (!isCorrect && overviewAiLeakedAnswer(trimmedAi, trimmed, forbidden)) return fallback;
+  return trimmedAi;
 }
 
 function buildAnalyticalFallbackBody(userCharacterSlots, userCharsText, correctChars, userStory, q2Label = '줄거리 요약') {
@@ -809,9 +933,56 @@ function hyThemeMatchColumnOk(placedIds, correctSet, wrongSet) {
 }
 
 function buildHyThemeMatchFallback({ theme1Ids, theme2Ids }) {
-  const t1 = (theme1Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id]).filter(Boolean).join(', ') || '미배치';
-  const t2 = (theme2Ids || []).map((id) => HY_THEME_MATCH_OPT_LABELS[id]).filter(Boolean).join(', ') || '미배치';
-  return `제1주제 칸: ${t1}. 제2주제 칸: ${t2}. 선율·리듬꼴·느낌의 차이에 귀를 두고 두 음원을 번갈아 들으며, 각 칸에 넣은 문구가 같은 듣기에서 모였는지 점검해 보세요. 과제(칸 나누기)에만 초점을 두고, 칸을 바꿔 넣어 실험해 보아도 좋아요. 마지막은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+  const t1 = theme1Ids || [];
+  const t2 = theme2Ids || [];
+  const t1WrongIds = t1.filter((id) => ['o2', 'o4', 'o6'].includes(id));
+  const t2WrongIds = t2.filter((id) => ['o1', 'o3', 'o5'].includes(id));
+  const parts = [];
+  const used = new Set();
+
+  if (t1WrongIds.includes('o2') && t2WrongIds.includes('o1')) {
+    parts.push('제1주제 칸에 「음이 순차적으로 이어진다」, 제2주제 칸에 「음이 크게 도약한다」를 넣었어요. 두 클립을 번갈아 들으며, 어느 쪽이 음이 멀리 뛰고 어느 쪽이 옆 음으로 이어지는지 선율의 움직임만 비교해 보세요.');
+    used.add('o2');
+    used.add('o1');
+  }
+  if (t1WrongIds.includes('o4') && t2WrongIds.includes('o3')) {
+    parts.push('제1주제 칸에 「리듬이 길게 이어진다」, 제2주제 칸에 「리듬이 짧게 끊어진다」를 넣었어요. 두 클립을 번갈아 들으며, 어느 쪽 리듬이 짧게 톡톡이고 어느 쪽이 길게 흐르는지 리듬꼴만 비교해 보세요.');
+    used.add('o4');
+    used.add('o3');
+  }
+  if (t1WrongIds.includes('o6') && t2WrongIds.includes('o5')) {
+    parts.push('제1주제 칸에 「부드럽고 서정적이다」, 제2주제 칸에 「밝고 활기차다」를 넣었어요. 두 클립을 번갈아 들으며, 어느 쪽이 가볍고 또렷하고 어느 쪽이 잔잔한지 분위기만 비교해 보세요.');
+    used.add('o6');
+    used.add('o5');
+  }
+
+  t1WrongIds.forEach((id) => {
+    if (used.has(id)) return;
+    const label = HY_THEME_MATCH_OPT_LABELS[id];
+    if (id === 'o2') {
+      parts.push(`제1주제 칸에 「${label}」를 넣었어요. 순차 진행은 음이 옆 칸으로 살살 걸어가듯 들릴 때 잘 맞아요. 제1주제 클립만 다시 들으며, 음과 음 사이가 가까운지 멀리 뛰어오르는지 선율의 움직임만 비교해 보세요.`);
+    } else if (id === 'o4') {
+      parts.push(`제1주제 칸에 「${label}」를 넣었어요. 긴 리듬은 음이 늘어지며 흐를 때 잘 맞아요. 제1주제 클립만 다시 들으며, 리듬이 길게 흐르는지 짧게 톡톡 끊어지는지 리듬꼴만 비교해 보세요.`);
+    } else if (id === 'o6') {
+      parts.push(`제1주제 칸에 「${label}」를 넣었어요. 서정적인 느낌은 노래하듯 잔잔할 때 잘 맞아요. 제1주제 클립만 다시 들으며, 느낌이 잔잔한지 가볍고 또렷한지 분위기만 비교해 보세요.`);
+    }
+  });
+  t2WrongIds.forEach((id) => {
+    if (used.has(id)) return;
+    const label = HY_THEME_MATCH_OPT_LABELS[id];
+    if (id === 'o1') {
+      parts.push(`제2주제 칸에 「${label}」를 넣었어요. 도약은 음이 멀리 뛰어오를 때 잘 맞아요. 제2주제 클립만 다시 들으며, 음과 음 사이가 멀리 뛰는지 옆 음으로 이어지는지 선율의 움직임만 비교해 보세요.`);
+    } else if (id === 'o3') {
+      parts.push(`제2주제 칸에 「${label}」를 넣었어요. 짧은 리듬은 톡톡 끊어질 때 잘 맞아요. 제2주제 클립만 다시 들으며, 리듬이 짧게 끊기는지 길게 흐르는지 리듬꼴만 비교해 보세요.`);
+    } else if (id === 'o5') {
+      parts.push(`제2주제 칸에 「${label}」를 넣었어요. 활기찬 느낌은 가볍고 또렷할 때 잘 맞아요. 제2주제 클립만 다시 들으며, 느낌이 또렷한지 잔잔한지 분위기만 비교해 보세요.`);
+    }
+  });
+
+  if (!parts.length) {
+    return '두 주제를 번갈아 들으며 선율의 움직임·리듬꼴·느낌이 같은 칸에 모였는지 점검해 보세요. 다시 들어보세요.';
+  }
+  return `${parts.slice(0, 2).join('\n')}\n다시 들어보세요.`;
 }
 
 /**
@@ -862,9 +1033,35 @@ function sbAtonalColumnOk(placedCards, correctSet, wrongSet) {
 }
 
 function buildSbAtonalMatchFallback({ tonalCards, atonalCards }) {
-  const t1 = (tonalCards || []).join(', ') || '미배치';
-  const t2 = (atonalCards || []).join(', ') || '미배치';
-  return `송어 칸: ${t1}. 피에로 칸: ${t2}. 조성·무조성, 안정감·긴장감, 음의 어울림에 귀를 두고 두 곡을 번갈아 들으며 각 칸에 넣은 문구가 맞는 듣기에서 모였는지 점검해 보세요. 마지막은 반드시 "다시 들어보세요." 또는 "다시 생각해보세요."`;
+  const tonal = tonalCards || [];
+  const atonal = atonalCards || [];
+  const tonalWrong = tonal.filter((card) => ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'].includes(card));
+  const atonalWrong = atonal.filter((card) => ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'].includes(card));
+  const parts = [];
+
+  tonalWrong.forEach((card) => {
+    if (card === '무조성 음악') {
+      parts.push('송어 칸의 「무조성 음악」을 다시 들어 보세요. 송어의 음들이 중심음 없이 떠다니는지, 편안하게 한곳으로 모이는지 조성감만 비교해 보세요.');
+    } else if (card === '낯설고 긴장감') {
+      parts.push('송어 칸의 「낯설고 긴장감」을 다시 들어 보세요. 송어가 낯설고 긴장되는지, 편안하고 안정적인지 분위기만 비교해 보세요.');
+    } else if (card === '음들이 따로 논다.') {
+      parts.push('송어 칸의 「음들이 따로 논다.」를 다시 들어 보세요. 송어의 음들이 서로 겉도는지, 잘 어울려 붙는지 화음의 느낌을 비교해 보세요.');
+    }
+  });
+  atonalWrong.forEach((card) => {
+    if (card === '조성 음악') {
+      parts.push('피에로 칸의 「조성 음악」을 다시 들어 보세요. 피에로의 음들이 편안하게 한곳으로 모이는지, 중심음 없이 떠다니는지 조성감만 비교해 보세요.');
+    } else if (card === '편안하고 안정적') {
+      parts.push('피에로 칸의 「편안하고 안정적」을 다시 들어 보세요. 피에로가 편안하고 안정적인지, 낯설고 긴장되는지 분위기만 비교해 보세요.');
+    } else if (card === '음들이 서로 잘 어울린다.') {
+      parts.push('피에로 칸의 「음들이 서로 잘 어울린다.」를 다시 들어 보세요. 피에로의 음들이 잘 어울려 붙는지, 서로 겉도는지 화음의 느낌을 비교해 보세요.');
+    }
+  });
+
+  if (!parts.length) {
+    return '두 곡을 번갈아 들으며 안정감·긴장감, 음의 어울림이 같은 칸에 모였는지 점검해 보세요. 다시 들어보세요.';
+  }
+  return `${parts.slice(0, 2).join('\n')}\n다시 들어보세요.`;
 }
 
 /**
@@ -908,7 +1105,13 @@ export async function generateSbAtonalMatchFeedback({ tonalCards, atonalCards })
 }
 
 function buildHyThemePart3Fallback(selectedDeg) {
-  return `선택한 도수는 ${selectedDeg || '미선택'}이에요. 시작음과 목표음을 모두 포함해서 한 칸씩 손으로 짚어 보세요. 먼저 "몇 칸인지"를 적고, 그다음 보기 중 어떤 도수와 대응되는지 다시 고르면 훨씬 정확해져요.`;
+  if (selectedDeg === '3도') {
+    return '「3도」를 골랐어요. 3도는 시작음에서 가까운 이웃처럼 느껴지는 간격이에요. 건반에서 G(솔)와 D(레)를 함께 누른 뒤, 두 음이 바로 옆처럼 가까운지 그 사이에 흰 건반이 더 있는지 한 칸씩 세어 보세요. 다시 생각해보세요.';
+  }
+  if (selectedDeg === '8도') {
+    return '「8도」를 골랐어요. 8도는 한 옥타브, 같은 음이름의 위·아래처럼 느껴지는 간격이에요. 건반에서 G와 D의 음이름이 같은지 다른지 글자를 보고, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.';
+  }
+  return '시작음 G와 목표음 D를 건반에서 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.';
 }
 
 export async function generateHyThemePart3Feedback({ selectedDeg }) {

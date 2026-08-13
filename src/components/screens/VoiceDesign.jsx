@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import { SegmentYoutubePlayer } from '../SegmentYoutubePlayer';
-import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
 import {
   createEmptyMawangVoiceDesign,
   getMawangMelodyOptions,
   isVoiceDesignRowFilled,
   MAWANG_VOICE_ANSWER_KEY,
   normalizeMawangVoiceDesign,
-  VOICE_DESIGN_FIELD_KEYS
 } from '../../lib/voiceDesignAnswers';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import { getVoiceDesignFixedFeedback } from '../../lib/fixedFormativeFeedback';
@@ -176,17 +174,6 @@ function VoiceDesignOptionIcon({ option }) {
 
 const answerKey = MAWANG_VOICE_ANSWER_KEY;
 
-/** 정답 확인 패널 하단 모범 해설 */
-const voiceCompareCommentary = {
-  해설자:
-    '해설자는 밤길 상황을 듣는 이에게 담담히 전달하는 역할이에요. 장면을 전하는 선율과 단조의 어두운 음계, 두꺼운 음색이 이야기의 무게를 실어 줍니다.',
-  아버지:
-    '아버지는 아들을 달래며 현실을 지키려는 목소리예요. 낮고 부드러운 선율과 두꺼운 음색이 어른의 단단함을, 장조의 밝고 안정된 느낌이 안심을 함께 드러냅니다.',
-  아들:
-    '아들은 두려움과 호소가 섞인 목소리로 들려요. 한자리에 머무는 답답한 선율과 얇은 음색, 단조가 불안과 비극적 분위기를 표현합니다.',
-  마왕:
-    '마왕은 달콤한 유혹을 속삭이는 인물이에요. 달콤하고 화려한 선율과 장조의 밝음, 얇은 음색이 부드럽고 가벼운 유혹처럼 들리게 설계된 모범안입니다.'
-};
 function VoiceDesign({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isErlkonig = selectedSong !== 'handel' && selectedSong !== 'hallelujah';
@@ -199,10 +186,7 @@ function VoiceDesign({ go }) {
   const [voiceDesign, setVoiceDesign] = useState(() =>
     normalizeMawangVoiceDesign(voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign())
   );
-  const [showCompare, setShowCompare] = useState(false);
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
-  /** { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } | null */
-  const [voiceAiGate, setVoiceAiGate] = useState(null);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
@@ -257,8 +241,8 @@ function VoiceDesign({ go }) {
     return n >= 2;
   }, [voiceDesign]);
 
-  /** 현재 편집 중인 인물만 네 항목이 모두 채워졌을 때 정답 확인 UI 표시 */
-  const canShowAnswerCheck = useMemo(
+  /** 현재 편집 중인 인물만 네 항목이 모두 채워졌을 때 피드백 UI 표시 */
+  const canShowFeedback = useMemo(
     () => isCharacterFilled(selectedCharacter),
     [selectedCharacter, voiceDesign]
   );
@@ -267,7 +251,6 @@ function VoiceDesign({ go }) {
     () => getVoiceDesignFixedFeedback([selectedCharacter], voiceDesign, answerKey),
     [selectedCharacter, voiceDesign]
   );
-  const designKeys = VOICE_DESIGN_FIELD_KEYS;
   const currentSnapshot = useMemo(
     () =>
       JSON.stringify({
@@ -276,38 +259,10 @@ function VoiceDesign({ go }) {
       }),
     [selectedCharacter, voiceDesign]
   );
-  const canOpenAnswerCheck =
-    canShowAnswerCheck &&
-    voiceAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: voiceAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: voiceAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: voiceAiGate.responseAtFeedback,
-      currentResponse: currentSnapshot
-    });
-  const onFeedbackRequested = useCallback(() => {
-    const wasCorrect = designKeys.every(
-      (key) => voiceDesign[selectedCharacter]?.[key] === answerKey[selectedCharacter]?.[key]
-    );
-    setVoiceAiGate({
-      feedbackCompleted: false,
-      responseAtFeedback: currentSnapshot,
-      wasCorrectWhenFeedbackRequested: wasCorrect
-    });
-    setShowCompare(false);
-  }, [currentSnapshot, selectedCharacter, voiceDesign]);
 
   useEffect(() => {
     if (canCheckAnswer) setStageCompletion('voice', true);
   }, [canCheckAnswer, setStageCompletion]);
-
-  useEffect(() => {
-    if (!canShowAnswerCheck) setShowCompare(false);
-  }, [canShowAnswerCheck]);
-
-  useEffect(() => {
-    setVoiceAiGate(null);
-  }, [selectedCharacter]);
 
   useEffect(() => {
     setVoiceDesignState({ selectedChars, voiceDesign });
@@ -401,77 +356,11 @@ function VoiceDesign({ go }) {
             ))}
           </div>
 
-          {canShowAnswerCheck ? (
-            <>
-              <FormativeFeedbackBlock
-                key={`voice-fb-${currentSnapshot}`}
-                getFeedback={getVoiceFeedback}
-                onRequested={onFeedbackRequested}
-                onResult={() => {
-                  setVoiceAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
-                }}
-              />
-              <button
-                type="button"
-                className="answer-check-toggle"
-                onClick={() => setShowCompare((v) => !v)}
-                aria-expanded={showCompare}
-                disabled={!canOpenAnswerCheck}
-                style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-              >
-                <span className="answer-check-toggle-label">{canOpenAnswerCheck ? `정답 확인하기 · ${selectedCharacter}` : '피드백 반영 후 정답 확인하기'}</span>
-                <span className="answer-check-toggle-chevron" aria-hidden="true">
-                  {showCompare ? '▲' : '▼'}
-                </span>
-              </button>
-              {voiceAiGate?.feedbackCompleted &&
-              voiceAiGate.wasCorrectWhenFeedbackRequested &&
-              currentSnapshot === voiceAiGate.responseAtFeedback ? (
-                <div className="small-note" style={{ marginTop: 8 }}>
-                  좋아요! 현재 입력이 이미 정답과 일치해서 바로 확인할 수 있어요.
-                </div>
-              ) : null}
-
-              <div className={`answer-compare-slide ${showCompare ? 'open' : ''}`}>
-                <div className="answer-compare-inner voice-compare-panel">
-                  <div className="voice-compare-head">
-                    <span className="voice-compare-badge">{active.icon}</span>
-                    <span className="voice-compare-title">{selectedCharacter} 음색 설계 비교</span>
-                  </div>
-                  <table className="cmp-table cmp-table-voice">
-                    <thead>
-                      <tr>
-                        <th className="col-element">요소</th>
-                        <th>나의 설계</th>
-                        <th>정답</th>
-                        <th className="col-mark" aria-label="일치 여부" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {designKeys.map((key) => {
-                        const mine = voiceDesign[selectedCharacter]?.[key] || '';
-                        const correct = answerKey[selectedCharacter]?.[key] ?? '—';
-                        const match = mine && mine === correct;
-                        return (
-                          <tr key={key}>
-                            <td className="row-label col-element">{key}</td>
-                            <td>{mine || '—'}</td>
-                            <td className="voice-correct-cell">{correct}</td>
-                            <td className="col-mark">
-                              <span className={`voice-compare-mark ${match ? 'ok' : 'bad'}`} aria-label={match ? '일치' : '불일치 또는 미선택'}>
-                                {match ? '✓' : '✗'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <div className="vd-answer-comment">{voiceCompareCommentary[selectedCharacter] ?? ''}</div>
-                  <div className="fb show info">💬 위 정답은 {isErlkonig ? '시와 음악 해설' : '곡의 성부/화성 해설'}에 맞춘 모범안이에요. 나의 설계와 비교해 들어보며 감각을 맞춰 보세요.</div>
-                </div>
-              </div>
-            </>
+          {canShowFeedback ? (
+            <FormativeFeedbackBlock
+              key={`voice-fb-${currentSnapshot}`}
+              getFeedback={getVoiceFeedback}
+            />
           ) : null}
         </div>
 

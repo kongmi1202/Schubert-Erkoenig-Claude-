@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createEmptyMawangVoiceDesign } from '../lib/voiceDesignAnswers';
 
-export const screenOrder = ['intro','studentInfo','songSelect','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
+export const screenOrder = ['intro','programGuide','studentInfo','songSelect','sensoryPage','analyticalOverview','voiceDesign','pianoAnalysis','historyCards','aestheticPage','finalCard'];
 
 export const stepNames = {
   sensoryPage: '1단계 감각적 감상',

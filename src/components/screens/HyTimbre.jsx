@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import { getHyTimbreFixedFeedback } from '../../lib/fixedFormativeFeedback';
 
 const AUDIO_SRC = {
   'hy-instr1': '/audio/haydn-violin.mp3',
@@ -14,7 +16,7 @@ const INSTRUMENTS = [
   { id: 'cello', icon: '🎻', name: '첼로', desc: '낮은 음역', sizeClass: 'size-vc' }
 ];
 
-/** 역할 카드 — key는 선택값·정답 비교용 */
+/** 역할 카드 — key는 선택값 */
 const ROLES = [
   { id: 'r-melody', key: '주선율', title: '주선율', desc: '가장 높은 음역을 담당해요' },
   { id: 'r-inner', key: '중성부', title: '중성부', desc: '중간 음역을 담당해요' },
@@ -51,31 +53,12 @@ const SEGMENTS = [
   }
 ];
 
-function accordionBodyText(segment, instrOk, roleOk) {
-  if (instrOk && roleOk) {
-    if (segment.idx === 1) {
-      return '맞아요! 바이올린이에요. 가장 높은 음역으로 주선율을 담당해요.';
-    }
-    if (segment.idx === 2) {
-      return '맞아요! 비올라예요. 중간 음역으로 중성부를 담당해요.';
-    }
-    return '맞아요! 첼로예요. 가장 낮은 음역으로 베이스를 담당해요.';
-  }
-  if (!instrOk) {
-    return '이 음역의 악기와 맞지 않아요. 음이 높은지 낮은지 다시 들어보세요.';
-  }
-  return '이 악기의 역할과 맞지 않아요. 음역을 생각하며 다시 선택해보세요.';
-}
-
 function HyTimbre({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const hyTimbreState = useAppStore((s) => s.hyTimbreState);
   const setHyTimbreState = useAppStore((s) => s.setHyTimbreState);
   const [selectedByGrid, setSelectedByGrid] = useState(() => hyTimbreState?.selectedByGrid || {});
   const [roleByGrid, setRoleByGrid] = useState(() => hyTimbreState?.roleByGrid || {});
-  const [resultInstrByGrid, setResultInstrByGrid] = useState({});
-  const [resultRoleByGrid, setResultRoleByGrid] = useState({});
-  const [openByBodyId, setOpenByBodyId] = useState({});
   const [playingId, setPlayingId] = useState('');
   const audioRefs = useRef({
     'hy-instr1': null,
@@ -107,43 +90,12 @@ function HyTimbre({ go }) {
     }
   };
 
-  function clearResultsFor(gridId) {
-    setResultInstrByGrid((prev) => {
-      const next = { ...prev };
-      delete next[gridId];
-      return next;
-    });
-    setResultRoleByGrid((prev) => {
-      const next = { ...prev };
-      delete next[gridId];
-      return next;
-    });
-    const seg = SEGMENTS.find((s) => s.gridId === gridId);
-    if (seg) {
-      setOpenByBodyId((prev) => ({ ...prev, [seg.bodyId]: false }));
-    }
-  }
-
   function selInstr(name, gridId) {
     setSelectedByGrid((prev) => ({ ...prev, [gridId]: name }));
-    clearResultsFor(gridId);
   }
 
   function selRole(roleKey, gridId) {
     setRoleByGrid((prev) => ({ ...prev, [gridId]: roleKey }));
-    clearResultsFor(gridId);
-  }
-
-  function checkHyTimbre(segment) {
-    const picked = selectedByGrid[segment.gridId];
-    const rolePick = roleByGrid[segment.gridId];
-    if (!picked || !rolePick) return;
-    const instrOk = picked === segment.answer;
-    const roleOk = rolePick === segment.roleAnswer;
-    setResultInstrByGrid((prev) => ({ ...prev, [segment.gridId]: instrOk ? 'ok' : 'ng' }));
-    setResultRoleByGrid((prev) => ({ ...prev, [segment.gridId]: roleOk ? 'ok' : 'ng' }));
-    setOpenByBodyId((prev) => ({ ...prev, [segment.bodyId]: !prev[segment.bodyId] }));
-    setStageCompletion('voice', true);
   }
 
   const allSelected = useMemo(
@@ -173,13 +125,7 @@ function HyTimbre({ go }) {
         {SEGMENTS.map((segment) => {
           const picked = selectedByGrid[segment.gridId];
           const rolePick = roleByGrid[segment.gridId];
-          const ri = resultInstrByGrid[segment.gridId];
-          const rr = resultRoleByGrid[segment.gridId];
-          const answerOpen = openByBodyId[segment.bodyId];
           const bothPicked = !!(picked && rolePick);
-          const instrOk = ri === 'ok';
-          const roleOk = rr === 'ok';
-          const checked = typeof ri === 'string' && typeof rr === 'string';
 
           return (
             <section key={segment.gridId} style={{ marginBottom: 20 }}>
@@ -209,13 +155,11 @@ function HyTimbre({ go }) {
                 <div id={segment.gridId} className="instr-grid">
                   {INSTRUMENTS.map((instrument) => {
                     const isSelected = picked === instrument.name;
-                    const showInstr = checked && isSelected && ri;
-                    const stateClass = showInstr ? ri : isSelected ? 'sel' : '';
                     return (
                       <button
                         key={`${segment.gridId}-${instrument.id}`}
                         type="button"
-                        className={`instr-btn ${stateClass}`}
+                        className={`instr-btn ${isSelected ? 'sel' : ''}`}
                         onClick={() => selInstr(instrument.name, segment.gridId)}
                       >
                         <div className={`instr-icon ${instrument.sizeClass}`}>{instrument.icon}</div>
@@ -229,13 +173,11 @@ function HyTimbre({ go }) {
                 <div className="instr-grid">
                   {ROLES.map((role) => {
                     const isSelected = rolePick === role.key;
-                    const showRole = checked && isSelected && rr;
-                    const stateClass = showRole ? rr : isSelected ? 'sel' : '';
                     return (
                       <button
                         key={`${segment.gridId}-${role.id}`}
                         type="button"
-                        className={`instr-btn hy-role-btn ${stateClass}`}
+                        className={`instr-btn hy-role-btn ${isSelected ? 'sel' : ''}`}
                         onClick={() => selRole(role.key, segment.gridId)}
                       >
                         <div className="hy-role-title">{role.title}</div>
@@ -246,33 +188,27 @@ function HyTimbre({ go }) {
                 </div>
               </div>
 
-              <button
-                id={segment.btnId}
-                type="button"
-                className="answer-check-toggle"
-                onClick={() => checkHyTimbre(segment)}
-                aria-expanded={!!answerOpen}
-                disabled={!bothPicked}
-                style={!bothPicked ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-              >
-                <span className="answer-check-toggle-label">정답 확인하기</span>
-                <span className="answer-check-toggle-chevron" aria-hidden="true">
-                  {answerOpen ? '▲' : '▼'}
-                </span>
-              </button>
+              <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
+                <FormativeFeedbackBlock
+                  key={`hy-timbre-fb-${segment.gridId}-${picked || 'none'}-${rolePick || 'none'}`}
+                  disabled={!bothPicked}
+                  getFeedback={() =>
+                    getHyTimbreFixedFeedback({
+                      picked,
+                      rolePick,
+                      answer: segment.answer,
+                      roleAnswer: segment.roleAnswer,
+                      segmentIdx: segment.idx
+                    })
+                  }
+                  onResult={() => setStageCompletion('voice', true)}
+                />
+              </div>
               {!bothPicked ? (
                 <div className="small-note" style={{ marginTop: 8 }}>
                   악기와 역할을 모두 선택해주세요
                 </div>
               ) : null}
-
-              <div id={segment.bodyId} className={`answer-compare-slide ${answerOpen ? 'open' : ''}`}>
-                <div className="answer-compare-inner">
-                  <div className={`fb show ${checked && instrOk && roleOk ? 'ok' : 'info'}`}>
-                    {checked ? accordionBodyText(segment, instrOk, roleOk) : null}
-                  </div>
-                </div>
-              </div>
             </section>
           );
         })}

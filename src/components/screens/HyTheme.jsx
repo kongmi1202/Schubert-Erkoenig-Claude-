@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { canOpenAnswerAfterFormativeAiGate, generateHyThemeMatchFeedback } from '../../lib/compareFeedback';
-import { getHyThemePart3FixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { getHyThemeMatchFixedFeedback, getHyThemePart3FixedFeedback } from '../../lib/fixedFormativeFeedback';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
@@ -21,18 +19,6 @@ const HY_MATCH_OPTIONS = [
   { id: 'o5', label: '밝고 활기차다' },
   { id: 'o6', label: '부드럽고 서정적이다' }
 ];
-
-const THEME1_CORRECT = new Set(['o1', 'o3', 'o5']);
-const THEME1_WRONG = new Set(['o2', 'o4', 'o6']);
-const THEME2_CORRECT = new Set(['o2', 'o4', 'o6']);
-const THEME2_WRONG = new Set(['o1', 'o3', 'o5']);
-
-function matchColumnCorrect(placedIds, correctSet, wrongSet) {
-  if (!Array.isArray(placedIds) || placedIds.length === 0) return false;
-  const hasCorrect = placedIds.some((id) => correctSet.has(id));
-  const hasWrong = placedIds.some((id) => wrongSet.has(id));
-  return hasCorrect && !hasWrong;
-}
 
 let ytApiPromise = null;
 function loadYouTubeIframeApi() {
@@ -127,14 +113,10 @@ function HyTheme({ go }) {
   const [placedOptions, setPlacedOptions] = useState(() => normPlaced(hyThemeState?.matchPlaced));
   const [selectedOption, setSelectedOption] = useState(null);
 
-  const [matchChecked, setMatchChecked] = useState(false);
-  const [matchOpen, setMatchOpen] = useState(false);
-  const [matchAiGate, setMatchAiGate] = useState(null);
+  const [matchFbDone, setMatchFbDone] = useState(false);
 
   const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
-  const [degChecked, setDegChecked] = useState(false);
-  const [degOpen, setDegOpen] = useState(false);
-  const [degAiGate, setDegAiGate] = useState(null);
+  const [degFbDone, setDegFbDone] = useState(false);
 
   const shuffledMatchOptions = useMemo(() => shuffleMatchOptions(HY_MATCH_OPTIONS), []);
 
@@ -314,7 +296,7 @@ function HyTheme({ go }) {
   const tapOption = (id) => {
     if (optionFullyPlaced(id)) return;
     setSelectedOption((prev) => (prev === id ? null : id));
-    setMatchChecked(false);
+    setMatchFbDone(false);
   };
 
   const placeInSlot = (slot) => {
@@ -324,7 +306,7 @@ function HyTheme({ go }) {
       return { ...prev, [slot]: [...prev[slot], selectedOption] };
     });
     setSelectedOption(null);
-    setMatchChecked(false);
+    setMatchFbDone(false);
   };
 
   const removeFromSlot = (slot, id) => {
@@ -332,62 +314,20 @@ function HyTheme({ go }) {
       ...prev,
       [slot]: prev[slot].filter((x) => x !== id)
     }));
-    setMatchChecked(false);
+    setMatchFbDone(false);
   };
 
   function selDegH(el) {
     setSelectedDeg(el);
-    setDegChecked(false);
-  }
-
-  function checkDegH() {
-    setDegChecked(true);
-    setDegOpen((prev) => !prev);
-  }
-
-  function checkMatchH() {
-    setMatchChecked(true);
-    setMatchOpen((prev) => !prev);
-    setStageCompletion('piano', true);
+    setDegFbDone(false);
   }
 
   const canCheckMatch = placedOptions.theme1.length > 0 && placedOptions.theme2.length > 0;
   const canCheckDeg = useMemo(() => !!selectedDeg, [selectedDeg]);
-  const canProceed = useMemo(() => canCheckMatch && canCheckDeg, [canCheckMatch, canCheckDeg]);
-
-  const matchCol1Ok = matchColumnCorrect(placedOptions.theme1, THEME1_CORRECT, THEME1_WRONG);
-  const matchCol2Ok = matchColumnCorrect(placedOptions.theme2, THEME2_CORRECT, THEME2_WRONG);
-  const matchBothCorrect = matchCol1Ok && matchCol2Ok;
-
-  const matchSnapshot = useMemo(
-    () =>
-      JSON.stringify({
-        t1: [...placedOptions.theme1].sort(),
-        t2: [...placedOptions.theme2].sort()
-      }),
-    [placedOptions]
+  const canProceed = useMemo(
+    () => canCheckMatch && canCheckDeg && matchFbDone && degFbDone,
+    [canCheckMatch, canCheckDeg, matchFbDone, degFbDone]
   );
-  const degSnapshot = useMemo(() => JSON.stringify({ selectedDeg: selectedDeg || '' }), [selectedDeg]);
-  const degCorrect = selectedDeg === '5도';
-
-  const canOpenMatchAnswerCheck =
-    canCheckMatch &&
-    matchAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: matchAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: matchAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: matchAiGate.responseAtFeedback,
-      currentResponse: matchSnapshot
-    });
-  const canOpenDegAnswerCheck =
-    canCheckDeg &&
-    degAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: degAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: degAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: degAiGate.responseAtFeedback,
-      currentResponse: degSnapshot
-    });
 
   useEffect(() => {
     setHyThemeState({ matchPlaced: placedOptions, selectedDeg });
@@ -402,15 +342,6 @@ function HyTheme({ go }) {
     flexDirection: 'column',
     gap: 6,
     borderRadius: 4
-  };
-
-  const slotCheckedStyle = (slot) => {
-    if (!matchChecked) return {};
-    const ok = slot === 'theme1' ? matchCol1Ok : matchCol2Ok;
-    return {
-      borderColor: ok ? 'var(--green)' : 'var(--crimson)',
-      background: ok ? 'var(--green-pale)' : 'var(--crimson-pale)'
-    };
   };
 
   const tagStyle = {
@@ -551,7 +482,6 @@ function HyTheme({ go }) {
             style={{
               ...slotBaseStyle,
               borderLeft: '3px solid #4a7fc1',
-              ...slotCheckedStyle('theme1'),
               width: '100%',
               cursor: 'pointer',
               alignItems: 'stretch',
@@ -605,7 +535,6 @@ function HyTheme({ go }) {
             style={{
               ...slotBaseStyle,
               borderLeft: '3px solid #c4922a',
-              ...slotCheckedStyle('theme2'),
               width: '100%',
               cursor: 'pointer',
               alignItems: 'stretch',
@@ -648,58 +577,27 @@ function HyTheme({ go }) {
           </div>
         </div>
 
-        <CompareAiFeedbackBlock
-          requestFn={() =>
-            generateHyThemeMatchFeedback({
-              theme1Ids: placedOptions.theme1,
-              theme2Ids: placedOptions.theme2
-            })
-          }
-          disabled={!canCheckMatch}
-          onRequested={() => {
-            setMatchAiGate({
-              feedbackCompleted: false,
-              responseAtFeedback: matchSnapshot,
-              wasCorrectWhenFeedbackRequested: matchBothCorrect
-            });
-            setMatchOpen(false);
-          }}
-          onResult={() => {
-            setMatchAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
-          }}
-        />
-        <button
-          id="hy-ans-tone-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={checkMatchH}
-          disabled={!canOpenMatchAnswerCheck}
-          style={!canOpenMatchAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          aria-expanded={matchOpen}
-        >
-          <span className="answer-check-toggle-label">
-            {canOpenMatchAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-          </span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">
-            {matchOpen ? '▲' : '▼'}
-          </span>
-        </button>
+        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
+          <FormativeFeedbackBlock
+            key={`hy-theme-match-fb-${placedOptions.theme1.join('|')}-${placedOptions.theme2.join('|')}`}
+            disabled={!canCheckMatch}
+            getFeedback={() =>
+              getHyThemeMatchFixedFeedback({
+                theme1Ids: placedOptions.theme1,
+                theme2Ids: placedOptions.theme2
+              })
+            }
+            onResult={() => {
+              setMatchFbDone(true);
+              setStageCompletion('piano', true);
+            }}
+          />
+        </div>
         {!canCheckMatch ? (
           <div className="small-note" style={{ marginTop: 8 }}>
             칸을 채워주세요
           </div>
         ) : null}
-        <div id="hy-ans-tone-body" className={`answer-compare-slide ${matchOpen ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className={`fb show ${matchChecked && matchCol1Ok && matchCol2Ok ? 'ok' : 'info'}`}>
-              정답 요약
-              <br />
-              제1주제: 음이 크게 도약한다 · 리듬이 짧게 끊어진다 · 밝고 활기차다
-              <br />
-              제2주제: 음이 순차적으로 이어진다 · 리듬이 길게 이어진다 · 부드럽고 서정적이다
-            </div>
-          </div>
-        </div>
         </div>
 
         <div className="sonnet-item">
@@ -762,45 +660,10 @@ function HyTheme({ go }) {
         <FormativeFeedbackBlock
           key={`hy-deg-fb-${selectedDeg || 'none'}`}
           getFeedback={() => getHyThemePart3FixedFeedback({ selectedDeg })}
-          onRequested={() => {
-            setDegAiGate({
-              feedbackCompleted: false,
-              responseAtFeedback: degSnapshot,
-              wasCorrectWhenFeedbackRequested: degCorrect
-            });
-            setDegOpen(false);
-          }}
           onResult={() => {
-            setDegAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+            setDegFbDone(true);
           }}
         />
-        <button
-          id="hy-ans-deg-btn"
-          type="button"
-          className="answer-check-toggle"
-          onClick={checkDegH}
-          disabled={!canOpenDegAnswerCheck}
-          style={!canOpenDegAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-          aria-expanded={degOpen}
-        >
-          <span className="answer-check-toggle-label">
-            {canOpenDegAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-          </span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">
-            {degOpen ? '▲' : '▼'}
-          </span>
-        </button>
-        <div id="hy-ans-deg-body" className={`answer-compare-slide ${degOpen ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className={`fb show ${degChecked && degCorrect ? 'ok' : 'info'}`}>
-              ✓ 5도 차이예요! G→A→B→C→D, 5개 음 간격이에요.
-              <br />
-              고전주의 소나타 형식에서 제1·제2주제는
-              <br />
-              5도 차이 조성을 사용하는 것이 특징이에요.
-            </div>
-          </div>
-        </div>
         </div>
 
         {canProceed ? (

@@ -61,11 +61,7 @@ export function getStep2ResponseFlags(selectedSong, state) {
     return {
       overviewQ1: hasText(chars[0]),
       overviewQ2: hasText(state.analyticalStory),
-      sprech: Boolean(
-        state.sbSprechState?.normalChecked
-        || state.sbSprechState?.sprechChecked
-        || hasText(state.sbSprechState?.selectedChoice)
-      ),
+      sprech: Boolean(state.sbSprechState?.normalChecked && state.sbSprechState?.sprechChecked),
       atonalCards: (atonal?.tonal?.length ?? 0) > 0 || (atonal?.atonal?.length ?? 0) > 0,
       atonalChoice: hasText(state.sbAtonalState?.selectedChoice),
       atonalFeel: hasText(state.sbAtonalState?.feelTonal) || hasText(state.sbAtonalState?.feelAtonal)

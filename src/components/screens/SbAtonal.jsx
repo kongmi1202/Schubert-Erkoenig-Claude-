@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { canOpenAnswerAfterFormativeAiGate, generateSbAtonalMatchFeedback } from '../../lib/compareFeedback';
+import { generateSbAtonalMatchFeedback } from '../../lib/compareFeedback';
 
 const AUDIO_SRC = {
   tonal: '/audio/sb-tonal-aud.mp3',
@@ -36,9 +36,7 @@ function SbAtonal({ go }) {
   const [placedCards, setPlacedCards] = useState(() => (
     sbAtonalState?.placedCards || { tonal: [], atonal: [] }
   ));
-  const [answerOpen, setAnswerOpen] = useState(false);
-  const [answerChecked, setAnswerChecked] = useState(false);
-  const [matchAiGate, setMatchAiGate] = useState(null);
+  const [fbDone, setFbDone] = useState(false);
   const tonalRef = useRef(null);
   const atonalRef = useRef(null);
 
@@ -57,16 +55,6 @@ function SbAtonal({ go }) {
     [placedCards]
   );
 
-  const canOpenAnswerCheck =
-    canCheck &&
-    matchAiGate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: matchAiGate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: matchAiGate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: matchAiGate.responseAtFeedback,
-      currentResponse: matchSnapshot
-    });
-
   useEffect(() => {
     const summary = canCheck
       ? `송어: ${placedCards.tonal.join(', ')} / 피에로: ${placedCards.atonal.join(', ')}`
@@ -75,9 +63,7 @@ function SbAtonal({ go }) {
   }, [placedCards, canCheck, setSbAtonalState]);
 
   const resetAfterPlacementChange = () => {
-    setMatchAiGate(null);
-    setAnswerOpen(false);
-    setAnswerChecked(false);
+    setFbDone(false);
   };
 
   const placeCard = (slot) => {
@@ -111,13 +97,6 @@ function SbAtonal({ go }) {
     } catch {
       setPlaying('');
     }
-  };
-
-  const checkAnswer = () => {
-    if (!canOpenAnswerCheck) return;
-    setAnswerChecked(true);
-    setAnswerOpen((prev) => !prev);
-    setStageCompletion('piano', true);
   };
 
   return (
@@ -299,16 +278,9 @@ function SbAtonal({ go }) {
               atonalCards: placedCards.atonal
             })
           }
-          onRequested={() => {
-            setMatchAiGate({
-              feedbackCompleted: false,
-              responseAtFeedback: matchSnapshot,
-              wasCorrectWhenFeedbackRequested: isCorrect
-            });
-            setAnswerOpen(false);
-          }}
           onResult={() => {
-            setMatchAiGate((g) => (g ? { ...g, feedbackCompleted: true } : g));
+            setFbDone(true);
+            setStageCompletion('piano', true);
           }}
         />
         {!canCheck ? (
@@ -317,47 +289,7 @@ function SbAtonal({ go }) {
           </div>
         ) : null}
 
-        <button
-          type="button"
-          className="answer-check-toggle"
-          onClick={checkAnswer}
-          aria-expanded={answerOpen}
-          disabled={!canOpenAnswerCheck}
-          style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-        >
-          <span className="answer-check-toggle-label">
-            {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-          </span>
-          <span className="answer-check-toggle-chevron" aria-hidden="true">{answerOpen ? '▲' : '▼'}</span>
-        </button>
-        {matchAiGate?.feedbackCompleted &&
-        matchAiGate.wasCorrectWhenFeedbackRequested &&
-        matchSnapshot === matchAiGate.responseAtFeedback ? (
-          <div className="small-note" style={{ marginTop: 8 }}>
-            좋아요! 현재 배치가 정답과 일치해서 바로 확인할 수 있어요.
-          </div>
-        ) : null}
-        <div className={`answer-compare-slide ${answerOpen ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            {answerChecked && isCorrect ? (
-              <div className="fb show ok">
-                ✓ 맞아요! 송어는 조성 음악이라 음들이 서로 어울리고 안정적으로 들려요.
-                <br />
-                달에 홀린 피에로는 무조성 음악이라 낯설고 긴장감 있는 느낌이 나타나요.
-              </div>
-            ) : answerChecked ? (
-              <div className="fb show ng">
-                ✗ 아직 일부 카드가 맞지 않아요.
-                <br />
-                두 곡을 다시 듣고, 안정적으로 어울리는 느낌인지
-                <br />
-                낯설고 긴장된 느낌인지 기준으로 다시 배치해 보세요.
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {canCheck && isCorrect ? (
+        {fbDone && isCorrect ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">표현주의 음악의 특징</div>

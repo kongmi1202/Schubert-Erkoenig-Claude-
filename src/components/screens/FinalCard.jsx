@@ -298,7 +298,7 @@ function FinalCard({ go }) {
     } else if (isSchoenberg) {
       pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('schoenberg', overviewState));
       pushCheck(stage2Checks, step2Flags.overviewQ2, gradeOverviewQ2('schoenberg', overviewState));
-      pushCheck(stage2Checks, step2Flags.sprech, sbSprechState?.bothCorrect === true || Boolean(sbSprechState?.selectedChoice));
+      pushCheck(stage2Checks, step2Flags.sprech, sbSprechState?.bothCorrect === true);
       pushCheck(
         stage2Checks,
         step2Flags.atonalCards || step2Flags.atonalChoice,
@@ -494,7 +494,7 @@ function FinalCard({ go }) {
           <div className="fb show info">{sensoryDesc || '서술 없음'}</div>
 
           <div className="summary-div"></div>
-          <div className="summary-ey">② 분석적 감상</div>
+          <div className="summary-ey">② 분석적 감상 <span style={getGradeBadgeStyle(stageGrades.stage2)}>등급 {stageGrades.stage2}</span></div>
           {!hasStep2Content ? (
             <div className="fb show info" style={{ marginBottom: 12 }}>
               2단계에서 완료한 활동이 있으면 여기에 표시됩니다.
@@ -521,7 +521,7 @@ function FinalCard({ go }) {
               )}
             </div>
             <div>
-              <div className="small-note">{analyticalQ1Label} · 정답 <span style={getGradeBadgeStyle(stageGrades.stage2)}>등급 {stageGrades.stage2}</span></div>
+              <div className="small-note">{analyticalQ1Label} · 정답</div>
               {isHandel ? (
                 <div className="fb show gold">{handelAnswerQ1}</div>
               ) : isHaydn ? (

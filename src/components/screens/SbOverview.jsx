@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
+import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 
-const q1Answer = '소프라노(또는 메조소프라노) 성악, 플루트, 클라리넷, 바이올린, 첼로, 피아노로 구성된 실내악이에요.';
-const q2Answer =
-  '불안하고 몽환적이며 신비로운 분위기예요. 달빛 속 도취감과 공포가 뒤섞인 표현주의 특유의 감성을 담고 있어요.';
 const SB_OVERVIEW_Q1_WRITING_TIP =
   '음악에서 들리는 악기 이름(또는 연주 형태)과 성악가의 목소리 파트를 써보세요.';
 const SB_OVERVIEW_Q2_WRITING_TIP =
@@ -17,17 +18,11 @@ function SbOverview({ go }) {
   const setAnalyticalStory = useAppStore((s) => s.setAnalyticalStory);
   const q1 = analyticalCharacters?.[0] || '';
   const q2 = analyticalStory || '';
-  const [q1Open, setQ1Open] = useState(false);
-  const [q2Open, setQ2Open] = useState(false);
 
-  const isAllFilled = useMemo(() => Boolean(q1.trim() && q2.trim()), [q1, q2]);
-
-  useEffect(() => {
-    if (!isAllFilled) {
-      setQ1Open(false);
-      setQ2Open(false);
-    }
-  }, [isAllFilled]);
+  const canOpenQ1 = useMemo(() => Boolean(q1.trim()), [q1]);
+  const canOpenQ2 = useMemo(() => Boolean(q2.trim()), [q2]);
+  const isAllFilled = canOpenQ1 && canOpenQ2;
+  const overviewData = { analyticalCharacters, analyticalStory };
 
   return (
     <div className="screen active" id="sb-overview">
@@ -49,21 +44,13 @@ function SbOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 TIP: {SB_OVERVIEW_Q1_WRITING_TIP}
         </div>
-        {isAllFilled ? (
-          <button
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => setQ1Open((prev) => !prev)}
-            aria-expanded={q1Open}
-          >
-            <span className="answer-check-toggle-label">정답 확인하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">{q1Open ? '▲' : '▼'}</span>
-          </button>
-        ) : null}
-        <div className={`answer-compare-slide ${isAllFilled && q1Open ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="fb show info">정답: {q1Answer}</div>
-          </div>
+        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
+          <FormativeFeedbackBlock
+            key={`sb-overview-q1-${q1.trim() || 'none'}`}
+            disabled={!canOpenQ1}
+            getFeedback={() => getOverviewFixedFeedback({ song: 'schoenberg', question: 'q1', data: overviewData })}
+            onResult={() => setStageCompletion('analytical', true)}
+          />
         </div>
 
         <div className="sec">2. 이 음악의 전체적인 분위기는 어떤가요?</div>
@@ -76,21 +63,20 @@ function SbOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 TIP: {SB_OVERVIEW_Q2_WRITING_TIP}
         </div>
-        {isAllFilled ? (
-          <button
-            type="button"
-            className="answer-check-toggle"
-            onClick={() => setQ2Open((prev) => !prev)}
-            aria-expanded={q2Open}
-          >
-            <span className="answer-check-toggle-label">정답 확인하기</span>
-            <span className="answer-check-toggle-chevron" aria-hidden="true">{q2Open ? '▲' : '▼'}</span>
-          </button>
-        ) : null}
-        <div className={`answer-compare-slide ${isAllFilled && q2Open ? 'open' : ''}`}>
-          <div className="answer-compare-inner">
-            <div className="fb show info">정답: {q2Answer}</div>
-          </div>
+        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
+          <CompareAiFeedbackBlock
+            key={`sb-overview-q2-${q2.trim() || 'none'}`}
+            disabled={!canOpenQ2}
+            requestFn={() =>
+              generateOverviewOpenTextFeedback({
+                song: 'schoenberg',
+                question: 'q2',
+                data: overviewData,
+                fallbackText: getOverviewFixedFeedback({ song: 'schoenberg', question: 'q2', data: overviewData })
+              })
+            }
+            onResult={() => setStageCompletion('analytical', true)}
+          />
         </div>
 
         <div className="btn-row">

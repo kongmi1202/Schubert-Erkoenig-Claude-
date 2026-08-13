@@ -274,7 +274,8 @@ function SbSprech({ go }) {
                   getSbSprechFixedFeedback({
                     kind: 'normal',
                     hasMoved: canCheckNormal,
-                    isCorrect: normalIsCorrect
+                    isCorrect: normalIsCorrect,
+                    toneText: getSliderToneText(normalValue)
                   })
                 }
                 onResult={() => {
@@ -317,7 +318,8 @@ function SbSprech({ go }) {
                   getSbSprechFixedFeedback({
                     kind: 'sprech',
                     hasMoved: canCheckSprech,
-                    isCorrect: sprechIsCorrect
+                    isCorrect: sprechIsCorrect,
+                    toneText: getSliderToneText(sprechValue)
                   })
                 }
                 onResult={() => {

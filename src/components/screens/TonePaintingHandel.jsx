@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { canOpenAnswerAfterFormativeAiGate } from '../../lib/compareFeedback';
 import { getTonePaintingFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
 import { useAppStore } from '../../store/useAppStore';
@@ -149,40 +148,22 @@ function TonePaintingHandel({ go }) {
     s2: null,
     s3: null
   });
-  const [open, setOpen] = useState({
+  const [fbDoneById, setFbDoneById] = useState({
     s1: false,
     s2: false,
     s3: false
   });
-  const [hasRequestedFeedback, setHasRequestedFeedback] = useState({
-    s1: false,
-    s2: false,
-    s3: false
-  });
-  /** { [segmentId]: { feedbackCompleted, responseAtFeedback, wasCorrectWhenFeedbackRequested } } */
-  const [segmentAiGate, setSegmentAiGate] = useState({});
   const activeSegment = SEGMENTS.find((s) => s.id === activeSegmentId) || SEGMENTS[0];
 
   const allAnswered = useMemo(
     () => SEGMENTS.every((q) => selected[q.id] !== null),
     [selected]
   );
-  const allCorrect = useMemo(
-    () => SEGMENTS.every((q) => selected[q.id] === q.answer),
-    [selected]
+  const allFeedbackDone = useMemo(
+    () => SEGMENTS.every((q) => fbDoneById[q.id]),
+    [fbDoneById]
   );
-  const canShowAnswerCheck = selected[activeSegment.id] !== null;
-  const gate = segmentAiGate[activeSegment.id];
-  const canOpenAnswerCheck =
-    canShowAnswerCheck &&
-    hasRequestedFeedback[activeSegment.id] &&
-    gate?.feedbackCompleted &&
-    canOpenAnswerAfterFormativeAiGate({
-      feedbackCompleted: gate.feedbackCompleted,
-      wasCorrectWhenFeedbackRequested: gate.wasCorrectWhenFeedbackRequested,
-      responseAtFeedback: gate.responseAtFeedback,
-      currentResponse: selected[activeSegment.id]
-    });
+  const canProceed = allAnswered && allFeedbackDone;
   useEffect(() => {
     setTonePaintingHandelState({ selected });
   }, [selected, setTonePaintingHandelState]);
@@ -248,12 +229,7 @@ function TonePaintingHandel({ go }) {
                   className={`vd-opt tone-option ${selected[activeSegment.id] === i ? 'sel' : ''}`}
                   onClick={() => {
                     if (selected[activeSegment.id] === i) return;
-                    setSegmentAiGate((prev) => {
-                      const next = { ...prev };
-                      delete next[activeSegment.id];
-                      return next;
-                    });
-                    setHasRequestedFeedback((prev) => ({ ...prev, [activeSegment.id]: false }));
+                    setFbDoneById((prev) => ({ ...prev, [activeSegment.id]: false }));
                     setSelected((prev) => ({ ...prev, [activeSegment.id]: i }));
                   }}
                 >
@@ -268,68 +244,19 @@ function TonePaintingHandel({ go }) {
                 disabled={selected[activeSegment.id] === null}
                 getFeedback={() =>
                   getTonePaintingFixedFeedback({
+                    segmentId: activeSegment.id,
                     segmentTitle: activeSegment.title,
                     selectedIndex: selected[activeSegment.id],
+                    selectedLabel: activeSegment.options[selected[activeSegment.id]],
                     correctIndex: activeSegment.answer,
                     correctElaboration: activeSegment.feedback
                   })
                 }
-                onRequested={() => {
-                  const segmentId = activeSegment.id;
-                  const currentSelected = selected[segmentId];
-                  setHasRequestedFeedback((prev) => ({ ...prev, [segmentId]: true }));
-                  setSegmentAiGate((prev) => ({
-                    ...prev,
-                    [segmentId]: {
-                      feedbackCompleted: false,
-                      responseAtFeedback: currentSelected,
-                      wasCorrectWhenFeedbackRequested: currentSelected === activeSegment.answer
-                    }
-                  }));
-                }}
                 onResult={() => {
                   const segmentId = activeSegment.id;
-                  setSegmentAiGate((prev) => {
-                    const g = prev[segmentId];
-                    if (!g) return prev;
-                    return { ...prev, [segmentId]: { ...g, feedbackCompleted: true } };
-                  });
+                  setFbDoneById((prev) => ({ ...prev, [segmentId]: true }));
                 }}
               />
-            </div>
-          </div>
-
-          {canShowAnswerCheck ? (
-            <button
-              type="button"
-              className="answer-check-toggle"
-              onClick={() => setOpen((prev) => ({ ...prev, [activeSegment.id]: !prev[activeSegment.id] }))}
-              aria-expanded={open[activeSegment.id]}
-              disabled={!canOpenAnswerCheck}
-              style={!canOpenAnswerCheck ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
-            >
-              <span className="answer-check-toggle-label">
-                {canOpenAnswerCheck ? '정답 확인하기' : '피드백 반영 후 정답 확인하기'}
-              </span>
-              <span className="answer-check-toggle-chevron" aria-hidden="true">
-                {open[activeSegment.id] ? '▲' : '▼'}
-              </span>
-            </button>
-          ) : null}
-          {hasRequestedFeedback[activeSegment.id] &&
-          gate?.feedbackCompleted &&
-          gate.wasCorrectWhenFeedbackRequested &&
-          selected[activeSegment.id] === gate.responseAtFeedback ? (
-            <div className="small-note" style={{ marginTop: 8 }}>
-              좋아요! 현재 선택이 정답과 일치해서 바로 확인할 수 있어요.
-            </div>
-          ) : null}
-
-          <div className={`answer-compare-slide ${open[activeSegment.id] ? 'open' : ''}`}>
-            <div className="answer-compare-inner">
-              <div className={`fb show ${selected[activeSegment.id] === activeSegment.answer ? 'ok' : 'info'}`}>
-                {activeSegment.feedback}
-              </div>
             </div>
           </div>
         </section>
@@ -346,8 +273,8 @@ function TonePaintingHandel({ go }) {
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>
           <button
             className="btn-p"
-            disabled={!allAnswered}
-            style={!allAnswered ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            disabled={!canProceed}
+            style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => {
               setStageCompletion('voice', true);
               go('pianoAnalysis');
