@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import ActivityEndFeedback from '../ActivityEndFeedback';
 import { generatePianoSceneFormativeAi } from '../../lib/formativeAiFeedback';
 import { PIANO_LH_SCENE_OPTIONS, PIANO_RH_SCENE_OPTIONS } from '../../lib/pianoSceneAnswers';
 import { useAppStore } from '../../store/useAppStore';
@@ -192,12 +192,10 @@ function PianoAnalysis({ go }) {
           ))}
         </div>
 
-        {canCheckAnswer ? (
-          <CompareAiFeedbackBlock
-            key={`piano-scene-fb-${sceneFeedbackKey}`}
-            requestFn={getSceneFeedback}
-          />
-        ) : null}
+        <ActivityEndFeedback
+          key={`piano-scene-fb-${sceneFeedbackKey}`}
+          requestFn={getSceneFeedback}
+        />
 
         {canCheckAnswer ? (
           <ArtSongTakeaway

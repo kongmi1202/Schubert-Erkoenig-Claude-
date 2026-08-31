@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { normalizeFormativeChoice } from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
 import {
-  generateCpFormAbaDiscoveryFormativeAi,
-  generateCpFormSegmentFormativeAi
-} from '../../lib/formativeAiFeedback';
+  getCpFormAbaDiscoveryFixedFeedback,
+  getCpFormSegmentFixedFeedback
+} from '../../lib/fixedFormativeFeedback';
 
 const FORM_CARDS = [
   { id: 'cp-f1', num: '구간 1', subtitle: '처음 30초' },
@@ -41,10 +42,6 @@ const CP_FORM_DISCOVERY_CHOICES = [
   CP_FORM_DISCOVERY_CORRECT,
   '연주자가 쉬기 위해'
 ];
-
-function segmentResponseKey(label, feature) {
-  return `${label || ''}|${feature || ''}`;
-}
 
 function AbaDiagram() {
   return (
@@ -88,11 +85,10 @@ function CpForm({ go }) {
 
   const [formAnswers, setFormAnswers] = useState(() => cpFormState?.formAnswers || {});
   const [featureById, setFeatureById] = useState(() => cpFormState?.featureById || {});
-  const [segmentFbDoneById, setSegmentFbDoneById] = useState({});
+  const [activityFbDone, setActivityFbDone] = useState(false);
 
   const [discoveryChoice, setDiscoveryChoice] = useState(() => cpFormState?.discoveryChoice || '');
   const [discoveryQuizResult, setDiscoveryQuizResult] = useState(() => cpFormState?.discoveryQuizResult || '');
-  const [discoveryFbDone, setDiscoveryFbDone] = useState(false);
 
   const [currentSegmentId, setCurrentSegmentId] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -103,25 +99,17 @@ function CpForm({ go }) {
 
   function selFormLabel(_el, cardId, label) {
     setFormAnswers((prev) => ({ ...prev, [cardId]: label }));
-    setSegmentFbDoneById((prev) => {
-      const next = { ...prev };
-      delete next[cardId];
-      return next;
-    });
+    setActivityFbDone(false);
   }
 
   function selFeature(cardId, value) {
     setFeatureById((prev) => ({ ...prev, [cardId]: value }));
-    setSegmentFbDoneById((prev) => {
-      const next = { ...prev };
-      delete next[cardId];
-      return next;
-    });
+    setActivityFbDone(false);
   }
 
   function pickDiscovery(choice) {
     setDiscoveryChoice(choice);
-    setDiscoveryFbDone(false);
+    setActivityFbDone(false);
     setDiscoveryQuizResult('');
   }
 
@@ -164,15 +152,17 @@ function CpForm({ go }) {
     setIsPlaying(true);
   };
 
-  const allSegmentsFbDone = useMemo(
-    () => FORM_CARDS.every((c) => segmentFbDoneById[c.id]),
-    [segmentFbDoneById]
+  const allSegmentsAnswered = useMemo(
+    () => FORM_CARDS.every((c) => formAnswers[c.id] && featureById[c.id]),
+    [formAnswers, featureById]
   );
+
+  const allAnswered = allSegmentsAnswered && Boolean(discoveryChoice);
 
   const discoveryCorrect =
     normalizeFormativeChoice(discoveryChoice) === normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
 
-  const canProceed = allSegmentsFbDone && discoveryFbDone && discoveryCorrect;
+  const canProceed = activityFbDone && discoveryCorrect;
 
   useEffect(() => {
     setCpFormState({
@@ -276,11 +266,10 @@ function CpForm({ go }) {
             const zone = zoneIndex + 1;
             const picked = formAnswers[card.id];
             const featPick = featureById[card.id];
-            const fbDone = !!segmentFbDoneById[card.id];
+            const fbDone = activityFbDone;
             const labelOk = picked === formCorrect[card.id];
             const featureOk = featPick === featureCorrect[card.id];
             const segReady = Boolean(picked && featPick);
-            const responseKey = segmentResponseKey(picked, featPick);
 
             return (
               <div key={card.id} className={`form-puzzle-card cp-form-zone cp-form-zone--${zone}`}>
@@ -364,32 +353,13 @@ function CpForm({ go }) {
                     라벨과 특징을 모두 선택해 주세요
                   </div>
                 ) : null}
-
-                <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-                  <CompareAiFeedbackBlock
-                    key={`cp-form-seg-fb-${card.id}-${responseKey || 'none'}`}
-                    disabled={!segReady}
-                    requestFn={() =>
-                      generateCpFormSegmentFormativeAi({
-                        cardId: card.id,
-                        label: picked || '',
-                        feature: featPick || '',
-                        correctLabel: formCorrect[card.id],
-                        correctFeature: featureCorrect[card.id]
-                      })
-                    }
-                    onResult={() => {
-                      setSegmentFbDoneById((prev) => ({ ...prev, [card.id]: true }));
-                    }}
-                  />
-                </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {allSegmentsFbDone ? (
+        {allSegmentsAnswered ? (
           <>
             <div className="sec" style={{ marginTop: 22 }}>
               형식의 의미를 찾아보세요
@@ -412,32 +382,50 @@ function CpForm({ go }) {
               ))}
             </div>
 
-            <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-              <CompareAiFeedbackBlock
-                key={`cp-form-aba-fb-${discoveryChoice || 'none'}`}
-                disabled={!discoveryChoice}
-                requestFn={() =>
-                  generateCpFormAbaDiscoveryFormativeAi({
-                    userChoice: discoveryChoice || '',
-                    correctAnswer: CP_FORM_DISCOVERY_CORRECT
-                  })
-                }
-                onResult={() => {
-                  const ok =
-                    normalizeFormativeChoice(discoveryChoice) ===
-                    normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
-                  setDiscoveryFbDone(true);
-                  setDiscoveryQuizResult(ok ? 'ok' : 'ng');
-                  if (ok) setStageCompletion('voice', true);
-                }}
-              />
-            </div>
-
-            {discoveryFbDone && discoveryCorrect ? <AbaDiagram /> : null}
+            {activityFbDone && discoveryCorrect ? <AbaDiagram /> : null}
           </>
         ) : null}
 
-        {allSegmentsFbDone && discoveryFbDone && discoveryCorrect ? (
+        <ActivityEndFeedback
+          style={{ marginTop: 4, marginBottom: 12 }}
+          key={`cp-form-activity-fb-${JSON.stringify({ formAnswers, featureById, discoveryChoice })}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: [
+                ...FORM_CARDS.map((card) =>
+                  getCpFormSegmentFixedFeedback({
+                    cardId: card.id,
+                    label: formAnswers[card.id] || '',
+                    feature: featureById[card.id] || '',
+                    correctLabel: formCorrect[card.id],
+                    correctFeature: featureCorrect[card.id]
+                  })
+                ),
+                getCpFormAbaDiscoveryFixedFeedback({
+                  userChoice: discoveryChoice || '',
+                  correctAnswer: CP_FORM_DISCOVERY_CORRECT
+                })
+              ],
+              activityTitle: '쇼팽 — ABA 형식',
+              studentSummary: [
+                ...FORM_CARDS.map(
+                  (c) => `${c.num}: ${formAnswers[c.id] || '—'} / ${featureById[c.id] || '—'}`
+                ),
+                `B구간 질문: ${discoveryChoice || '—'}`
+              ].join(' · ')
+            })
+          }
+          onResult={() => {
+            const ok =
+              normalizeFormativeChoice(discoveryChoice) ===
+              normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
+            setActivityFbDone(true);
+            setDiscoveryQuizResult(ok ? 'ok' : 'ng');
+            if (ok) setStageCompletion('voice', true);
+          }}
+        />
+
+        {canProceed ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">환상 즉흥곡의 특징 ①</div>

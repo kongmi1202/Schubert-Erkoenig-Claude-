@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { normalizeFormativeChoice } from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import ActivityEndFeedback from '../ActivityEndFeedback';
 import { generateVvConcertoFormativeAi } from '../../lib/formativeAiFeedback';
 
 const VV_CONCERTO_Q = 'vv-concerto-q';
@@ -33,6 +33,7 @@ function VvConcerto({ go }) {
   const picked = selectedByGroup[VV_CONCERTO_Q];
   const isCorrect =
     normalizeFormativeChoice(picked) === normalizeFormativeChoice(VV_CONCERTO_CORRECT);
+  const canProceed = Boolean(picked) && fbDone;
 
   useEffect(() => {
     setVvConcertoState({
@@ -103,27 +104,25 @@ function VvConcerto({ go }) {
               </button>
             ))}
           </div>
-
-          <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-            <CompareAiFeedbackBlock
-              key={`vv-concerto-fb-${picked || 'none'}`}
-              disabled={!picked}
-              requestFn={() =>
-                generateVvConcertoFormativeAi({
-                  userChoice: picked || '',
-                  correctAnswer: VV_CONCERTO_CORRECT,
-                  question: '이 곡에서 바이올린 독주와 현악 그룹(총주)은 어떻게 연주되나요?'
-                })
-              }
-              onResult={() => {
-                setFbDone(true);
-                setStageCompletion('piano', true);
-              }}
-            />
-          </div>
         </div>
 
-        {fbDone && isCorrect ? (
+        <ActivityEndFeedback
+          style={{ marginTop: 4, marginBottom: 12 }}
+          key={`vv-concerto-fb-${picked || 'none'}`}
+          requestFn={() =>
+            generateVvConcertoFormativeAi({
+              userChoice: picked || '',
+              correctAnswer: VV_CONCERTO_CORRECT,
+              question: '이 곡에서 바이올린 독주와 현악 그룹(총주)은 어떻게 연주되나요?'
+            })
+          }
+          onResult={() => {
+            setFbDone(true);
+            setStageCompletion('piano', true);
+          }}
+        />
+
+        {canProceed && isCorrect ? (
           <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">사계의 주요 특징 ②: 바이올린 협주곡</div>
@@ -147,7 +146,14 @@ function VvConcerto({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('voiceDesign')}>← 이전: vv-sonnet</button>
-          <button className="btn-p" onClick={() => { setStageCompletion('piano', true); go('historyCards'); }}>다음: 역사 맥락 →</button>
+          <button
+            className="btn-p"
+            disabled={!canProceed}
+            style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            onClick={() => { setStageCompletion('piano', true); go('historyCards'); }}
+          >
+            다음: 역사 맥락 →
+          </button>
         </div>
       </div>
     </div>

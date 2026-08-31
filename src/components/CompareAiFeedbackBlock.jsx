@@ -49,7 +49,8 @@ export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResul
 
   return (
     <div className="compare-ai-feedback">
-      <button type="button" className="btn-s" onClick={onClick} disabled={loading || disabled}>
+      <div className="compare-ai-feedback-head">활동 피드백</div>
+      <button type="button" className="btn-feedback" onClick={onClick} disabled={loading || disabled}>
         {loading ? '피드백 생성 중…' : '피드백 보기'}
       </button>
       {isOverview ? (

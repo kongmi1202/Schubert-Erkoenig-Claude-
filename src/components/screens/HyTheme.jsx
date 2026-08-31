@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
 import {
-  generateHyThemeMatchFormativeAi,
-  generateHyThemePart3FormativeAi
-} from '../../lib/formativeAiFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+  getHyThemeMatchFixedFeedback,
+  getHyThemePart3FixedFeedback
+} from '../../lib/fixedFormativeFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
 const HY_THEME1_START_SEC = 0;
@@ -116,10 +117,8 @@ function HyTheme({ go }) {
   const [placedOptions, setPlacedOptions] = useState(() => normPlaced(hyThemeState?.matchPlaced));
   const [selectedOption, setSelectedOption] = useState(null);
 
-  const [matchFbDone, setMatchFbDone] = useState(false);
-
   const [selectedDeg, setSelectedDeg] = useState(() => hyThemeState?.selectedDeg || '');
-  const [degFbDone, setDegFbDone] = useState(false);
+  const [activityFbDone, setActivityFbDone] = useState(false);
 
   const shuffledMatchOptions = useMemo(() => shuffleMatchOptions(HY_MATCH_OPTIONS), []);
 
@@ -299,7 +298,7 @@ function HyTheme({ go }) {
   const tapOption = (id) => {
     if (optionFullyPlaced(id)) return;
     setSelectedOption((prev) => (prev === id ? null : id));
-    setMatchFbDone(false);
+    setActivityFbDone(false);
   };
 
   const placeInSlot = (slot) => {
@@ -309,7 +308,7 @@ function HyTheme({ go }) {
       return { ...prev, [slot]: [...prev[slot], selectedOption] };
     });
     setSelectedOption(null);
-    setMatchFbDone(false);
+    setActivityFbDone(false);
   };
 
   const removeFromSlot = (slot, id) => {
@@ -317,19 +316,20 @@ function HyTheme({ go }) {
       ...prev,
       [slot]: prev[slot].filter((x) => x !== id)
     }));
-    setMatchFbDone(false);
+    setActivityFbDone(false);
   };
 
   function selDegH(el) {
     setSelectedDeg(el);
-    setDegFbDone(false);
+    setActivityFbDone(false);
   }
 
   const canCheckMatch = placedOptions.theme1.length > 0 && placedOptions.theme2.length > 0;
   const canCheckDeg = useMemo(() => !!selectedDeg, [selectedDeg]);
+  const allAnswered = canCheckMatch && canCheckDeg;
   const canProceed = useMemo(
-    () => canCheckMatch && canCheckDeg && matchFbDone && degFbDone,
-    [canCheckMatch, canCheckDeg, matchFbDone, degFbDone]
+    () => allAnswered && activityFbDone,
+    [allAnswered, activityFbDone]
   );
 
   useEffect(() => {
@@ -579,23 +579,6 @@ function HyTheme({ go }) {
               )}
           </div>
         </div>
-
-        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
-          <CompareAiFeedbackBlock
-            key={`hy-theme-match-fb-${placedOptions.theme1.join('|')}-${placedOptions.theme2.join('|')}`}
-            disabled={!canCheckMatch}
-            requestFn={() =>
-              generateHyThemeMatchFormativeAi({
-                theme1Ids: placedOptions.theme1,
-                theme2Ids: placedOptions.theme2
-              })
-            }
-            onResult={() => {
-              setMatchFbDone(true);
-              setStageCompletion('piano', true);
-            }}
-          />
-        </div>
         {!canCheckMatch ? (
           <div className="small-note" style={{ marginTop: 8 }}>
             칸을 채워주세요
@@ -660,12 +643,25 @@ function HyTheme({ go }) {
           ))}
         </div>
 
-        <CompareAiFeedbackBlock
-          key={`hy-deg-fb-${selectedDeg || 'none'}`}
-          disabled={!selectedDeg}
-          requestFn={() => generateHyThemePart3FormativeAi({ selectedDeg })}
+        <ActivityEndFeedback
+          style={{ marginTop: 4, marginBottom: 12 }}
+          key={`hy-theme-activity-fb-${placedOptions.theme1.join('|')}-${placedOptions.theme2.join('|')}-${selectedDeg}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: [
+                getHyThemeMatchFixedFeedback({
+                  theme1Ids: placedOptions.theme1,
+                  theme2Ids: placedOptions.theme2
+                }),
+                getHyThemePart3FixedFeedback({ selectedDeg })
+              ],
+              activityTitle: '하이든 — 소나타 주제',
+              studentSummary: `제1주제: ${placedOptions.theme1.join(', ') || '—'} / 제2주제: ${placedOptions.theme2.join(', ') || '—'} / 도수: ${selectedDeg || '—'}`
+            })
+          }
           onResult={() => {
-            setDegFbDone(true);
+            setActivityFbDone(true);
+            setStageCompletion('piano', true);
           }}
         />
         </div>

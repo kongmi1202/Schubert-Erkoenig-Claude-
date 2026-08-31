@@ -8,7 +8,7 @@ import {
   MAWANG_VOICE_ANSWER_KEY,
   normalizeMawangVoiceDesign,
 } from '../../lib/voiceDesignAnswers';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import ActivityEndFeedback from '../ActivityEndFeedback';
 import { generateVoiceDesignFormativeAi } from '../../lib/formativeAiFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -187,6 +187,7 @@ function VoiceDesign({ go }) {
     normalizeMawangVoiceDesign(voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign())
   );
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
+  const [activityFbDone, setActivityFbDone] = useState(false);
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
   const videoId = '8noeFpdfWcQ';
@@ -231,38 +232,31 @@ function VoiceDesign({ go }) {
       ...prev,
       [selectedCharacter]: { ...prev[selectedCharacter], [category]: value }
     }));
+    setActivityFbDone(false);
   };
 
   const isSel = (category, value) => voiceDesign[selectedCharacter]?.[category] === value;
   const isCharacterFilled = (name) => isVoiceDesignRowFilled(voiceDesign[name]);
-  /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */
-  const canCheckAnswer = useMemo(() => {
-    const n = VOICE_CHAR_NAMES.filter((name) => isCharacterFilled(name)).length;
-    return n >= 2;
-  }, [voiceDesign]);
-
-  /** 현재 편집 중인 인물만 네 항목이 모두 채워졌을 때 피드백 UI 표시 */
-  const canShowFeedback = useMemo(
-    () => isCharacterFilled(selectedCharacter),
-    [selectedCharacter, voiceDesign]
+  const filledChars = useMemo(
+    () => VOICE_CHAR_NAMES.filter((name) => isCharacterFilled(voiceDesign[name])),
+    [voiceDesign]
   );
+  /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */
+  const canCheckAnswer = useMemo(() => filledChars.length >= 2, [filledChars]);
+  const canProceed = canCheckAnswer && activityFbDone;
 
   const getVoiceFeedback = useCallback(
-    () => generateVoiceDesignFormativeAi([selectedCharacter], voiceDesign, answerKey),
-    [selectedCharacter, voiceDesign, answerKey]
+    () => generateVoiceDesignFormativeAi(filledChars, voiceDesign, answerKey),
+    [filledChars, voiceDesign, answerKey]
   );
-  const currentSnapshot = useMemo(
-    () =>
-      JSON.stringify({
-        selectedCharacter,
-        row: voiceDesign[selectedCharacter]
-      }),
-    [selectedCharacter, voiceDesign]
+  const feedbackSnapshot = useMemo(
+    () => JSON.stringify({ filledChars, voiceDesign }),
+    [filledChars, voiceDesign]
   );
 
   useEffect(() => {
-    if (canCheckAnswer) setStageCompletion('voice', true);
-  }, [canCheckAnswer, setStageCompletion]);
+    if (canProceed) setStageCompletion('voice', true);
+  }, [canProceed, setStageCompletion]);
 
   useEffect(() => {
     setVoiceDesignState({ selectedChars, voiceDesign });
@@ -355,16 +349,16 @@ function VoiceDesign({ go }) {
               </div>
             ))}
           </div>
-
-          {canShowFeedback ? (
-            <CompareAiFeedbackBlock
-              key={`voice-fb-${currentSnapshot}`}
-              requestFn={getVoiceFeedback}
-            />
-          ) : null}
         </div>
 
-        {canCheckAnswer ? (
+        <ActivityEndFeedback
+          style={{ marginTop: 4, marginBottom: 12 }}
+          key={`voice-activity-fb-${feedbackSnapshot}`}
+          requestFn={getVoiceFeedback}
+          onResult={() => setActivityFbDone(true)}
+        />
+
+        {canProceed ? (
           <ArtSongTakeaway
             eyebrow={isErlkonig ? '예술가곡의 첫 번째 특징' : '할렐루야 감상의 핵심'}
             title={isErlkonig ? '시와 음악이 하나가 된다' : '성부의 겹침이 감정을 키운다'}
@@ -374,7 +368,7 @@ function VoiceDesign({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전</button>
-          <button className="btn-p" disabled={!canCheckAnswer} style={!canCheckAnswer ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => go('pianoAnalysis')}>다음 단계 →</button>
+          <button className="btn-p" disabled={!canProceed} style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined} onClick={() => go('pianoAnalysis')}>다음 단계 →</button>
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateHyTimbreFormativeAi } from '../../lib/formativeAiFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
+import { getHyTimbreFixedFeedback } from '../../lib/fixedFormativeFeedback';
 
 const AUDIO_SRC = {
   'hy-instr1': '/audio/haydn-violin.mp3',
@@ -59,6 +60,7 @@ function HyTimbre({ go }) {
   const setHyTimbreState = useAppStore((s) => s.setHyTimbreState);
   const [selectedByGrid, setSelectedByGrid] = useState(() => hyTimbreState?.selectedByGrid || {});
   const [roleByGrid, setRoleByGrid] = useState(() => hyTimbreState?.roleByGrid || {});
+  const [activityFbDone, setActivityFbDone] = useState(false);
   const [playingId, setPlayingId] = useState('');
   const audioRefs = useRef({
     'hy-instr1': null,
@@ -92,10 +94,12 @@ function HyTimbre({ go }) {
 
   function selInstr(name, gridId) {
     setSelectedByGrid((prev) => ({ ...prev, [gridId]: name }));
+    setActivityFbDone(false);
   }
 
   function selRole(roleKey, gridId) {
     setRoleByGrid((prev) => ({ ...prev, [gridId]: roleKey }));
+    setActivityFbDone(false);
   }
 
   const allSelected = useMemo(
@@ -106,6 +110,8 @@ function HyTimbre({ go }) {
       ),
     [selectedByGrid, roleByGrid]
   );
+
+  const canProceed = allSelected && activityFbDone;
 
   useEffect(() => {
     setHyTimbreState({ selectedByGrid, roleByGrid });
@@ -187,23 +193,6 @@ function HyTimbre({ go }) {
                   })}
                 </div>
               </div>
-
-              <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
-                <CompareAiFeedbackBlock
-                  key={`hy-timbre-fb-${segment.gridId}-${picked || 'none'}-${rolePick || 'none'}`}
-                  disabled={!bothPicked}
-                  requestFn={() =>
-                    generateHyTimbreFormativeAi({
-                      picked,
-                      rolePick,
-                      answer: segment.answer,
-                      roleAnswer: segment.roleAnswer,
-                      segmentIdx: segment.idx
-                    })
-                  }
-                  onResult={() => setStageCompletion('voice', true)}
-                />
-              </div>
               {!bothPicked ? (
                 <div className="small-note" style={{ marginTop: 8 }}>
                   악기와 역할을 모두 선택해주세요
@@ -213,7 +202,33 @@ function HyTimbre({ go }) {
           );
         })}
 
-        {allSelected ? (
+        <ActivityEndFeedback
+          style={{ marginTop: 4, marginBottom: 12 }}
+          key={`hy-timbre-activity-fb-${JSON.stringify({ selectedByGrid, roleByGrid })}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: SEGMENTS.map((segment) =>
+                getHyTimbreFixedFeedback({
+                  picked: selectedByGrid[segment.gridId],
+                  rolePick: roleByGrid[segment.gridId],
+                  answer: segment.answer,
+                  roleAnswer: segment.roleAnswer,
+                  segmentIdx: segment.idx
+                })
+              ),
+              activityTitle: '하이든 — 현악 4중주 음색',
+              studentSummary: SEGMENTS.map(
+                (s) => `구간${s.idx}: ${selectedByGrid[s.gridId] || '—'} / ${roleByGrid[s.gridId] || '—'}`
+              ).join(' · ')
+            })
+          }
+          onResult={() => {
+            setActivityFbDone(true);
+            setStageCompletion('voice', true);
+          }}
+        />
+
+        {canProceed ? (
           <ArtSongTakeaway
             eyebrow="현악 4중주의 특징"
             title="4개의 현악기가 하나의 앙상블을 이룬다"
@@ -227,8 +242,8 @@ function HyTimbre({ go }) {
           </button>
           <button
             className="btn-p"
-            disabled={!allSelected}
-            style={!allSelected ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            disabled={!canProceed}
+            style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
             onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}
           >
             다음 단계 →

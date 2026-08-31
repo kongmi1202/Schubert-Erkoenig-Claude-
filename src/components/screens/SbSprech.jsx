@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateSbSprechFormativeAi } from '../../lib/formativeAiFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
+import { getSbSprechFixedFeedback } from '../../lib/fixedFormativeFeedback';
 
 const SEGMENTS = {
   normal: {
@@ -56,8 +57,9 @@ function SbSprech({ go }) {
   const [playing, setPlaying] = useState('');
   const [normalValue, setNormalValue] = useState(() => savedSprech?.normalValue ?? SLIDER_DEFAULT);
   const [sprechValue, setSprechValue] = useState(() => savedSprech?.sprechValue ?? SLIDER_DEFAULT);
-  const [normalChecked, setNormalChecked] = useState(() => Boolean(savedSprech?.normalChecked));
-  const [sprechChecked, setSprechChecked] = useState(() => Boolean(savedSprech?.sprechChecked));
+  const [activityFbDone, setActivityFbDone] = useState(
+    () => Boolean(savedSprech?.normalChecked && savedSprech?.sprechChecked)
+  );
   const [bothCorrect, setBothCorrect] = useState(false);
   const currentSegmentRef = useRef('');
   const ytHostRef = useRef(null);
@@ -68,27 +70,29 @@ function SbSprech({ go }) {
   const sprechIsCorrect = isSprechstimmeCorrect(sprechValue);
   const canCheckNormal = normalValue !== SLIDER_DEFAULT;
   const canCheckSprech = sprechValue !== SLIDER_DEFAULT;
-  const hasCheckedAll = normalChecked && sprechChecked;
+  const canCheckBoth = canCheckNormal && canCheckSprech;
+  const hasCheckedAll = activityFbDone;
+  const canProceed = activityFbDone;
 
   useEffect(() => {
-    setBothCorrect(normalChecked && sprechChecked && normalIsCorrect && sprechIsCorrect);
-  }, [normalChecked, sprechChecked, normalIsCorrect, sprechIsCorrect]);
+    setBothCorrect(activityFbDone && normalIsCorrect && sprechIsCorrect);
+  }, [activityFbDone, normalIsCorrect, sprechIsCorrect]);
 
   useEffect(() => {
     const studentSummary = buildSprechStudentSummary(
-      normalValue, sprechValue, normalChecked, sprechChecked
+      normalValue, sprechValue, activityFbDone, activityFbDone
     );
     setSbSprechState({
       normalValue,
       sprechValue,
       normalTone: getSliderToneText(normalValue),
       sprechTone: getSliderToneText(sprechValue),
-      normalChecked,
-      sprechChecked,
+      normalChecked: activityFbDone,
+      sprechChecked: activityFbDone,
       bothCorrect,
       selectedChoice: studentSummary || (bothCorrect ? SPRECH_CORRECT_SUMMARY : '')
     });
-  }, [normalValue, sprechValue, normalChecked, sprechChecked, bothCorrect, setSbSprechState]);
+  }, [normalValue, sprechValue, activityFbDone, bothCorrect, setSbSprechState]);
 
   const stopWatcher = () => {
     if (endWatcherRef.current) {
@@ -259,30 +263,12 @@ function SbSprech({ go }) {
                 value={normalValue}
                 onChange={(e) => {
                   setNormalValue(Number(e.target.value));
-                  setNormalChecked(false);
+                  setActivityFbDone(false);
                 }}
                 className="sb-tone-slider"
                 style={{ '--slider-value': `${normalValue}%` }}
               />
               <div className="sb-slider-state">{getSliderToneText(normalValue)}</div>
-            </div>
-            <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-              <CompareAiFeedbackBlock
-                key={`sb-sprech-normal-fb-${normalValue}`}
-                disabled={!canCheckNormal}
-                requestFn={() =>
-                  generateSbSprechFormativeAi({
-                    kind: 'normal',
-                    hasMoved: canCheckNormal,
-                    isCorrect: normalIsCorrect,
-                    toneText: getSliderToneText(normalValue)
-                  })
-                }
-                onResult={() => {
-                  setNormalChecked(true);
-                  setStageCompletion('voice', true);
-                }}
-              />
             </div>
           </div>
           <div className="cl-card atonal">
@@ -303,33 +289,44 @@ function SbSprech({ go }) {
                 value={sprechValue}
                 onChange={(e) => {
                   setSprechValue(Number(e.target.value));
-                  setSprechChecked(false);
+                  setActivityFbDone(false);
                 }}
                 className="sb-tone-slider"
                 style={{ '--slider-value': `${sprechValue}%` }}
               />
               <div className="sb-slider-state">{getSliderToneText(sprechValue)}</div>
             </div>
-            <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-              <CompareAiFeedbackBlock
-                key={`sb-sprech-sprech-fb-${sprechValue}`}
-                disabled={!canCheckSprech}
-                requestFn={() =>
-                  generateSbSprechFormativeAi({
-                    kind: 'sprech',
-                    hasMoved: canCheckSprech,
-                    isCorrect: sprechIsCorrect,
-                    toneText: getSliderToneText(sprechValue)
-                  })
-                }
-                onResult={() => {
-                  setSprechChecked(true);
-                  setStageCompletion('voice', true);
-                }}
-              />
-            </div>
           </div>
         </div>
+
+        <ActivityEndFeedback
+          style={{ marginTop: 12, marginBottom: 12 }}
+          key={`sb-sprech-activity-fb-${normalValue}-${sprechValue}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: [
+                getSbSprechFixedFeedback({
+                  kind: 'normal',
+                  hasMoved: canCheckNormal,
+                  isCorrect: normalIsCorrect,
+                  toneText: getSliderToneText(normalValue)
+                }),
+                getSbSprechFixedFeedback({
+                  kind: 'sprech',
+                  hasMoved: canCheckSprech,
+                  isCorrect: sprechIsCorrect,
+                  toneText: getSliderToneText(sprechValue)
+                })
+              ],
+              activityTitle: '슈베르트·쇤베르크 — 말하기와 노래하기',
+              studentSummary: `송어: ${getSliderToneText(normalValue)} / 피에로: ${getSliderToneText(sprechValue)}`
+            })
+          }
+          onResult={() => {
+            setActivityFbDone(true);
+            setStageCompletion('voice', true);
+          }}
+        />
 
         {hasCheckedAll ? (
           <div className="review-card" style={{ marginBottom: 12 }}>
@@ -382,7 +379,14 @@ function SbSprech({ go }) {
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('analyticalOverview')}>← 이전: sb-overview</button>
-          <button className="btn-p" onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}>다음: sb-atonal →</button>
+          <button
+            className="btn-p"
+            disabled={!canProceed}
+            style={!canProceed ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+            onClick={() => { setStageCompletion('voice', true); go('pianoAnalysis'); }}
+          >
+            다음: sb-atonal →
+          </button>
         </div>
       </div>
     </div>

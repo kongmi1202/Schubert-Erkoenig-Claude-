@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateCpRhythmFormativeAi } from '../../lib/formativeAiFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
+import { getCpRhythmFixedFeedback } from '../../lib/fixedFormativeFeedback';
 
 const AUDIO_SRC = {
   'cp-rh': '/audio/cp-rh.mp3',
@@ -35,7 +36,7 @@ function CpRhythm({ go }) {
   const cpRhythmState = useAppStore((s) => s.cpRhythmState);
   const setCpRhythmState = useAppStore((s) => s.setCpRhythmState);
   const [selectedByGroup, setSelectedByGroup] = useState(() => cpRhythmState?.selectedByGroup || {});
-  const [fbDoneByGroup, setFbDoneByGroup] = useState({});
+  const [activityFbDone, setActivityFbDone] = useState(false);
   const [playingId, setPlayingId] = useState('');
   const audioRefs = useRef({
     'cp-rh': null,
@@ -45,11 +46,7 @@ function CpRhythm({ go }) {
 
   function selectChoice(groupId, value) {
     setSelectedByGroup((prev) => ({ ...prev, [groupId]: value }));
-    setFbDoneByGroup((prev) => {
-      const next = { ...prev };
-      delete next[groupId];
-      return next;
-    });
+    setActivityFbDone(false);
   }
 
   const stopOthers = (exceptId) => {
@@ -76,40 +73,15 @@ function CpRhythm({ go }) {
     }
   };
 
-  const allFbDone = useMemo(
-    () => QUIZ_IDS.every((groupId) => !!fbDoneByGroup[groupId]),
-    [fbDoneByGroup]
+  const allAnswered = useMemo(
+    () => QUIZ_IDS.every((groupId) => !!selectedByGroup[groupId]),
+    [selectedByGroup]
   );
-  const canProceed = allFbDone;
+  const canProceed = allAnswered && activityFbDone;
 
   useEffect(() => {
     setCpRhythmState({ selectedByGroup });
   }, [selectedByGroup, setCpRhythmState]);
-
-  function renderFeedback(groupId) {
-    const meta = QUIZ_META[groupId];
-    const picked = selectedByGroup[groupId];
-
-    return (
-      <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-        <CompareAiFeedbackBlock
-          key={`cp-rhythm-fb-${groupId}-${picked || 'none'}`}
-          disabled={!picked}
-          requestFn={() =>
-            generateCpRhythmFormativeAi({
-              groupId,
-              userChoice: picked || '',
-              correctAnswer: meta.correct
-            })
-          }
-          onResult={() => {
-            setFbDoneByGroup((prev) => ({ ...prev, [groupId]: true }));
-            setStageCompletion('piano', true);
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="screen active" id="cp-rhythm">
@@ -162,7 +134,6 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
-          {renderFeedback('cp-rh-q')}
         </div>
 
         <div className="sec">4-2. 왼손 리듬</div>
@@ -205,7 +176,6 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
-          {renderFeedback('cp-lh-q')}
         </div>
 
         <div className="sec">4-3. 두 손이 합쳐지면?</div>
@@ -291,8 +261,29 @@ function CpRhythm({ go }) {
               </button>
             ))}
           </div>
-          {renderFeedback('cp-poly-q')}
         </div>
+
+        <ActivityEndFeedback
+          style={{ marginTop: 12, marginBottom: 12 }}
+          key={`cp-rhythm-activity-fb-${JSON.stringify(selectedByGroup)}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: QUIZ_IDS.map((groupId) =>
+                getCpRhythmFixedFeedback({
+                  groupId,
+                  userChoice: selectedByGroup[groupId] || '',
+                  correctAnswer: QUIZ_META[groupId].correct
+                })
+              ),
+              activityTitle: '쇼팽 — 폴리리듬',
+              studentSummary: QUIZ_IDS.map((id) => `${id}: ${selectedByGroup[id] || '—'}`).join(' / ')
+            })
+          }
+          onResult={() => {
+            setActivityFbDone(true);
+            setStageCompletion('piano', true);
+          }}
+        />
 
         {canProceed ? (
           <div className="feat-card">

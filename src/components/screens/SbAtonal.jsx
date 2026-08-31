@@ -271,7 +271,6 @@ function SbAtonal({ go }) {
 
         <CompareAiFeedbackBlock
           key={`sb-atonal-ai-${matchSnapshot}`}
-          disabled={!canCheck}
           requestFn={() =>
             generateSbAtonalFormativeAi({
               tonalCards: placedCards.tonal,

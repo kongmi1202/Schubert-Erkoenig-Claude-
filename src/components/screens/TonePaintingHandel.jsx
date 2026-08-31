@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateTonePaintingFormativeAi } from '../../lib/formativeAiFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
+import { getTonePaintingFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -148,22 +149,14 @@ function TonePaintingHandel({ go }) {
     s2: null,
     s3: null
   });
-  const [fbDoneById, setFbDoneById] = useState({
-    s1: false,
-    s2: false,
-    s3: false
-  });
+  const [activityFbDone, setActivityFbDone] = useState(false);
   const activeSegment = SEGMENTS.find((s) => s.id === activeSegmentId) || SEGMENTS[0];
 
   const allAnswered = useMemo(
     () => SEGMENTS.every((q) => selected[q.id] !== null),
     [selected]
   );
-  const allFeedbackDone = useMemo(
-    () => SEGMENTS.every((q) => fbDoneById[q.id]),
-    [fbDoneById]
-  );
-  const canProceed = allAnswered && allFeedbackDone;
+  const canProceed = allAnswered && activityFbDone;
   useEffect(() => {
     setTonePaintingHandelState({ selected });
   }, [selected, setTonePaintingHandelState]);
@@ -229,7 +222,7 @@ function TonePaintingHandel({ go }) {
                   className={`vd-opt tone-option ${selected[activeSegment.id] === i ? 'sel' : ''}`}
                   onClick={() => {
                     if (selected[activeSegment.id] === i) return;
-                    setFbDoneById((prev) => ({ ...prev, [activeSegment.id]: false }));
+                    setActivityFbDone(false);
                     setSelected((prev) => ({ ...prev, [activeSegment.id]: i }));
                   }}
                 >
@@ -238,28 +231,31 @@ function TonePaintingHandel({ go }) {
                 </button>
               ))}
             </div>
-            <div className="compare-ai-feedback tone-ai-feedback" style={{ marginTop: 12 }}>
-              <CompareAiFeedbackBlock
-                key={`tone-fb-${activeSegment.id}-${selected[activeSegment.id] ?? 'none'}`}
-                disabled={selected[activeSegment.id] === null}
-                requestFn={() =>
-                  generateTonePaintingFormativeAi({
-                    segmentId: activeSegment.id,
-                    segmentTitle: activeSegment.title,
-                    selectedIndex: selected[activeSegment.id],
-                    selectedLabel: activeSegment.options[selected[activeSegment.id]],
-                    correctIndex: activeSegment.answer,
-                    correctElaboration: activeSegment.feedback
-                  })
-                }
-                onResult={() => {
-                  const segmentId = activeSegment.id;
-                  setFbDoneById((prev) => ({ ...prev, [segmentId]: true }));
-                }}
-              />
-            </div>
           </div>
         </section>
+
+        <ActivityEndFeedback
+          className="tone-ai-feedback"
+          style={{ marginTop: 12, marginBottom: 12 }}
+          key={`tone-activity-fb-${JSON.stringify(selected)}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: SEGMENTS.map((segment) =>
+                getTonePaintingFixedFeedback({
+                  segmentId: segment.id,
+                  segmentTitle: segment.title,
+                  selectedIndex: selected[segment.id],
+                  selectedLabel: segment.options[selected[segment.id]],
+                  correctIndex: segment.answer,
+                  correctElaboration: segment.feedback
+                })
+              ),
+              activityTitle: '할렐루야 — 음화법',
+              studentSummary: SEGMENTS.map((s) => `${s.title}: ${s.options[selected[s.id]] || '—'}`).join(' / ')
+            })
+          }
+          onResult={() => setActivityFbDone(true)}
+        />
 
         {allAnswered ? (
           <ArtSongTakeaway

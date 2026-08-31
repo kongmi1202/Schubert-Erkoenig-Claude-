@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateVvSonnetFormativeAi } from '../../lib/formativeAiFeedback';
+import ActivityEndFeedback from '../ActivityEndFeedback';
+import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
+import { getVvSonnetFixedFeedback } from '../../lib/fixedFormativeFeedback';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 
 /** 비발디 사계 여름 — 표제음악(소네트) 구간: https://youtu.be/wVAq3CzHf9E */
@@ -49,7 +50,7 @@ function VvSonnet({ go }) {
   const vvSonnetState = useAppStore((s) => s.vvSonnetState);
   const setVvSonnetState = useAppStore((s) => s.setVvSonnetState);
   const [selectedById, setSelectedById] = useState(() => vvSonnetState?.selectedById || {});
-  const [fbDoneById, setFbDoneById] = useState({});
+  const [activityFbDone, setActivityFbDone] = useState(false);
   const [ytReady, setYtReady] = useState({});
   const [controlsArmed, setControlsArmed] = useState({});
   const [playingSegmentId, setPlayingSegmentId] = useState('');
@@ -57,11 +58,7 @@ function VvSonnet({ go }) {
 
   function selectChoice(groupId, value) {
     setSelectedById((prev) => ({ ...prev, [groupId]: value }));
-    setFbDoneById((prev) => {
-      const next = { ...prev };
-      delete next[groupId];
-      return next;
-    });
+    setActivityFbDone(false);
   }
 
   const stopOtherSegments = (exceptId) => {
@@ -85,16 +82,12 @@ function VvSonnet({ go }) {
     playerCtlRef.current[segmentId]?.stop?.();
   };
 
-  const canProceed = useMemo(
-    () =>
-      SEGMENTS.every(
-        (segment) =>
-          typeof selectedById[segment.id] === 'string' &&
-          selectedById[segment.id] &&
-          fbDoneById[segment.id]
-      ),
-    [selectedById, fbDoneById]
+  const allAnswered = useMemo(
+    () => SEGMENTS.every((segment) => typeof selectedById[segment.id] === 'string' && selectedById[segment.id]),
+    [selectedById]
   );
+
+  const canProceed = allAnswered && activityFbDone;
 
   useEffect(() => {
     setVvSonnetState({ selectedById });
@@ -187,28 +180,32 @@ function VvSonnet({ go }) {
                   ))}
                 </div>
               </div>
-
-              <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 12 }}>
-                <CompareAiFeedbackBlock
-                  key={`vv-sonnet-fb-${segment.id}-${picked || 'none'}`}
-                  disabled={!picked}
-                  requestFn={() =>
-                    generateVvSonnetFormativeAi({
-                      segmentId: segment.id,
-                      userChoice: picked || '',
-                      correctAnswer: segment.answer,
-                      correctElaboration: segment.feedback
-                    })
-                  }
-                  onResult={() => {
-                    setFbDoneById((prev) => ({ ...prev, [segment.id]: true }));
-                    setStageCompletion('voice', true);
-                  }}
-                />
-              </div>
             </div>
           );
         })}
+
+        <ActivityEndFeedback
+          style={{ marginTop: 12, marginBottom: 12 }}
+          key={`vv-sonnet-activity-fb-${JSON.stringify(selectedById)}`}
+          requestFn={() =>
+            generateCombinedFormativeAi({
+              fixedPayloads: SEGMENTS.map((segment) =>
+                getVvSonnetFixedFeedback({
+                  segmentId: segment.id,
+                  userChoice: selectedById[segment.id] || '',
+                  correctAnswer: segment.answer,
+                  correctElaboration: segment.feedback
+                })
+              ),
+              activityTitle: '비발디 — 소네트(표제음악)',
+              studentSummary: SEGMENTS.map((s) => `${s.id}: ${selectedById[s.id] || '—'}`).join(' / ')
+            })
+          }
+          onResult={() => {
+            setActivityFbDone(true);
+            setStageCompletion('voice', true);
+          }}
+        />
 
         {canProceed ? (
           <div className="feat-card">

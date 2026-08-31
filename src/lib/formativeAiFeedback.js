@@ -18,9 +18,12 @@ import {
 const MSG_NO_KEY = getApiKeySetupMessage();
 
 const STAGE2_RULES_KO = `[피드백 설계 원칙 — Kulhavy & Stock(1989)]
-· 검증: ✓ / △ / ✗
-· 설명: 음악 요소명을 넣어 정교화
-· 검증 △·✗이고 틀린 항목이 여러 개면 모두 다룰 것`;
+· 검증: ✓ / △ / ✗ (코드가 정함, 바꾸지 말 것)
+· 설명: [내부 가이드] 내용만 옮겨 자연스럽게 이어 붙이기. 가이드에 없는 문장·추론·정답·정답 보기 문구 추가 금지
+· 말투: 반말·해요체, 「네가 고른」 등 가이드와 같은 톤. 「학생이」「~습니다」「~할 수 있습니다」 금지
+· 항목 제목(선율:, 음계: 등) 나열 금지 — 한 덩어리 서술
+· 정답·맞은 보기·맞은 항목 이름·값을 직접 말하지 말 것 (맞은 항목은 개수만)
+· 검증 △·✗이고 틀린 항목이 여러 개면 가이드에 있는 것만 모두 다룰 것`;
 
 const STAGE3_RULES_KO = `[피드백 설계 원칙 — Sadler]
 · 상단 검증 줄 없음
@@ -83,7 +86,7 @@ export function buildVoiceSectionsExplanation(payload, mark) {
   if (payload.summary) lines.push(payload.summary);
   (payload.sections || []).filter((s) => s.status === 'miss').forEach((section) => {
     lines.push('');
-    lines.push(`· ${section.label}: ${section.note}`);
+    lines.push(section.note);
     if (section.hint) lines.push(section.hint);
     if (section.example) lines.push(section.example);
   });
@@ -100,7 +103,7 @@ function buildVoiceSectionsGptGuide(payload, mark) {
   const okSections = (payload.sections || []).filter((s) => s.status === 'ok');
   const missSections = (payload.sections || []).filter((s) => s.status === 'miss');
   if (okSections.length) {
-    lines.push(`맞은 항목: ${okSections.map((s) => `${s.label}(${s.studentPick})`).join(', ')}`);
+    lines.push(`맞은 항목 수: ${okSections.length} (어떤 항목인지·정답 값은 학생에게 말하지 말 것)`);
   }
   missSections.forEach((section) => {
     lines.push('');
@@ -172,14 +175,71 @@ function buildGptInternalGuide(fixedPayload, mark) {
   return buildDisplayGuide(fixedPayload, mark);
 }
 
-async function generateFormativeFromFixedGuide({
-  fixedPayload,
+function stage2ExplanationLooksUnsafe(mark, body, displayGuide) {
+  const text = String(body || '').trim();
+  if (!text) return true;
+  if (/학생이|습니다|할 수 있습니다|적합할 수|부적합|판단되어/.test(text)) return true;
+  if (/^(선율|음계|음색|구간|오른손|왼손)\s*[:：]/m.test(text)) return true;
+  if (mark === '✓') return false;
+  const guide = String(displayGuide || '');
+  const guideLen = guide.replace(/\s+/g, '').length;
+  const textLen = text.replace(/\s+/g, '').length;
+  if (guideLen > 0 && textLen > guideLen * 1.35) return true;
+  return false;
+}
+
+function combineMarkFromPayloads(payloads) {
+  const marks = (payloads || []).map((p) => verificationMarkFromFixed(p) || '✗');
+  if (!marks.length) return '✗';
+  if (marks.every((m) => m === '✓')) return '✓';
+  if (marks.every((m) => m === '✗')) return '✗';
+  return '△';
+}
+
+function labelForCombinedPayload(payload) {
+  if (payload?.kind !== 'voice-sections') return '';
+  const id = payload.character;
+  if (!id || id === 'piano-scene') return '';
+  if (/^cp-f\d$/.test(id)) {
+    const nums = { 'cp-f1': '1', 'cp-f2': '2', 'cp-f3': '3' };
+    return `구간 ${nums[id] || id}`;
+  }
+  return `「${id}」`;
+}
+
+function buildCombinedDisplayGuide(payloads) {
+  return (payloads || [])
+    .map((p) => {
+      const mark = verificationMarkFromFixed(p) || '✗';
+      const body = buildDisplayGuide(p, mark);
+      if (!body) return '';
+      const label = labelForCombinedPayload(p);
+      return label ? `${label}\n${body}` : body;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function buildCombinedGptGuide(payloads) {
+  return (payloads || [])
+    .map((p) => {
+      const mark = verificationMarkFromFixed(p) || '✗';
+      const body = buildGptInternalGuide(p, mark);
+      if (!body) return '';
+      const label = labelForCombinedPayload(p);
+      return label ? `[${label}]\n${body}` : body;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+async function generateFormativeFromGuides({
+  mark,
+  displayGuide,
+  gptGuide,
   activityTitle = '',
   studentSummary = ''
 }) {
-  const mark = verificationMarkFromFixed(fixedPayload) || '✗';
-  const displayGuide = buildDisplayGuide(fixedPayload, mark);
-  const gptGuide = buildGptInternalGuide(fixedPayload, mark);
   if (!displayGuide && !gptGuide) return '피드백을 준비하지 못했어요.';
   if (isPreflightFeedbackMessage(displayGuide || gptGuide)) return displayGuide || gptGuide;
 
@@ -188,15 +248,59 @@ async function generateFormativeFromFixedGuide({
 학생 응답: ${studentSummary || '(없음)'}
 내부 판정: 검증: ${mark}
 
-[내부 가이드]
+[내부 가이드 — 아래 문장만 재구성. 새 정보 금지]
 ${gptGuide}
 
-출력:
+출력 형식(검증 줄은 그대로, 설명만 한 덩어리):
 검증: ${mark}
 설명: (본문)`;
 
   const raw = await requestFormativeText(`${STAGE2_RULES_KO}\n\n${taskPrompt}`, fallback);
-  return normalizeStage2AiOutput(raw, mark, displayGuide);
+  const normalized = normalizeStage2AiOutput(raw, mark, displayGuide);
+  const body = extractExplanationBody(normalized);
+  if (stage2ExplanationLooksUnsafe(mark, body, displayGuide)) {
+    return fallback;
+  }
+  return normalized;
+}
+
+async function generateFormativeFromFixedGuide({
+  fixedPayload,
+  activityTitle = '',
+  studentSummary = ''
+}) {
+  const mark = verificationMarkFromFixed(fixedPayload) || '✗';
+  const displayGuide = buildDisplayGuide(fixedPayload, mark);
+  const gptGuide = buildGptInternalGuide(fixedPayload, mark);
+  return generateFormativeFromGuides({
+    mark,
+    displayGuide,
+    gptGuide,
+    activityTitle,
+    studentSummary
+  });
+}
+
+export async function generateCombinedFormativeAi({
+  fixedPayloads,
+  activityTitle = '',
+  studentSummary = ''
+}) {
+  const items = (fixedPayloads || []).filter(Boolean);
+  const preflight = items.find((p) => typeof p === 'string' && isPreflightFeedbackMessage(p));
+  if (preflight) return preflight;
+  if (!items.length) return '먼저 모든 문항을 완료한 뒤 피드백 보기를 눌러 주세요.';
+
+  const mark = combineMarkFromPayloads(items);
+  const displayGuide = buildCombinedDisplayGuide(items);
+  const gptGuide = buildCombinedGptGuide(items);
+  return generateFormativeFromGuides({
+    mark,
+    displayGuide,
+    gptGuide,
+    activityTitle,
+    studentSummary
+  });
 }
 
 function formatAestheticFallback({ goal, mark, guide }) {
@@ -212,10 +316,16 @@ function normalizeAestheticAiOutput(raw, mark, goal, guide) {
 }
 
 export async function generateVoiceDesignFormativeAi(selectedChars, voiceDesign, answerKey) {
-  return generateFormativeFromFixedGuide({
-    fixedPayload: getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKey),
+  const names = (selectedChars || []).filter(Boolean);
+  const fixedPayloads = names.map((name) =>
+    getVoiceDesignFixedFeedback([name], voiceDesign, answerKey)
+  );
+  return generateCombinedFormativeAi({
+    fixedPayloads,
     activityTitle: '마왕 — 등장인물 음색 설계',
-    studentSummary: `${selectedChars?.[0] || ''}: ${JSON.stringify(voiceDesign?.[selectedChars?.[0]] || {})}`
+    studentSummary: names
+      .map((name) => `${name}: ${JSON.stringify(voiceDesign?.[name] || {})}`)
+      .join(' / ')
   });
 }
 
