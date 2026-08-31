@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { normalizeFormativeChoice } from '../../lib/compareFeedback';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 import {
-  getCpFormAbaDiscoveryFixedFeedback,
-  getCpFormSegmentFixedFeedback
-} from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+  generateCpFormAbaDiscoveryFormativeAi,
+  generateCpFormSegmentFormativeAi
+} from '../../lib/formativeAiFeedback';
 
 const FORM_CARDS = [
   { id: 'cp-f1', num: '구간 1', subtitle: '처음 30초' },
@@ -366,11 +366,11 @@ function CpForm({ go }) {
                 ) : null}
 
                 <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-                  <FormativeFeedbackBlock
+                  <CompareAiFeedbackBlock
                     key={`cp-form-seg-fb-${card.id}-${responseKey || 'none'}`}
                     disabled={!segReady}
-                    getFeedback={() =>
-                      getCpFormSegmentFixedFeedback({
+                    requestFn={() =>
+                      generateCpFormSegmentFormativeAi({
                         cardId: card.id,
                         label: picked || '',
                         feature: featPick || '',
@@ -413,11 +413,11 @@ function CpForm({ go }) {
             </div>
 
             <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-              <FormativeFeedbackBlock
+              <CompareAiFeedbackBlock
                 key={`cp-form-aba-fb-${discoveryChoice || 'none'}`}
                 disabled={!discoveryChoice}
-                getFeedback={() =>
-                  getCpFormAbaDiscoveryFixedFeedback({
+                requestFn={() =>
+                  generateCpFormAbaDiscoveryFormativeAi({
                     userChoice: discoveryChoice || '',
                     correctAnswer: CP_FORM_DISCOVERY_CORRECT
                   })

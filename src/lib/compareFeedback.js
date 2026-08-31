@@ -71,7 +71,7 @@ export function feedbackAllowsProceedAfterAi(text) {
 }
 
 /**
- * 1차 응답 후 「AI 맞춤형 피드백」을 받은 뒤 「정답 확인」 허용 여부(과제 기준 정오는 UI에서 판별한 값 사용).
+ * 1차 응답 후 「피드백 보기」를 받은 뒤 「정답 확인」 허용 여부(과제 기준 정오는 UI에서 판별한 값 사용).
  * · 피드백 요청 시점에 정답이면 → 피드백 완료 후 응답이 그때와 같으면 바로 허용.
  * · 오답이면 → 피드백 본 뒤 응답이 그때와 달라졌을 때만 허용(2차 응답).
  * `responseAtFeedback` / `currentResponse`는 문자열·숫자 등 `===` 로 비교 가능한 값이면 된다.
@@ -136,7 +136,7 @@ function finalizeObjectiveChoiceAiFeedback(text, isCorrect) {
 function msgApiFailed(status) {
   if (status === 429) {
     return `──
-OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「AI 맞춤형 피드백 보기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
+OpenAI 요청 한도(HTTP 429)에 걸렸어요. 잠시 후 「피드백 보기」를 다시 눌러 보세요. Free 등급은 분·일 제한이 작을 수 있어요. https://platform.openai.com/usage 에서 사용량을 확인하거나, 1~2분 뒤 재시도해 보세요.`;
   }
   return `──
 OpenAI 요청이 실패했습니다${status ? ` (HTTP ${status})` : ''}. API 키가 맞는지, 결제·크레딧이 있는지 확인해 보세요.`;
@@ -1137,7 +1137,7 @@ export async function generateHyThemePart3Feedback({ selectedDeg }) {
 
 function buildVvSonnetFallback({ hasChoice }) {
   if (!hasChoice) {
-    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 소네트 구절과 질문을 다시 읽고, 들린 셈여림·빠르기·리듬꼴 중 무엇이 가장 잘 드러나는지 골라보면 좋아요.';
+    return '먼저 보기 중 하나를 고른 뒤 「피드백 보기」를 눌러 주세요. 소네트 구절과 질문을 다시 읽고, 들린 셈여림·빠르기·리듬꼴 중 무엇이 가장 잘 드러나는지 골라보면 좋아요.';
   }
   return '표제음악에서는 시의 장면과 음악의 셈여림·빠르기·리듬꼴이 서로 맞물려요. 같은 구간을 다시 들으며, 갑자기 세진 부분과 잔잔한 부분이 어디인지 귀로만 짚어보세요.';
 }
@@ -1183,7 +1183,7 @@ export async function generateVvSonnetCompareFeedback({
 
 function buildVvConcertoFallback({ hasChoice }) {
   if (!hasChoice) {
-    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 독주(바이올린 한 대)와 총주(현악 전체)가 번갈아 나오는지 영상을 다시 보며 확인해 보세요.';
+    return '먼저 보기 중 하나를 고른 뒤 「피드백 보기」를 눌러 주세요. 독주(바이올린 한 대)와 총주(현악 전체)가 번갈아 나오는지 영상을 다시 보며 확인해 보세요.';
   }
   return '바이올린 협주곡에서는 독주와 총주의 음색·밀도 대비가 중요해요. 영상에서 화려한 솔로 구간과 풀 앙상블 구간이 어떻게 바뀌는지 귀로만 비교해 보세요.';
 }
@@ -1226,51 +1226,6 @@ export async function generateVvConcertoCompareFeedback({
   );
 }
 
-function buildCpFormAbaDiscoveryFallback({ hasChoice, isCorrect }) {
-  if (!hasChoice) {
-    return '먼저 보기 중 하나를 고른 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요. 각 구간에서 셈여림(소리의 세기)과 빠르기가 어떻게 다른지 다시 들어보세요.';
-  }
-  if (isCorrect) {
-    return 'ABA에서 가운데 구간은 앞쪽·뒤쪽과 달리 들리는 부분이에요. 쇼팽 곡에서 A·B·A\u2019를 이어 들으며 셈여림과 빠르기가 어떻게 달라지는지 짚어 보세요.';
-  }
-  return '선택한 보기가 질문과 잘 맞는지, 세 구간의 셈여림과 빠르기만 귀로 비교해 보세요. 다시 들어보세요.';
-}
-
-/**
- * 쇼팽 2-B ABA 형식 — 발견 질문(B구간이 왜 있는가) 형성적 피드백
- */
-export async function generateCpFormAbaDiscoveryFeedback({
-  question,
-  userChoice,
-  correctAnswer,
-  choiceListText
-}) {
-  const trimmedNorm = normalizeFormativeChoice(userChoice);
-  const hasChoice = Boolean(trimmedNorm);
-  if (!hasChoice) return buildCpFormAbaDiscoveryFallback({ hasChoice: false, isCorrect: false });
-
-  const isCorrect = trimmedNorm === normalizeFormativeChoice(correctAnswer);
-  const fallback = buildCpFormAbaDiscoveryFallback({ hasChoice, isCorrect });
-
-  const taskPrompt = `너는 초등·중학생 음악 감상 수업을 돕는 선생님이야. 쇼팽 <환상 즉흥곡>의 ABA 형식(구조) 활동의 마지막 발견 질문이다.
-
-내부 참고(학생에게 정답 문구·오답 보기를 그대로 쓰지 말 것): 객관적 정오 = ${isCorrect ? '일치' : '불일치'}.
-
-질문: ${question}
-보기 목록(참고): ${choiceListText}
-학생이 고른 보기: ${trimmedNorm}
-
-규칙:
-· 첫 줄: 검증: ✓ 또는 검증: ✗ — 내부 참고의 정오에 맞춘다.
-· 검증 ✓: 형식·셈여림·빠르기·구간(A·B·A\u2019) 등 음악 개념으로 2~3문장 정교화. 보기 목록의 정답 문장이나 그 동의어(예: 대비, 서로 다른 느낌, 느낌의 차이를 나란히, 극적 대비 등)를 그대로 인용하거나 앞두고 설명하지 말 것. 개인 칭찬 금지.
-· 검증 ✗(매우 중요): 정답 보기 문구·그 요지·한글 동의어를 본문에 절대 넣지 말 것. "B구간은 ~역할", "가운데 구간은 ~하기 위해"처럼 B의 목적·역할을 한 문장으로 설명하는 서술 금지. "대비""서로 다른 느낌""느낌을 나란히""극적으로 다르게" 같은 표현 금지. B가 A·A\u2019와 셈여림·빠르기 면에서 어떻게 들리는지 귀로만 다시 짚으라는 힌트 1문장만 허용. 마지막은 "다시 들어보세요." 또는 "다시 생각해보세요."`;
-
-  return finalizeObjectiveChoiceAiFeedback(
-    await requestCompareFeedback(wrapFormativePrompt(taskPrompt), fallback),
-    isCorrect
-  );
-}
-
 function isCpRhythmPolyMoodNonAttempt(text) {
   const t = String(text ?? '').trim();
   if (t.length < 8) return true;
@@ -1281,7 +1236,7 @@ function isCpRhythmPolyMoodNonAttempt(text) {
 
 function buildCpRhythmPolyMoodFallback({ hasInput, isNonAttempt = false }) {
   if (!hasInput) {
-    return '먼저 폴리리듬이 이 곡의 분위기에 어떤 영향을 주는지 한두 문장으로 써본 뒤 「AI 맞춤형 피드백 보기」를 눌러 주세요.';
+    return '먼저 폴리리듬이 이 곡의 분위기에 어떤 영향을 주는지 한두 문장으로 써본 뒤 「피드백 보기」를 눌러 주세요.';
   }
   if (isNonAttempt) {
     return `검증: ✗

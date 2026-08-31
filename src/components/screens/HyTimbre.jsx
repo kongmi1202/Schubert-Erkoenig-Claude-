@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
-import { getHyTimbreFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateHyTimbreFormativeAi } from '../../lib/formativeAiFeedback';
 
 const AUDIO_SRC = {
   'hy-instr1': '/audio/haydn-violin.mp3',
@@ -189,11 +189,11 @@ function HyTimbre({ go }) {
               </div>
 
               <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
-                <FormativeFeedbackBlock
+                <CompareAiFeedbackBlock
                   key={`hy-timbre-fb-${segment.gridId}-${picked || 'none'}-${rolePick || 'none'}`}
                   disabled={!bothPicked}
-                  getFeedback={() =>
-                    getHyTimbreFixedFeedback({
+                  requestFn={() =>
+                    generateHyTimbreFormativeAi({
                       picked,
                       rolePick,
                       answer: segment.answer,

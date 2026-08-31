@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { getHyThemeMatchFixedFeedback, getHyThemePart3FixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import {
+  generateHyThemeMatchFormativeAi,
+  generateHyThemePart3FormativeAi
+} from '../../lib/formativeAiFeedback';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
 const HY_THEME1_START_SEC = 0;
@@ -578,11 +581,11 @@ function HyTheme({ go }) {
         </div>
 
         <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 8 }}>
-          <FormativeFeedbackBlock
+          <CompareAiFeedbackBlock
             key={`hy-theme-match-fb-${placedOptions.theme1.join('|')}-${placedOptions.theme2.join('|')}`}
             disabled={!canCheckMatch}
-            getFeedback={() =>
-              getHyThemeMatchFixedFeedback({
+            requestFn={() =>
+              generateHyThemeMatchFormativeAi({
                 theme1Ids: placedOptions.theme1,
                 theme2Ids: placedOptions.theme2
               })
@@ -657,9 +660,10 @@ function HyTheme({ go }) {
           ))}
         </div>
 
-        <FormativeFeedbackBlock
+        <CompareAiFeedbackBlock
           key={`hy-deg-fb-${selectedDeg || 'none'}`}
-          getFeedback={() => getHyThemePart3FixedFeedback({ selectedDeg })}
+          disabled={!selectedDeg}
+          requestFn={() => generateHyThemePart3FormativeAi({ selectedDeg })}
           onResult={() => {
             setDegFbDone(true);
           }}

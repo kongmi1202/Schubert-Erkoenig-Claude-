@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getCpRhythmFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateCpRhythmFormativeAi } from '../../lib/formativeAiFeedback';
 
 const AUDIO_SRC = {
   'cp-rh': '/audio/cp-rh.mp3',
@@ -92,11 +92,11 @@ function CpRhythm({ go }) {
 
     return (
       <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-        <FormativeFeedbackBlock
+        <CompareAiFeedbackBlock
           key={`cp-rhythm-fb-${groupId}-${picked || 'none'}`}
           disabled={!picked}
-          getFeedback={() =>
-            getCpRhythmFixedFeedback({
+          requestFn={() =>
+            generateCpRhythmFormativeAi({
               groupId,
               userChoice: picked || '',
               correctAnswer: meta.correct

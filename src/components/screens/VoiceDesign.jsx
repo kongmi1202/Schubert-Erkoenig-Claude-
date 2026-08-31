@@ -8,8 +8,8 @@ import {
   MAWANG_VOICE_ANSWER_KEY,
   normalizeMawangVoiceDesign,
 } from '../../lib/voiceDesignAnswers';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
-import { getVoiceDesignFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateVoiceDesignFormativeAi } from '../../lib/formativeAiFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const chars = [
@@ -248,8 +248,8 @@ function VoiceDesign({ go }) {
   );
 
   const getVoiceFeedback = useCallback(
-    () => getVoiceDesignFixedFeedback([selectedCharacter], voiceDesign, answerKey),
-    [selectedCharacter, voiceDesign]
+    () => generateVoiceDesignFormativeAi([selectedCharacter], voiceDesign, answerKey),
+    [selectedCharacter, voiceDesign, answerKey]
   );
   const currentSnapshot = useMemo(
     () =>
@@ -357,9 +357,9 @@ function VoiceDesign({ go }) {
           </div>
 
           {canShowFeedback ? (
-            <FormativeFeedbackBlock
+            <CompareAiFeedbackBlock
               key={`voice-fb-${currentSnapshot}`}
-              getFeedback={getVoiceFeedback}
+              requestFn={getVoiceFeedback}
             />
           ) : null}
         </div>

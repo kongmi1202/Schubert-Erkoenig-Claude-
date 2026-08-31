@@ -13,6 +13,10 @@ function verification(isCorrect, correctBody, wrongBody) {
   return isCorrect ? `검증: ✓\n${correctBody}` : `검증: ✗\n${wrongBody}`;
 }
 
+function verificationWithMark(mark, body) {
+  return `검증: ${mark}\n${body}`;
+}
+
 export function getVvSonnetFixedFeedback({ userChoice, correctAnswer, correctElaboration, segmentId }) {
   if (!normalizeFormativeChoice(userChoice)) {
     return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
@@ -190,6 +194,8 @@ export function getCpFormSegmentFixedFeedback({
     }
   ];
 
+  const mark = allMatch ? '✓' : (matchedCount > 0 ? '△' : '✗');
+
   if (allMatch) {
     return {
       kind: 'voice-sections',
@@ -205,7 +211,7 @@ export function getCpFormSegmentFixedFeedback({
   return {
     kind: 'voice-sections',
     isCorrect: false,
-    verification: '검증: ✗',
+    verification: `검증: ${mark}`,
     character: cardId,
     summary: `구간 선택을 항목별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
     sections,
@@ -565,6 +571,8 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
     };
   });
 
+  const mark = allMatch ? '✓' : (matched.length > 0 ? '△' : '✗');
+
   if (allMatch) {
     return {
       kind: 'voice-sections',
@@ -580,7 +588,7 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
   return {
     kind: 'voice-sections',
     isCorrect: false,
-    verification: '검증: ✗',
+    verification: `검증: ${mark}`,
     character: name,
     summary: `「${name}」설계를 항목별로 점검했어요. 맞은 항목 ${matched.length}개 · 다시 볼 항목 ${missed.length}개`,
     sections,
@@ -658,6 +666,8 @@ export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
     }
   ];
 
+  const mark = allMatch ? '✓' : (matchedCount > 0 ? '△' : '✗');
+
   if (allMatch) {
     return {
       kind: 'voice-sections',
@@ -673,7 +683,7 @@ export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
   return {
     kind: 'voice-sections',
     isCorrect: false,
-    verification: '검증: ✗',
+    verification: `검증: ${mark}`,
     character: 'piano-scene',
     summary: `장면 선택을 손별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
     sections,
@@ -768,7 +778,8 @@ export function getHyThemeMatchFixedFeedback({ theme1Ids, theme2Ids }) {
     );
   }
 
-  return verification(false, '', `${parts.slice(0, 2).join('\n')}\n다시 들어보세요.`);
+  const mark = col1Ok || col2Ok ? '△' : '✗';
+  return verificationWithMark(mark, `${parts.join('\n')}\n다시 들어보세요.`);
 }
 
 export function getHyThemePart3FixedFeedback({ selectedDeg }) {
@@ -1058,6 +1069,7 @@ export function getHyTimbreFixedFeedback({ picked, rolePick, answer, roleAnswer,
   if (instrOk && roleOk) {
     return verification(true, HY_TIMBRE_CORRECT[segmentIdx] || '음역과 역할이 잘 맞아요. 현악 4중주의 음색 나뉨을 이어 들어 보세요.');
   }
-  return verification(false, '', buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk }));
+  const mark = instrOk || roleOk ? '△' : '✗';
+  return verificationWithMark(mark, buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk }));
 }
 

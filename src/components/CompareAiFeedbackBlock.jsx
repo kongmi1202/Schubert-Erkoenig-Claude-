@@ -50,12 +50,12 @@ export default function CompareAiFeedbackBlock({ requestFn, onRequested, onResul
   return (
     <div className="compare-ai-feedback">
       <button type="button" className="btn-s" onClick={onClick} disabled={loading || disabled}>
-        {loading ? '피드백 생성 중…' : 'AI 맞춤형 피드백 보기'}
+        {loading ? '피드백 생성 중…' : '피드백 보기'}
       </button>
       {isOverview ? (
         <OverviewSectionsFeedback data={payload} />
       ) : plainText ? (
-        <div className="fb show info compare-ai-text">{plainText}</div>
+        <div className="fb show info compare-ai-text" style={{ whiteSpace: 'pre-wrap' }}>{plainText}</div>
       ) : null}
     </div>
   );

@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import { generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import OverviewAnswerCheckBlock from '../OverviewAnswerCheckBlock';
 
 function VvOverview({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -11,6 +9,8 @@ function VvOverview({ go }) {
   const analyticalCharacters = useAppStore((s) => s.analyticalCharacters);
 
   const canProceed = useMemo(() => Boolean(q1.trim()), [q1]);
+  const overviewData = { analyticalCharacters };
+  const overviewResponseKey = useMemo(() => q1.trim(), [q1]);
 
   return (
     <div className="screen active" id="vv-overview">
@@ -35,7 +35,6 @@ function VvOverview({ go }) {
           </div>
         </div>
 
-
         <div className="sec">1. 소네트를 보고, 이 곡에서 묘사하는 내용이 무엇인지 적어보세요.</div>
         <textarea
           id="vv-q1"
@@ -43,25 +42,15 @@ function VvOverview({ go }) {
           value={q1}
           onChange={(e) => setAnalyticalCharacter(0, e.target.value)}
         />
-        <div className="compare-ai-feedback" style={{ marginTop: 8, marginBottom: 12 }}>
-          <CompareAiFeedbackBlock
-            key={`vv-overview-q1-${q1.trim() || 'none'}`}
-            disabled={!canProceed}
-            requestFn={() =>
-              generateOverviewOpenTextFeedback({
-                song: 'vivaldi',
-                question: 'q1',
-                data: { analyticalCharacters },
-                fallbackText: getOverviewFixedFeedback({
-                  song: 'vivaldi',
-                  question: 'q1',
-                  data: { analyticalCharacters }
-                })
-              })
-            }
+
+        {canProceed ? (
+          <OverviewAnswerCheckBlock
+            key={overviewResponseKey}
+            song="vivaldi"
+            data={overviewData}
             onResult={() => setStageCompletion('analytical', true)}
           />
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('sensoryPage')}>← 이전</button>

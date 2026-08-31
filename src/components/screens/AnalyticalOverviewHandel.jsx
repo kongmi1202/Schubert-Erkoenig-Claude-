@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import { generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import OverviewAnswerCheckBlock from '../OverviewAnswerCheckBlock';
 
 function AnalyticalOverviewHandel({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -17,6 +15,10 @@ function AnalyticalOverviewHandel({ go }) {
   const canOpenQ2 = useMemo(() => q2Text.trim().length > 0, [q2Text]);
   const canProceed = canOpenQ1 && canOpenQ2;
   const overviewData = { handelLyricMeaning: q1Text, handelOperaDiff: q2Text };
+  const overviewResponseKey = useMemo(
+    () => `${q1Text.trim()}|${q2Text.trim()}`,
+    [q1Text, q2Text]
+  );
 
   return (
     <div className="screen active">
@@ -36,21 +38,6 @@ function AnalyticalOverviewHandel({ go }) {
           placeholder="할렐루야의 가사 내용을 써보세요..."
         />
         <div className="small-note">작성 힌트: {q1WritingHint}</div>
-        <div className="compare-ai-feedback" style={{ marginTop: 8, marginBottom: 12 }}>
-          <CompareAiFeedbackBlock
-            key={`handel-overview-q1-${q1Text.trim() || 'none'}`}
-            disabled={!canOpenQ1}
-            requestFn={() =>
-              generateOverviewOpenTextFeedback({
-                song: 'handel',
-                question: 'q1',
-                data: overviewData,
-                fallbackText: getOverviewFixedFeedback({ song: 'handel', question: 'q1', data: overviewData })
-              })
-            }
-            onResult={() => setStageCompletion('analytical', true)}
-          />
-        </div>
 
         <div className="sec">2. 이 음악은 오페라와 어떤 차이가 있나요?</div>
         <textarea
@@ -60,21 +47,15 @@ function AnalyticalOverviewHandel({ go }) {
           placeholder="오페라와의 차이를 써보세요..."
         />
         <div className="small-note">작성 힌트: {q2WritingHint}</div>
-        <div className="compare-ai-feedback" style={{ marginTop: 8, marginBottom: 12 }}>
-          <CompareAiFeedbackBlock
-            key={`handel-overview-q2-${q2Text.trim() || 'none'}`}
-            disabled={!canOpenQ2}
-            requestFn={() =>
-              generateOverviewOpenTextFeedback({
-                song: 'handel',
-                question: 'q2',
-                data: overviewData,
-                fallbackText: getOverviewFixedFeedback({ song: 'handel', question: 'q2', data: overviewData })
-              })
-            }
+
+        {canProceed ? (
+          <OverviewAnswerCheckBlock
+            key={overviewResponseKey}
+            song="handel"
+            data={overviewData}
             onResult={() => setStageCompletion('analytical', true)}
           />
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('sensoryPage')}>← 이전</button>

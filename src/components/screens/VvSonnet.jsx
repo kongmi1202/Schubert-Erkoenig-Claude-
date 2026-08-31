@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getVvSonnetFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateVvSonnetFormativeAi } from '../../lib/formativeAiFeedback';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 
 /** 비발디 사계 여름 — 표제음악(소네트) 구간: https://youtu.be/wVAq3CzHf9E */
@@ -189,11 +189,11 @@ function VvSonnet({ go }) {
               </div>
 
               <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 12 }}>
-                <FormativeFeedbackBlock
+                <CompareAiFeedbackBlock
                   key={`vv-sonnet-fb-${segment.id}-${picked || 'none'}`}
                   disabled={!picked}
-                  getFeedback={() =>
-                    getVvSonnetFixedFeedback({
+                  requestFn={() =>
+                    generateVvSonnetFormativeAi({
                       segmentId: segment.id,
                       userChoice: picked || '',
                       correctAnswer: segment.answer,

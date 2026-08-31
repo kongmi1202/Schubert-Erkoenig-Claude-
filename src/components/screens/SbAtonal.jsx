@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateSbAtonalMatchFeedback } from '../../lib/compareFeedback';
+import { generateSbAtonalFormativeAi } from '../../lib/formativeAiFeedback';
 
 const AUDIO_SRC = {
   tonal: '/audio/sb-tonal-aud.mp3',
@@ -273,7 +273,7 @@ function SbAtonal({ go }) {
           key={`sb-atonal-ai-${matchSnapshot}`}
           disabled={!canCheck}
           requestFn={() =>
-            generateSbAtonalMatchFeedback({
+            generateSbAtonalFormativeAi({
               tonalCards: placedCards.tonal,
               atonalCards: placedCards.atonal
             })

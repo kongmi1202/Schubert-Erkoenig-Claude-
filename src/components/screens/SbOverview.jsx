@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import { generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import OverviewAnswerCheckBlock from '../OverviewAnswerCheckBlock';
 
 const SB_OVERVIEW_Q1_WRITING_TIP =
   '음악에서 들리는 악기 이름(또는 연주 형태)과 성악가의 목소리 파트를 써보세요.';
@@ -23,6 +20,10 @@ function SbOverview({ go }) {
   const canOpenQ2 = useMemo(() => Boolean(q2.trim()), [q2]);
   const isAllFilled = canOpenQ1 && canOpenQ2;
   const overviewData = { analyticalCharacters, analyticalStory };
+  const overviewResponseKey = useMemo(
+    () => `${q1.trim()}|${q2.trim()}`,
+    [q1, q2]
+  );
 
   return (
     <div className="screen active" id="sb-overview">
@@ -44,14 +45,6 @@ function SbOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 TIP: {SB_OVERVIEW_Q1_WRITING_TIP}
         </div>
-        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-          <FormativeFeedbackBlock
-            key={`sb-overview-q1-${q1.trim() || 'none'}`}
-            disabled={!canOpenQ1}
-            getFeedback={() => getOverviewFixedFeedback({ song: 'schoenberg', question: 'q1', data: overviewData })}
-            onResult={() => setStageCompletion('analytical', true)}
-          />
-        </div>
 
         <div className="sec">2. 이 음악의 전체적인 분위기는 어떤가요?</div>
         <textarea
@@ -63,21 +56,15 @@ function SbOverview({ go }) {
         <div className="small-note" style={{ marginTop: 8, marginBottom: 10, lineHeight: 1.55 }}>
           작성 TIP: {SB_OVERVIEW_Q2_WRITING_TIP}
         </div>
-        <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-          <CompareAiFeedbackBlock
-            key={`sb-overview-q2-${q2.trim() || 'none'}`}
-            disabled={!canOpenQ2}
-            requestFn={() =>
-              generateOverviewOpenTextFeedback({
-                song: 'schoenberg',
-                question: 'q2',
-                data: overviewData,
-                fallbackText: getOverviewFixedFeedback({ song: 'schoenberg', question: 'q2', data: overviewData })
-              })
-            }
+
+        {isAllFilled ? (
+          <OverviewAnswerCheckBlock
+            key={overviewResponseKey}
+            song="schoenberg"
+            data={overviewData}
             onResult={() => setStageCompletion('analytical', true)}
           />
-        </div>
+        ) : null}
 
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('sensoryPage')}>← 이전</button>

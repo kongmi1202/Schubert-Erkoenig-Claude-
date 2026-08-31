@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
-import { generateMawangOverviewFeedback, generateOverviewOpenTextFeedback } from '../../lib/compareFeedback';
-import { getOverviewFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import OverviewAnswerCheckBlock from '../OverviewAnswerCheckBlock';
 
 const ERLKONIG_OVERVIEW_Q2_HINT = '등장인물과 사건을 "처음-중간-끝" 순서로 짧게 써 보세요.';
 const hallelujahPromptHints = [
@@ -11,6 +8,7 @@ const hallelujahPromptHints = [
   '노래가 작게 시작해서 크게 커지는 부분을 써보세요.',
   '같은 "할렐루야"가 다르게 들린 이유를 한 줄로 써보세요.'
 ];
+
 function AnalyticalOverview({ go }) {
   const selectedSong = useAppStore((s) => s.selectedSong);
   const isMawang = selectedSong === 'mawang';
@@ -32,19 +30,21 @@ function AnalyticalOverview({ go }) {
   const q2Title = isHaydn
     ? '2. 이 음악은 어떤 동물을 떠올리게 하나요? 그 이유는 무엇인가요?'
     : (isErlkonig ? '2. 줄거리' : '2. 곡의 전개와 분위기');
-  const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : `등장인물`;
+  const q1Placeholder = isHaydn ? '악기 이름을 적어보세요' : '등장인물';
   const q2Placeholder = isHaydn ? '' : (isErlkonig ? '마왕의 줄거리를 써보세요...' : '할렐루야의 전개와 분위기를 써보세요...');
   const q1AllFilled = useMemo(() => characters.every((c) => typeof c === 'string' && c.trim().length > 0), [characters]);
   const q2AllFilled = useMemo(() => typeof story === 'string' && story.trim().length > 0, [story]);
   const isAllFilled = q1AllFilled && q2AllFilled;
   const overviewData = { analyticalCharacters: characters, analyticalStory: story };
+  const overviewSong = isHaydn ? 'haydn' : 'mawang';
 
   const overviewResponseKey = useMemo(
     () => JSON.stringify({
+      song: overviewSong,
       characters: characters.map((c) => String(c || '').trim()),
       story: String(story || '').trim()
     }),
-    [characters, story]
+    [overviewSong, characters, story]
   );
 
   const showRandomStoryHint = () => {
@@ -75,16 +75,6 @@ function AnalyticalOverview({ go }) {
             />
           ))}
         </div>
-        {isHaydn ? (
-          <div className="compare-ai-feedback" style={{ marginTop: -8, marginBottom: 16 }}>
-            <FormativeFeedbackBlock
-              key={`haydn-overview-q1-${characters.map((c) => String(c || '').trim()).join('|') || 'none'}`}
-              disabled={!q1AllFilled}
-              getFeedback={() => getOverviewFixedFeedback({ song: 'haydn', question: 'q1', data: overviewData })}
-              onResult={() => setStageCompletion('analytical', true)}
-            />
-          </div>
-        ) : null}
 
         <div className="sec">{q2Title}</div>
         <textarea
@@ -108,37 +98,14 @@ function AnalyticalOverview({ go }) {
             </div>
           </>
         ) : null}
-        {isHaydn ? (
-          <div className="compare-ai-feedback" style={{ marginTop: 8, marginBottom: 12 }}>
-            <CompareAiFeedbackBlock
-              key={`haydn-overview-q2-${String(story || '').trim() || 'none'}`}
-              disabled={!q2AllFilled}
-              requestFn={() =>
-                generateOverviewOpenTextFeedback({
-                  song: 'haydn',
-                  question: 'q2',
-                  data: overviewData,
-                  fallbackText: getOverviewFixedFeedback({ song: 'haydn', question: 'q2', data: overviewData })
-                })
-              }
-              onResult={() => setStageCompletion('analytical', true)}
-            />
-          </div>
-        ) : null}
 
-        {isErlkonig && isAllFilled ? (
-          <div className="compare-ai-feedback" style={{ marginTop: 12, marginBottom: 8 }}>
-            <CompareAiFeedbackBlock
-              key={`mawang-overview-fb-${overviewResponseKey}`}
-              requestFn={() => generateMawangOverviewFeedback({
-                userCharacterSlots: characters,
-                userStory: story
-              })}
-              onResult={() => {
-                setStageCompletion('analytical', true);
-              }}
-            />
-          </div>
+        {isAllFilled ? (
+          <OverviewAnswerCheckBlock
+            key={overviewResponseKey}
+            song={overviewSong}
+            data={overviewData}
+            onResult={() => setStageCompletion('analytical', true)}
+          />
         ) : null}
 
         <div className="btn-row">

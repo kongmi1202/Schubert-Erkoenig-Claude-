@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { getSbSprechFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateSbSprechFormativeAi } from '../../lib/formativeAiFeedback';
 
 const SEGMENTS = {
   normal: {
@@ -267,11 +267,11 @@ function SbSprech({ go }) {
               <div className="sb-slider-state">{getSliderToneText(normalValue)}</div>
             </div>
             <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-              <FormativeFeedbackBlock
+              <CompareAiFeedbackBlock
                 key={`sb-sprech-normal-fb-${normalValue}`}
                 disabled={!canCheckNormal}
-                getFeedback={() =>
-                  getSbSprechFixedFeedback({
+                requestFn={() =>
+                  generateSbSprechFormativeAi({
                     kind: 'normal',
                     hasMoved: canCheckNormal,
                     isCorrect: normalIsCorrect,
@@ -311,11 +311,11 @@ function SbSprech({ go }) {
               <div className="sb-slider-state">{getSliderToneText(sprechValue)}</div>
             </div>
             <div className="compare-ai-feedback" style={{ marginTop: 12 }}>
-              <FormativeFeedbackBlock
+              <CompareAiFeedbackBlock
                 key={`sb-sprech-sprech-fb-${sprechValue}`}
                 disabled={!canCheckSprech}
-                getFeedback={() =>
-                  getSbSprechFixedFeedback({
+                requestFn={() =>
+                  generateSbSprechFormativeAi({
                     kind: 'sprech',
                     hasMoved: canCheckSprech,
                     isCorrect: sprechIsCorrect,

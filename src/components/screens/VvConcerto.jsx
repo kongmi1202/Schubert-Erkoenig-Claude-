@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { normalizeFormativeChoice } from '../../lib/compareFeedback';
-import { getVvConcertoFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateVvConcertoFormativeAi } from '../../lib/formativeAiFeedback';
 
 const VV_CONCERTO_Q = 'vv-concerto-q';
 const VV_CONCERTO_CORRECT = '독주와 총주가 번갈아 나온다';
@@ -105,13 +105,14 @@ function VvConcerto({ go }) {
           </div>
 
           <div className="compare-ai-feedback" style={{ marginTop: 4, marginBottom: 12 }}>
-            <FormativeFeedbackBlock
+            <CompareAiFeedbackBlock
               key={`vv-concerto-fb-${picked || 'none'}`}
               disabled={!picked}
-              getFeedback={() =>
-                getVvConcertoFixedFeedback({
+              requestFn={() =>
+                generateVvConcertoFormativeAi({
                   userChoice: picked || '',
-                  correctAnswer: VV_CONCERTO_CORRECT
+                  correctAnswer: VV_CONCERTO_CORRECT,
+                  question: '이 곡에서 바이올린 독주와 현악 그룹(총주)은 어떻게 연주되나요?'
                 })
               }
               onResult={() => {

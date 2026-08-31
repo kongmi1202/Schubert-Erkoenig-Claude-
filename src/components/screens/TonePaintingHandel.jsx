@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { getTonePaintingFixedFeedback } from '../../lib/fixedFormativeFeedback';
-import FormativeFeedbackBlock from '../FormativeFeedbackBlock';
+import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import { generateTonePaintingFormativeAi } from '../../lib/formativeAiFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -239,11 +239,11 @@ function TonePaintingHandel({ go }) {
               ))}
             </div>
             <div className="compare-ai-feedback tone-ai-feedback" style={{ marginTop: 12 }}>
-              <FormativeFeedbackBlock
+              <CompareAiFeedbackBlock
                 key={`tone-fb-${activeSegment.id}-${selected[activeSegment.id] ?? 'none'}`}
                 disabled={selected[activeSegment.id] === null}
-                getFeedback={() =>
-                  getTonePaintingFixedFeedback({
+                requestFn={() =>
+                  generateTonePaintingFormativeAi({
                     segmentId: activeSegment.id,
                     segmentTitle: activeSegment.title,
                     selectedIndex: selected[activeSegment.id],
