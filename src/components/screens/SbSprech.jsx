@@ -323,8 +323,18 @@ function SbSprech({ go }) {
 
         {hasCheckedAll ? (
           <div className="review-card" style={{ marginBottom: 12 }}>
-            <div className="review-item" style={{ marginBottom: 8 }}>일반 성악 &nbsp;&nbsp;&nbsp;────────── 🎵</div>
-            <div className="review-item" style={{ marginBottom: 12 }}>슈프레흐슈팀메 🗣️ ────────</div>
+            <div className="review-item" style={{ marginBottom: 8 }}>
+              일반 성악 &nbsp;&nbsp;&nbsp;────────── 🎵
+              <span className={`sb-review-mark sb-review-mark--${normalIsCorrect ? 'ok' : 'miss'}`}>
+                {normalIsCorrect ? '맞음' : '다시 보기'}
+              </span>
+            </div>
+            <div className="review-item" style={{ marginBottom: 12 }}>
+              슈프레흐슈팀메 🗣️ ────────
+              <span className={`sb-review-mark sb-review-mark--${sprechIsCorrect ? 'ok' : 'miss'}`}>
+                {sprechIsCorrect ? '맞음' : '다시 보기'}
+              </span>
+            </div>
             <div className="small-note">
               {bothCorrect ? (
                 <>
@@ -336,9 +346,15 @@ function SbSprech({ go }) {
                   <br />
                   로 맞췄어요.
                 </>
+              ) : normalIsCorrect || sprechIsCorrect ? (
+                <>
+                  한 구간은 맞았어요. 피드백에서 「맞음」과 「다시 보기」를 확인한 뒤,
+                  <br />
+                  맞지 않은 쪽 슬라이더를 조정하고 피드백 보기를 다시 눌러 보세요.
+                </>
               ) : (
                 <>
-                  아직 두 구간 모두 맞지 않아요.
+                  두 구간 모두 다시 들어 볼 필요가 있어요.
                   <br />
                   각 구간을 다시 듣고 슬라이더를 조정한 뒤
                   <br />

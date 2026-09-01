@@ -14,6 +14,8 @@ import {
   getVvSonnetFixedFeedback
 } from './fixedFormativeFeedback';
 import { buildStage2ActivityRequest } from './formative/stage2Activities';
+import { unwrapStage2ItemPayload } from './formative/labeledItem';
+import { formatMarkDisplay, parseMarkFromVerificationLine, stripFeedbackHeader } from './formative/markLabels';
 
 const MSG_NO_KEY = getApiKeySetupMessage();
 
@@ -21,14 +23,18 @@ const STAGE2_RULES_KO = `[피드백 설계 원칙 — Kulhavy & Stock(1989)]
 · 검증: ✓ / △ / ✗ (코드가 정함, 바꾸지 말 것)
 · 설명: [내부 가이드] 내용만 옮겨 자연스럽게 이어 붙이기. 가이드에 없는 문장·추론·정답·정답 보기 문구 추가 금지
 · 말투: 반말·해요체, 「네가 고른」 등 가이드와 같은 톤. 「학생이」「~습니다」「~할 수 있습니다」 금지
+· 중학생이 읽기 쉽게, 음악 용어는 짧게 풀어 설명 (예: 셈여림=소리의 세기, 리듬꼴=박자 묶음)
+· 오답·△ 피드백에서 절대 금지: 정답 보기 문구, 정답 악기·역할·장면 이름, A/B/A' 직접 지목, 「~이 맞아요/정답이에요」
+· 오답·△에서는 학생 선택을 인정 → 왜 아쉬운지 → 무엇을 들어야 하는지(비교 질문) → 다시 들어보세요 순으로 3~4문장
 · 항목 제목(선율:, 음계: 등) 나열 금지 — 한 덩어리 서술
-· 정답·맞은 보기·맞은 항목 이름·값을 직접 말하지 말 것 (맞은 항목은 개수만)
 · 검증 △·✗이고 틀린 항목이 여러 개면 가이드에 있는 것만 모두 다룰 것`;
 
 const STAGE3_RULES_KO = `[피드백 설계 원칙 — Sadler]
 · 상단 검증 줄 없음
 · 2. [가치 평가] → 목표 수준 / 현재 나의 수준 / 설명
-· △·✗만 맨 끝에 「다시 시도해 보세요!」`;
+· △·✗만 맨 끝에 「다시 시도해 보세요!」
+· 2단계에서 배운 음악 요소·특징은 정확한 키워드가 아니어도, 비슷한 뜻이면 근거로 인정하고 피드백에서도 인정할 것
+· 학생에게 필수 용어·정답 키워드를 요구하거나 암시하지 말 것`;
 
 const AESTHETIC_GOAL_BY_TYPE = {
   음색: '등장인물의 음색이 곡 안에서 어떻게 드러나는지 근거를 들어, 그것이 이 곡을 왜 특별하게 만드는지 평가할 수 있어요.',
@@ -88,11 +94,16 @@ export function buildVoiceSectionsExplanation(payload, mark) {
     lines.push('');
     lines.push(payload.footer);
   }
-  (payload.sections || []).filter((s) => s.status === 'miss').forEach((section) => {
+  (payload.sections || []).forEach((section) => {
     lines.push('');
-    lines.push(section.note);
-    if (section.hint) lines.push(section.hint);
-    if (section.example) lines.push(section.example);
+    lines.push(`[${section.label}]`);
+    if (section.status === 'ok') {
+      lines.push(section.note);
+    } else {
+      lines.push(section.note);
+      if (section.hint) lines.push(section.hint);
+      if (section.example) lines.push(section.example);
+    }
   });
   const combined = lines.join('\n').trim();
   if ((mark === '△' || mark === '✗') && !/다시 (들어|생각)/.test(combined)) {
@@ -125,32 +136,57 @@ function buildVoiceSectionsGptGuide(payload, mark) {
 }
 
 export function verificationMarkFromFixed(payload) {
-  if (typeof payload === 'string') {
-    if (/검증\s*[:：]\s*△/.test(payload)) return '△';
-    if (/검증\s*[:：]\s*✓/.test(payload)) return '✓';
-    if (/검증\s*[:：]\s*✗/.test(payload)) return '✗';
+  const core = unwrapStage2ItemPayload(payload);
+  if (core?.kind === 'hy-theme-match') return core.mark || '✗';
+  if (typeof core === 'string') {
+    const head = core.trim();
+    if (/^검증\s*[:：]\s*△/.test(head)) return '△';
+    if (/^검증\s*[:：]\s*✓/.test(head)) return '✓';
+    if (/^검증\s*[:：]\s*✗/.test(head)) return '✗';
     return null;
   }
-  if (payload?.kind === 'voice-sections') {
-    if (/△/.test(payload.verification || '')) return '△';
-    if (payload.isCorrect) return '✓';
-    const okCount = (payload.sections || []).filter((s) => s.status === 'ok').length;
-    const total = (payload.sections || []).length;
+  if (core?.kind === 'voice-sections') {
+    if (/△/.test(core.verification || '')) return '△';
+    if (core.isCorrect) return '✓';
+    const okCount = (core.sections || []).filter((s) => s.status === 'ok').length;
+    const total = (core.sections || []).length;
     if (okCount > 0 && okCount < total) return '△';
     return '✗';
   }
+  if (core?.kind === 'slider-item') return core.isCorrect ? '✓' : '✗';
   return '✗';
 }
 
 function extractExplanationBody(guide) {
-  let body = String(guide || '').trim();
-  body = body.replace(/^검증\s*[:：]\s*[✓△✗]\s*\n?/, '');
-  body = body.replace(/^설명\s*[:：]\s*/, '');
-  return body.trim();
+  return stripFeedbackHeader(guide);
 }
 
 export function formatStage2Display(mark, body) {
-  return `검증: ${mark}\n설명: ${extractExplanationBody(body)}`;
+  return `검증: ${formatMarkDisplay(mark)}\n설명: ${extractExplanationBody(body)}`;
+}
+
+/** CompareAiFeedbackBlock 등 UI용 — 검증 줄과 본문 분리 */
+export function parseStage2FeedbackText(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+  const lines = raw.split(/\r?\n/);
+  const mark = parseMarkFromVerificationLine(lines[0] || '');
+  if (!mark) return null;
+  const body = lines
+    .slice(1)
+    .join('\n')
+    .replace(/^설명\s*[:：]\s*/, '')
+    .trim();
+  return { mark, body };
+}
+
+/** 3단계 가치 평가 피드백 — 현재 나의 수준 기호 추출 */
+export function parseAestheticFeedbackText(text) {
+  const raw = String(text || '').trim();
+  if (!/2\.\s*\[가치 평가\]/.test(raw)) return null;
+  const levelMatch = raw.match(/📍\s*현재 나의 수준\s*[:：]\s*([✓△✗])/);
+  if (!levelMatch) return null;
+  return { mark: levelMatch[1], body: raw };
 }
 
 function normalizeStage2AiOutput(raw, mark, fallbackGuide) {
@@ -169,13 +205,31 @@ function isPreflightFeedbackMessage(text) {
   return /먼저|적은 뒤|고른 뒤|넣은 뒤|움직여|선택해|채워|입력/.test(t);
 }
 
+function isPreflightPayload(payload) {
+  if (payload?.kind === 'labeled') return isPreflightFeedbackMessage(payload.body);
+  if (typeof payload === 'string') return isPreflightFeedbackMessage(payload);
+  if (payload?.kind === 'plain') return isPreflightFeedbackMessage(payload.text);
+  if (payload?.kind === 'slider-item') return false;
+  return false;
+}
+
+function preflightPayloadText(payload) {
+  if (payload?.kind === 'labeled') return payload.body;
+  if (typeof payload === 'string') return payload;
+  if (payload?.kind === 'plain') return payload.text;
+  return '';
+}
+
 function buildDisplayGuide(fixedPayload, mark) {
-  if (fixedPayload?.kind === 'voice-sections') return buildVoiceSectionsExplanation(fixedPayload, mark);
-  return extractExplanationBody(typeof fixedPayload === 'string' ? fixedPayload : fixedPayload?.text || '');
+  const core = unwrapStage2ItemPayload(fixedPayload);
+  if (core?.kind === 'voice-sections') return buildVoiceSectionsExplanation(core, mark);
+  if (core?.kind === 'slider-item') return core.body || '';
+  return extractExplanationBody(typeof core === 'string' ? core : core?.text || '');
 }
 
 function buildGptInternalGuide(fixedPayload, mark) {
-  if (fixedPayload?.kind === 'voice-sections') return buildVoiceSectionsGptGuide(fixedPayload, mark);
+  const core = unwrapStage2ItemPayload(fixedPayload);
+  if (core?.kind === 'voice-sections') return buildVoiceSectionsGptGuide(core, mark);
   return buildDisplayGuide(fixedPayload, mark);
 }
 
@@ -201,8 +255,11 @@ function combineMarkFromPayloads(payloads) {
 }
 
 function labelForCombinedPayload(payload) {
-  if (payload?.kind !== 'voice-sections') return '';
-  const id = payload.character;
+  if (payload?.itemLabel) return payload.itemLabel;
+  if (payload?.kind === 'labeled') return payload.label;
+  const core = unwrapStage2ItemPayload(payload);
+  if (core?.kind !== 'voice-sections') return '';
+  const id = core.character;
   if (!id || id === 'piano-scene') return '';
   if (/^cp-f\d$/.test(id)) {
     const nums = { 'cp-f1': '1', 'cp-f2': '2', 'cp-f3': '3' };
@@ -211,26 +268,59 @@ function labelForCombinedPayload(payload) {
   return `「${id}」`;
 }
 
+function buildStage2SectionFromPayload(payload) {
+  const label = labelForCombinedPayload(payload);
+  const core = unwrapStage2ItemPayload(payload);
+  if (core?.kind === 'hy-theme-match') {
+    return { label, kind: 'hy-theme-match', ...core };
+  }
+  if (core?.kind === 'voice-sections') {
+    const { kind, verification, ...rest } = core;
+    return { label, kind: 'voice-sections', ...rest };
+  }
+  if (core?.kind === 'slider-item') {
+    const { kind, ...rest } = core;
+    return { label, kind: 'slider-item', ...rest };
+  }
+  const mark = verificationMarkFromFixed(payload) || '✗';
+  const body = buildDisplayGuide(payload, mark).trim();
+  if (!body) return null;
+  return { label, kind: 'text', body };
+}
+
+function buildStage2SectionsPayload(payloads) {
+  const sections = (payloads || []).map(buildStage2SectionFromPayload).filter(Boolean);
+  const hasStructured = sections.some(
+    (s) => s.kind === 'hy-theme-match' || s.kind === 'voice-sections' || s.kind === 'slider-item'
+  );
+  if (!hasStructured) return null;
+  const mark = combineMarkFromPayloads(payloads);
+  return { kind: 'stage2-sections', mark, sections };
+}
+
 function buildCombinedDisplayGuide(payloads) {
+  const multi = (payloads || []).length > 1;
   return (payloads || [])
     .map((p) => {
       const mark = verificationMarkFromFixed(p) || '✗';
-      const body = buildDisplayGuide(p, mark);
+      const body = buildDisplayGuide(p, mark).trim();
+      const label = multi ? labelForCombinedPayload(p) : '';
       if (!body) return '';
-      const label = labelForCombinedPayload(p);
-      return label ? `${label}\n${body}` : body;
+      if (!label) return body;
+      return `${label}\n${body}`;
     })
     .filter(Boolean)
     .join('\n\n');
 }
 
 function buildCombinedGptGuide(payloads) {
+  const multi = (payloads || []).length > 1;
   return (payloads || [])
     .map((p) => {
       const mark = verificationMarkFromFixed(p) || '✗';
       const body = buildGptInternalGuide(p, mark);
       if (!body) return '';
-      const label = labelForCombinedPayload(p);
+      const label = multi ? labelForCombinedPayload(p) : '';
       return label ? `[${label}]\n${body}` : body;
     })
     .filter(Boolean)
@@ -274,13 +364,12 @@ export async function generateCombinedFormativeAi({
   studentSummary = ''
 }) {
   const items = (fixedPayloads || []).filter(Boolean);
-  const preflight = items.find(
-    (p) =>
-      (typeof p === 'string' && isPreflightFeedbackMessage(p)) ||
-      (p?.kind === 'plain' && isPreflightFeedbackMessage(p.text))
-  );
-  if (preflight) return typeof preflight === 'string' ? preflight : preflight.text;
+  const preflight = items.find((p) => isPreflightPayload(p));
+  if (preflight) return preflightPayloadText(preflight);
   if (!items.length) return '먼저 모든 문항을 완료한 뒤 피드백 보기를 눌러 주세요.';
+
+  const structured = buildStage2SectionsPayload(items);
+  if (structured) return structured;
 
   const mark = combineMarkFromPayloads(items);
   const displayGuide = buildCombinedDisplayGuide(items);
@@ -302,14 +391,17 @@ export async function generateStage2ActivityFeedback(activityId, context) {
 
 function formatAestheticFallback({ goal, mark, guide }) {
   const retry = mark === '✓' ? '' : '\n\n다시 시도해 보세요!';
-  return `2. [가치 평가]\n\n🎯 목표 수준:\n${goal}\n\n📍 현재 나의 수준: ${mark}\n\n📝 설명:\n${guide}${retry}`;
+  return `2. [가치 평가]\n\n🎯 목표 수준:\n${goal}\n\n📍 현재 나의 수준: ${formatMarkDisplay(mark)}\n\n📝 설명:\n${guide}${retry}`;
 }
 
 function normalizeAestheticAiOutput(raw, mark, goal, guide) {
   const fallback = formatAestheticFallback({ goal, mark, guide });
   const text = String(raw || '').trim();
   if (!text || !/2\.\s*\[가치 평가\]/.test(text)) return fallback;
-  return text.replace(/(📍\s*현재 나의 수준\s*[:：]\s*)[✓△✗]/, `$1${mark}`);
+  return text.replace(
+    /(📍\s*현재 나의 수준\s*[:：]\s*)[✓△✗](?:\s+[^\n]*)?/,
+    `$1${formatMarkDisplay(mark)}`
+  );
 }
 
 export async function generateVoiceDesignFormativeAi(selectedChars, voiceDesign, answerKey) {
@@ -393,70 +485,8 @@ export async function generateSbSprechFormativeAi(params) {
   });
 }
 
-function sbAtonalColumnOk(cards, correctSet, wrongSet) {
-  if (!Array.isArray(cards) || cards.length === 0) return false;
-  const hasCorrect = cards.some((c) => correctSet.has(c));
-  const hasWrong = cards.some((c) => wrongSet.has(c));
-  return hasCorrect && !hasWrong;
-}
-
-function buildSbAtonalFixedGuide({ tonalCards, atonalCards }) {
-  const tonal = tonalCards || [];
-  const atonal = atonalCards || [];
-  if (!tonal.length || !atonal.length) {
-    return '여섯 장의 카드를 모두 칸에 넣은 뒤 피드백 보기를 눌러 주세요.';
-  }
-
-  const tonalCorrect = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
-  const tonalWrong = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
-  const atonalCorrect = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
-  const atonalWrong = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
-  const colTonalOk = sbAtonalColumnOk(tonal, tonalCorrect, tonalWrong);
-  const colAtonalOk = sbAtonalColumnOk(atonal, atonalCorrect, atonalWrong);
-
-  if (colTonalOk && colAtonalOk) {
-    return '검증: ✓\n조성곡과 무조성 곡의 안정감·긴장감·음의 어울림이 칸과 잘 맞아요. 두 곡을 번갈아 들으며 차이를 다시 확인해 보세요.';
-  }
-
-  const wrongTonal = tonal.filter((card) => tonalWrong.has(card));
-  const wrongAtonal = atonal.filter((card) => atonalWrong.has(card));
-  const parts = [];
-
-  wrongTonal.forEach((card) => {
-    if (card === '무조성 음악') {
-      parts.push('송어 칸의 「무조성 음악」을 다시 들어 보세요. 조성감만 비교해 보세요.');
-    } else if (card === '낯설고 긴장감') {
-      parts.push('송어 칸의 「낯설고 긴장감」을 다시 들어 보세요. 분위기만 비교해 보세요.');
-    } else if (card === '음들이 따로 논다.') {
-      parts.push('송어 칸의 「음들이 따로 논다.」를 다시 들어 보세요. 화음의 느낌을 비교해 보세요.');
-    }
-  });
-  wrongAtonal.forEach((card) => {
-    if (card === '조성 음악') {
-      parts.push('피에로 칸의 「조성 음악」을 다시 들어 보세요. 조성감만 비교해 보세요.');
-    } else if (card === '편안하고 안정적') {
-      parts.push('피에로 칸의 「편안하고 안정적」을 다시 들어 보세요. 분위기만 비교해 보세요.');
-    } else if (card === '음들이 서로 잘 어울린다.') {
-      parts.push('피에로 칸의 「음들이 서로 잘 어울린다.」를 다시 들어 보세요. 화음의 느낌을 비교해 보세요.');
-    }
-  });
-
-  const body = parts.length
-    ? `${parts.join('\n')}\n다시 들어보세요.`
-    : '두 곡을 번갈아 들으며 안정감·긴장감·음의 어울림이 같은 칸에 모였는지 점검해 보세요.\n다시 들어보세요.';
-  const mark = colTonalOk || colAtonalOk ? '△' : '✗';
-  return `검증: ${mark}\n${body}`;
-}
-
 export async function generateSbAtonalFormativeAi({ tonalCards, atonalCards }) {
-  const fixedGuide = buildSbAtonalFixedGuide({ tonalCards, atonalCards });
-  if (isPreflightFeedbackMessage(fixedGuide)) return fixedGuide;
-
-  return generateFormativeFromFixedGuide({
-    fixedPayload: fixedGuide,
-    activityTitle: '쇤베르크 — 무조성 카드 매칭',
-    studentSummary: `조성: ${(tonalCards || []).join(', ')} / 무조: ${(atonalCards || []).join(', ')}`
-  });
+  return generateStage2ActivityFeedback('sb-atonal', { tonalCards, atonalCards });
 }
 
 export async function generateAestheticQ2FormativeAi({ selectedSong, q2Type, q2Label, q2 }) {

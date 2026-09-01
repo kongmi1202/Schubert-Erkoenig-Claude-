@@ -27,6 +27,19 @@ export const MAWANG_MELODY_OPTIONS_BY_CHAR = {
   ]
 };
 
+/** 마왕 2단계 3번 — 인물별 고정 활동 번호 (3-1 해설자 … 3-4 마왕) */
+export const MAWANG_VOICE_CHAR_ORDER = ['해설자', '아버지', '아들', '마왕'];
+
+export function mawangVoiceActivityNum(characterName) {
+  const index = MAWANG_VOICE_CHAR_ORDER.indexOf(characterName);
+  return index >= 0 ? index + 1 : null;
+}
+
+export function mawangVoiceActivityLabel(characterName) {
+  const num = mawangVoiceActivityNum(characterName);
+  return num ? `3-${num}. 「${characterName}」` : `3. 「${characterName}」`;
+}
+
 export const MAWANG_VOICE_ANSWER_KEY = {
   해설자: {
     선율: '장면을 담담히 전하는 선율',

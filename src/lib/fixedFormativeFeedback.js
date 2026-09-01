@@ -8,9 +8,11 @@ import {
   includesAnyToken
 } from './overviewGrading';
 import { buildMultiFieldSectionsPayload } from './formative/buildMultiField';
-import { buildSingleChoiceFeedback, buildConditionalSingleChoice } from './formative/buildSingleChoice';
+import { buildSingleChoiceFeedback, buildSliderItemPayload } from './formative/buildSingleChoice';
 import { buildCpFormSegmentPayload, buildCpRhythmItemPayload } from './formative/builders';
-import { FOOTER, verification, verificationWithMark } from './formative/templates';
+import { buildHyThemeMatchWrongPayload } from './formative/content/hyThemeMatch';
+import { buildSbAtonalMatchWrongPayload, sbAtonalColumnOk } from './formative/content/sbAtonalMatch';
+import { FOOTER, PARTIAL_SUMMARY_DEFAULT, verification, verificationWithMark } from './formative/templates';
 import { PIANO_LH_SCENE_CORRECT, PIANO_RH_SCENE_CORRECT } from './pianoSceneAnswers';
 
 export function getVvSonnetFixedFeedback({ userChoice, correctAnswer, correctElaboration, segmentId }) {
@@ -23,7 +25,7 @@ export function getVvSonnetFixedFeedback({ userChoice, correctAnswer, correctEla
       : '표제음악에서는 시의 장면과 음악의 셈여림·빠르기·리듬꼴이 맞물려요.',
     wrongHints: VV_SONNET_WRONG_FEEDBACK[segmentId],
     defaultWrongBody:
-      '같은 구간을 다시 들으며 셈여림(소리의 세기)·속도(템포)·리듬꼴 중 어디가 달라지는지 들어 보세요. 다시 생각해보세요.'
+      '같은 구간을 다시 들으며 셈여림(소리의 세기)·빠르기·리듬꼴 중 무엇이 시의 장면과 가장 잘 맞는지 비교해 보세요. 다시 들어보세요.'
   });
 }
 
@@ -32,13 +34,17 @@ const VV_SONNET_WRONG_FEEDBACK = {
     '음이 부드럽고 느리게 이어진다':
       '「음이 부드럽고 느리게 이어진다」를 골랐어요. 부드러운 선율은 잔잔한 바람이나 고요한 장면에 잘 어울리죠.\n이 소네트는 하늘이 천둥치고 번개가 번쩍이는 장면이에요. 같은 구간을 다시 들으며, 소리가 살살 이어지는지 아니면 갑자기 세게 터지듯 들리는지 셈여림(소리의 세기)과 빠르기만 비교해 보세요.\n다시 들어보세요.',
     '음이 점점 낮아지며 사라진다':
-      '「음이 점점 낮아지며 사라진다」를 골랐어요. 음이 아래로 잦아들면 장면이 멀어지거나 잠잠해지는 느낌이 나요.\n번개가 번쩍이는 가사와 맞춰 들으며, 이 구간이 점점 사그라드는지 아니면 세게 치고 나가는지 처음과 한가운데의 셈여림을 비교해 보세요.\n다시 들어보세요.'
+      '「음이 점점 낮아지며 사라진다」를 골랐어요. 음이 아래로 잦아들면 장면이 멀어지거나 잠잠해지는 느낌이 나요.\n번개가 번쩍이는 가사와 맞춰 들으며, 이 구간이 점점 사그라드는지, 갑작스럽게 세게 터지는지, 아니면 다른 방향으로 움직이는지 셈여림과 빠르기를 비교해 보세요.\n다시 들어보세요.',
+    '음이 갑자기 강하고 빠르게 터진다':
+      '「음이 갑자기 강하고 빠르게 터진다」를 골랐어요. 갑작스럽고 강한 소리는 천둥·번개 장면과 잘 어울릴 수 있어요.\n이 구간에서 그 느낌이 처음부터 끝까지 이어지는지, 중간에 다른 느낌도 섞이는지 처음·한가운데·끝을 나눠 들어 보세요.\n다시 들어보세요.'
   },
   'vv-c2': {
     '음이 길게 이어지며 서정적으로 흐른다':
       '「음이 길게 이어지며 서정적으로 흐른다」를 골랐어요. 긴 선율은 노래처럼 이어지는 장면에 잘 맞아요.\n가사는 우박이 이삭을 때리는 장면이에요. 우박이 뚝뚝 떨어지는 모습을 떠올리며, 음이 길게 흐르는지 짧게 톡톡 끊기는지 리듬꼴만 다시 들어 보세요.\n다시 들어보세요.',
     '음이 매우 느리고 조용해진다':
-      '「음이 매우 느리고 조용해진다」를 골랐어요. 느리고 조용한 음악은 잠잠해지는 장면에 잘 어울리죠.\n우박이 쏟아지는 가사와 맞춰 들으며, 이 구간이 잠잠한지 아니면 짧고 또렷한 음이 여러 번 부딪히듯 들리는지 빠르기와 셈여림을 비교해 보세요.\n다시 들어보세요.'
+      '「음이 매우 느리고 조용해진다」를 골랐어요. 느리고 조용한 음악은 잠잠해지는 장면에 잘 어울리죠.\n우박이 쏟아지는 가사와 맞춰 들으며, 이 구간이 잠잠한지, 짧고 또렷한 음이 여러 번 부딪히는지, 아니면 다른 느낌이 섞이는지 빠르기와 셈여림을 비교해 보세요.\n다시 들어보세요.',
+    '음이 짧고 강하게 반복된다':
+      '「음이 짧고 강하게 반복된다」를 골랐어요. 짧고 강한 반복은 우박이 떨어지는 느낌과 잘 맞을 수 있어요.\n이 구간에서 그 느낌이 처음부터 끝까지 이어지는지, 중간에 다른 느낌도 섞이는지 리듬꼴을 나눠 들어 보세요.\n다시 들어보세요.'
   }
 };
 
@@ -51,7 +57,7 @@ export function getVvConcertoFixedFeedback({ userChoice, correctAnswer }) {
       '바이올린 협주곡에서는 독주와 총주의 음색·밀도 대비가 중요해요. 영상에서 솔로와 앙상블 구간이 어떻게 바뀌는지 귀로 비교해 보세요.',
     wrongHints: VV_CONCERTO_WRONG_FEEDBACK,
     defaultWrongBody:
-      '영상에서 바이올린 한 대가 두드러지는 구간과 현악 전체가 함께 울리는 구간을 번갈아 짚어 보세요. 다시 들어보세요.'
+      '영상에서 바이올린 한 대가 두드러지는 구간과 여러 현악기가 함께 울리는 구간을 찾아 보세요. 소리의 밀도와 음색이 어떻게 바뀌는지 비교해 들어 보세요. 다시 들어보세요.'
   });
 }
 
@@ -59,7 +65,7 @@ const VV_CONCERTO_WRONG_FEEDBACK = {
   '독주만 계속 나온다':
     '「독주만 계속 나온다」를 골랐어요. 바이올린 한 대가 앞에서 노래하듯 연주하는 느낌이 강했나 봐요.\n영상 전체를 다시 들으며, 한 대만 나오는지, 여러 현악기가 한꺼번에 들어와 소리가 두꺼워지는 순간도 있는지 음색의 밀도만 비교해 보세요.\n다시 들어보세요.',
   '총주만 계속 나온다':
-    '「총주만 계속 나온다」를 골랐어요. 현악 그룹이 함께 울리는 울림이 크게 들렸나 봐요.\n영상 가운데를 다시 들으며, 전체가 계속 나오는지, 한 대가 앞으로 나와 소리가 얇아지는 순간도 있는지 독주와 그룹의 교대를 찾아 보세요.\n다시 들어보세요.'
+    '「총주만 계속 나온다」를 골랐어요. 현악 그룹이 함께 울리는 울림이 크게 들렸나 봐요.\n영상 가운데를 다시 들으며, 전체가 계속 나오는지, 한 대가 앞으로 나와 소리가 얇아지는 순간도 있는지 밀도 변화만 비교해 보세요.\n다시 들어보세요.'
 };
 
 export function getCpFormSegmentFixedFeedback({ cardId, label, feature }) {
@@ -90,18 +96,18 @@ export function getTonePaintingFixedFeedback({
   }
   const pick = selectedLabel || '';
   const wrongBody = TONE_PAINTING_WRONG_FEEDBACK[segmentId]?.[pick]
-    || '가사의 핵심 단어가 나올 때 음 높낮이, 반복, 선율 길이 중 어디에 귀를 둘지 들어 보세요. 다시 생각해보세요.';
+    || '「' + pick + '」을 골랐어요. 가사의 뜻과 음악이 같은 방향으로 움직이는지, 음 높낮이·반복·선율 길이·빠르기 중 무엇이 두드러지는지 비교해 들어 보세요. 다시 들어보세요.';
   return verification(false, '', wrongBody);
 }
 
 const TONE_PAINTING_WRONG_FEEDBACK = {
   s1: {
     '음이 갑자기 낮아진다':
-      '「음이 갑자기 낮아진다」를 골랐어요. 음이 뚝 떨어지면 힘이 빠지거나 작아지는 느낌이 나기 쉬워요.\n가사는 ‘왕 중의 왕’으로, 가장 높은 권위를 찬양하는 구절이에요. 이 가사가 나올 때 선율이 아래로 내려가는지, 아니면 다른 방향으로 움직이는지 음 높낮이에만 귀를 모아 다시 들어 보세요.\n다시 들어보세요.',
+      '「음이 갑자기 낮아진다」를 골랐어요. 음이 뚝 떨어지면 힘이 빠지거나 작아지는 느낌이 나기 쉬워요.\n가사는 ‘왕 중의 왕’으로, 위엄과 높임을 떠올리게 해요. 이 구절에서 음이 가사의 느낌과 같은 방향으로 움직이는지, 반대로 움직이는지 음 높낮이·길이·빠르기를 비교해 들어 보세요.\n다시 들어보세요.',
     '리듬이 빨라진다':
-      '「리듬이 빨라진다」를 골랐어요. 빨라지는 리듬은 긴박함을 잘 나타내죠. 그런데 이 구절의 핵심은 박자가 급해지는지보다, 가사의 의미를 음으로 그리는 음화법이에요.\n빠르기보다 ‘왕 중의 왕’이 나올 때 음이 어디로 가는지(위·아래)를 한 번만 더 따라가 보세요.\n다시 들어보세요.',
+      '「리듬이 빨라진다」를 골랐어요. 빨라지는 리듬은 긴박함을 잘 나타내죠.\n이 구절은 박자가 급해지는지보다, 가사의 뜻을 음으로 그리는 음화법이에요. ‘왕 중의 왕’이 나올 때 음 높낮이·길이·빠르기 중 무엇이 가장 두드러지는지 들어 보세요.\n다시 들어보세요.',
     '선율이 길게 이어진다':
-      '「선율이 길게 이어진다」를 골랐어요. 선율이 길게 이어지는 느낌도 있을 수 있지만, 이 구절은 ‘왕’의 위대함을 어떻게 그리는지가 핵심이에요.\n음의 길이보다, 가사가 나올 때 음이 올라가거나 내려가는 방향에 귀를 기울여 보세요.\n다시 들어보세요.'
+      '「선율이 길게 이어진다」를 골랐어요. 선율이 길게 이어지면 서정적으로 느껴질 수 있어요.\n이 구절은 ‘왕’의 위대함을 어떻게 그리는지가 핵심이에요. 음의 길이뿐 아니라 가사가 나올 때 소리가 어떤 방향·느낌으로 움직이는지 비교해 들어 보세요.\n다시 들어보세요.'
   },
   s2: {
     '지루함을 준다':
@@ -310,19 +316,18 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
     correctSummary: `「${name}」선율·음계·음색이 모두 맞아요.`,
     correctFooter: '영상을 한 번 더 들으며 세 가지가 어떻게 함께 들리는지 확인해 보세요.',
     wrongFooter: FOOTER.noAnswerReveal,
-    partialSummary: (matched, total) =>
-      `「${name}」설계를 항목별로 점검했어요. 맞은 항목 ${matched}개 · 다시 볼 항목 ${total - matched}개`
+    partialSummary: () => PARTIAL_SUMMARY_DEFAULT
   });
 }
 
 const PIANO_RH_WRONG_HINT = {
   폭풍우: {
     hint: '「폭풍우」를 골랐어요. 오른손이 넓게 몰아치는 것처럼 들렸나 봐요. 오른손만 다시 들으며, 크게 출렁이는지 짧게 자주 뛰어가는지 리듬의 촘촘함만 비교해 보세요.',
-    example: '하늘이 열리는 넓은 소리인지, 말이 달리듯 톡톡 반복되는 소리인지 손으로 박자를 쳐 보며 골라 보세요.'
+    example: '하늘이 열리는 넓은 소리인지, 짧게 자주 반복되는 소리인지 손으로 박자를 쳐 보며 골라 보세요.'
   },
   파도: {
     hint: '「파도」를 골랐어요. 오른손이 느릿하게 오르내리는 것처럼 들렸나 봐요. 오른손만 다시 들으며, 넓게 출렁이는지 짧게 자주 반복되는지 비교해 보세요.',
-    example: '물결처럼 천천히 흔들리는지, 달리듯이 촘촘한지 귀로만 비교해 보세요.'
+    example: '넓게 퍼지는 소리인지, 짧게 자주 반복되는 소리인지 귀로만 비교해 보세요.'
   },
   바람: {
     hint: '「바람」을 골랐어요. 오른손이 스치듯 지나가는 것처럼 들렸나 봐요. 오른손만 다시 들으며, 흩어지듯 스치는지 짧게 자주 뛰어가는지 리듬만 비교해 보세요.',
@@ -333,15 +338,15 @@ const PIANO_RH_WRONG_HINT = {
 const PIANO_LH_WRONG_HINT = {
   북소리: {
     hint: '「북소리」를 골랐어요. 왼손이 타악기처럼 딱딱 끊긴다고 들렸나 봐요. 왼손만 다시 들으며, 북처럼 표면이 맞부딪히는 소리인지, 낮은 음이 가슴처럼 반복되는지 비교해 보세요.',
-    example: '딱딱 끊기는 타점인지, 낮게 쿵쿵 이어지는 박동인지 손바닥으로 박을 맞춰 보세요.'
+    example: '딱딱 끊기는 타점인지, 낮게 규칙적으로 이어지는 박동인지 손바닥으로 박을 맞춰 보세요.'
   },
   '무거운 발걸음': {
     hint: '「무거운 발걸음」을 골랐어요. 왼손이 한 걸음씩 짚는 것처럼 들렸나 봐요. 왼손만 다시 들으며, 천천히 내딛는지, 짧게 반복되는 박동처럼 찍히는지 비교해 보세요.',
-    example: '느리게 내딛는 무게인지, 가슴이 뛰듯 자주 찍히는지 손바닥으로 박을 맞춰 보세요.'
+    example: '느리게 내딛는 무게인지, 짧게 자주 찍히는 박동인지 손바닥으로 박을 맞춰 보세요.'
   },
   '잔잔한 물결': {
-    hint: '「잔잔한 물결」을 골랐어요. 왼손이 부드럽게 흐른다고 들렸나 봐요. 왼손만 다시 들으며, 잔잔히 이어지는지, 낮고 짧게 쿵쿵 찍히는지 비교해 보세요.',
-    example: '부드럽게 흐르는 느낌인지, 가슴이 뛰듯 반복되는 느낌인지 귀로만 비교해 보세요.'
+    hint: '「잔잔한 물결」을 골랐어요. 왼손이 부드럽게 흐른다고 들렸나 봐요. 왼손만 다시 들으며, 잔잔히 이어지는지, 짧고 규칙적으로 찍히는지 비교해 보세요.',
+    example: '부드럽게 흐르는 느낌인지, 짧고 규칙적으로 찍히는 느낌인지 귀로만 비교해 보세요.'
   }
 };
 
@@ -358,8 +363,7 @@ export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
         missNote: (pick) => `네가 고른 「${pick}」은 오른손 반주와 잘 맞지 않아요.`,
         defaultWrongHint: {
           hint: '오른손만 다시 들으며, 빠르고 촘촘하게 반복되는 리듬이 어떤 움직임을 떠올리게 하는지 비교해 보세요.',
-          example:
-            '잔잔한 물결처럼 느리게 흔들리는지, 달리듯이 짧게 자주 뛰어가는지 손으로 박자를 쳐 보며 골라 보세요.'
+          example: '넓게 출렁이는 느낌인지, 짧게 자주 뛰어가는 느낌인지 손으로 박자를 쳐 보며 골라 보세요.'
         }
       },
       {
@@ -370,8 +374,7 @@ export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
         missNote: (pick) => `네가 고른 「${pick}」은 왼손 반주와 잘 맞지 않아요.`,
         defaultWrongHint: {
           hint: '왼손만 다시 들으며, 낮고 강하게 반복되는 베이스가 어떤 박동·무게감을 주는지 비교해 보세요.',
-          example:
-            '부드럽게 흐르는 느낌인지, 가슴이 뛰듯 짧게 쿵쿵 찍히는 느낌인지 손바닥으로 박을 맞춰 보며 골라 보세요.'
+          example: '부드럽게 흐르는 느낌인지, 짧고 규칙적으로 찍히는 느낌인지 손바닥으로 박을 맞춰 보며 골라 보세요.'
         }
       }
     ],
@@ -383,8 +386,7 @@ export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
     correctFooter:
       '각 손 반주를 다시 들으며, 고른 장면이 소리의 리듬·무게와 어떻게 연결되는지 확인해 보세요.',
     wrongFooter: '정답 장면 이름은 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.',
-    partialSummary: (matched, total) =>
-      `장면 선택을 손별로 점검했어요. 맞은 항목 ${matched}개 · 다시 볼 항목 ${total - matched}개`
+    partialSummary: () => PARTIAL_SUMMARY_DEFAULT
   });
 }
 
@@ -392,28 +394,6 @@ const HY_THEME_T1_CORRECT = new Set(['o1', 'o3', 'o5']);
 const HY_THEME_T1_WRONG = new Set(['o2', 'o4', 'o6']);
 const HY_THEME_T2_CORRECT = new Set(['o2', 'o4', 'o6']);
 const HY_THEME_T2_WRONG = new Set(['o1', 'o3', 'o5']);
-
-const HY_THEME_MATCH_CARD_HINT = {
-  t1: {
-    o2: '제1주제 칸에 「음이 순차적으로 이어진다」를 넣었어요. 순차 진행은 음이 옆 칸으로 살살 걸어가듯 들릴 때 잘 맞아요.\n제1주제 클립만 다시 들으며, 음과 음 사이가 가까운지 멀리 뛰어오르는지 선율의 움직임만 비교해 보세요.',
-    o4: '제1주제 칸에 「리듬이 길게 이어진다」를 넣었어요. 긴 리듬은 음이 늘어지며 흐를 때 잘 맞아요.\n제1주제 클립만 다시 들으며, 리듬이 길게 흐르는지 짧게 톡톡 끊어지는지 리듬꼴만 비교해 보세요.',
-    o6: '제1주제 칸에 「부드럽고 서정적이다」를 넣었어요. 서정적인 느낌은 노래하듯 잔잔할 때 잘 맞아요.\n제1주제 클립만 다시 들으며, 느낌이 잔잔한지 가볍고 또렷한지 분위기만 비교해 보세요.'
-  },
-  t2: {
-    o1: '제2주제 칸에 「음이 크게 도약한다」를 넣었어요. 도약은 음이 멀리 뛰어오를 때 잘 맞아요.\n제2주제 클립만 다시 들으며, 음과 음 사이가 멀리 뛰는지 옆 음으로 이어지는지 선율의 움직임만 비교해 보세요.',
-    o3: '제2주제 칸에 「리듬이 짧게 끊어진다」를 넣었어요. 짧은 리듬은 톡톡 끊어질 때 잘 맞아요.\n제2주제 클립만 다시 들으며, 리듬이 짧게 끊기는지 길게 흐르는지 리듬꼴만 비교해 보세요.',
-    o5: '제2주제 칸에 「밝고 활기차다」를 넣었어요. 활기찬 느낌은 가볍고 또렷할 때 잘 맞아요.\n제2주제 클립만 다시 들으며, 느낌이 또렷한지 잔잔한지 분위기만 비교해 보세요.'
-  }
-};
-
-const HY_THEME_MATCH_SWAP_HINT = {
-  melody:
-    '제1주제 칸에 「음이 순차적으로 이어진다」, 제2주제 칸에 「음이 크게 도약한다」를 넣었어요.\n두 클립을 번갈아 들으며, 어느 쪽이 음이 멀리 뛰고 어느 쪽이 옆 음으로 이어지는지 선율의 움직임만 비교해 보세요.',
-  rhythm:
-    '제1주제 칸에 「리듬이 길게 이어진다」, 제2주제 칸에 「리듬이 짧게 끊어진다」를 넣었어요.\n두 클립을 번갈아 들으며, 어느 쪽 리듬이 짧게 톡톡이고 어느 쪽이 길게 흐르는지 리듬꼴만 비교해 보세요.',
-  mood:
-    '제1주제 칸에 「부드럽고 서정적이다」, 제2주제 칸에 「밝고 활기차다」를 넣었어요.\n두 클립을 번갈아 들으며, 어느 쪽이 가볍고 또렷하고 어느 쪽이 잔잔한지 분위기만 비교해 보세요.'
-};
 
 function hyThemeMatchColumnOk(placedIds, correctSet, wrongSet) {
   if (!Array.isArray(placedIds) || placedIds.length === 0) return false;
@@ -434,49 +414,47 @@ export function getHyThemeMatchFixedFeedback({ theme1Ids, theme2Ids }) {
   if (col1Ok && col2Ok) {
     return verification(
       true,
-      '두 주제의 선율 움직임·리듬꼴·느낌이 칸과 잘 맞아요. 소나타 형식에서는 제1주제와 제2주제가 이렇게 대비되며 형식을 만들어요.'
-    );
-  }
-
-  const t1Wrong = t1.filter((id) => HY_THEME_T1_WRONG.has(id));
-  const t2Wrong = t2.filter((id) => HY_THEME_T2_WRONG.has(id));
-  const parts = [];
-  const used = new Set();
-
-  const swaps = [
-    { dim: 'melody', t1: 'o2', t2: 'o1' },
-    { dim: 'rhythm', t1: 'o4', t2: 'o3' },
-    { dim: 'mood', t1: 'o6', t2: 'o5' }
-  ];
-  swaps.forEach((swap) => {
-    if (t1Wrong.includes(swap.t1) && t2Wrong.includes(swap.t2)) {
-      parts.push(HY_THEME_MATCH_SWAP_HINT[swap.dim]);
-      used.add(`t1:${swap.t1}`);
-      used.add(`t2:${swap.t2}`);
-    }
-  });
-
-  t1Wrong.forEach((id) => {
-    if (used.has(`t1:${id}`)) return;
-    const hint = HY_THEME_MATCH_CARD_HINT.t1[id];
-    if (hint) parts.push(hint);
-  });
-  t2Wrong.forEach((id) => {
-    if (used.has(`t2:${id}`)) return;
-    const hint = HY_THEME_MATCH_CARD_HINT.t2[id];
-    if (hint) parts.push(hint);
-  });
-
-  if (!parts.length) {
-    return verification(
-      false,
-      '',
-      '두 주제를 번갈아 들으며 선율의 움직임·리듬꼴·느낌이 같은 칸에 모였는지 점검해 보세요.\n다시 들어보세요.'
+      '두 주제의 선율 움직임·리듬꼴·느낌이 칸과 잘 맞아요. 소나타 형식에서는 제1주제와 제2주제가 이렇게 대비되며, 조성(도수) 차이와 함께 곡의 형식미를 만들어요.'
     );
   }
 
   const mark = col1Ok || col2Ok ? '△' : '✗';
-  return verificationWithMark(mark, `${parts.join('\n')}\n다시 들어보세요.`);
+  return {
+    kind: 'hy-theme-match',
+    mark,
+    ...buildHyThemeMatchWrongPayload(t1, t2, { col1Ok, col2Ok })
+  };
+}
+
+export function getSbAtonalMatchFixedFeedback({ tonalCards, atonalCards }) {
+  const tonal = tonalCards || [];
+  const atonal = atonalCards || [];
+  if (!tonal.length || !atonal.length) {
+    return '여섯 장의 카드를 모두 칸에 넣은 뒤 피드백 보기를 눌러 주세요.';
+  }
+
+  const tonalCorrect = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const tonalWrong = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalCorrect = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalWrong = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const colTonalOk = sbAtonalColumnOk(tonal, tonalCorrect, tonalWrong);
+  const colAtonalOk = sbAtonalColumnOk(atonal, atonalCorrect, atonalWrong);
+
+  if (colTonalOk && colAtonalOk) {
+    return verification(
+      true,
+      '조성곡과 무조성 곡의 안정감·긴장감·음의 어울림이 칸과 잘 맞아요. 두 곡을 번갈아 들으며 차이를 다시 확인해 보세요.'
+    );
+  }
+
+  const mark = colTonalOk || colAtonalOk ? '△' : '✗';
+  return {
+    kind: 'hy-theme-match',
+    mark,
+    col1Header: '송어 칸',
+    col2Header: '피에로 칸',
+    ...buildSbAtonalMatchWrongPayload(tonal, atonal, { colTonalOk, colAtonalOk })
+  };
 }
 
 export function getHyThemePart3FixedFeedback({ selectedDeg }) {
@@ -485,18 +463,20 @@ export function getHyThemePart3FixedFeedback({ selectedDeg }) {
     correctAnswer: '5도',
     preflightMessage: '3도·5도·8도 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.',
     correctBody:
-      'G에서 D까지의 간격을 건반에서 세어 보았어요. 두 주제의 조성 관계를 선율과 연결해 생각해 보세요.',
+      'G에서 D까지의 간격을 건반에서 세어 보았어요. 5도는 시작음에서 다섯 칸 떨어진 느낌으로, 소나타 형식에서 두 주제의 조성 관계를 만드는 데 자주 쓰여요. 선율과 함께 떠올려 보세요.',
     wrongHints: HY_THEME_DEG_WRONG_FEEDBACK,
     defaultWrongBody:
-      '시작음 G와 목표음 D를 건반에서 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.'
+      '건반에서 두 주제의 시작음을 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 3도·5도·8도 중 어떤 느낌에 가까운지 비교해 보세요. 다시 생각해보세요.'
   });
 }
 
 const HY_THEME_DEG_WRONG_FEEDBACK = {
   '3도':
-    '「3도」를 골랐어요. 3도는 시작음에서 가까운 이웃처럼 느껴지는 간격이에요.\n건반에서 G(솔)와 D(레)를 함께 누른 뒤, 두 음이 바로 옆처럼 가까운지, 그 사이에 흰 건반이 더 있는지 한 칸씩 세어 보세요.\n다시 생각해보세요.',
+    '「3도」를 골랐어요. 3도는 두 음이 바로 옆 건반처럼 가까울 때 느껴지는 간격이에요.\n' +
+    '건반에서 두 시작음을 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.',
   '8도':
-    '「8도」를 골랐어요. 8도는 한 옥타브, 같은 음이름의 위·아래처럼 느껴지는 간격이에요.\n건반에서 G와 D의 음이름이 같은지 다른지 글자를 보고, 그 사이를 한 칸씩 세어 보세요.\n다시 생각해보세요.'
+    '「8도」를 골랐어요. 8도는 같은 음이름의 위·아래처럼 한 옥타브 떨어진 간격이에요.\n' +
+    '건반에서 두 시작음의 글자를 보고, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.'
 };
 
 /**
@@ -505,10 +485,11 @@ const HY_THEME_DEG_WRONG_FEEDBACK = {
  */
 export function getSbSprechFixedFeedback({ kind, hasMoved, isCorrect, toneText }) {
   if (kind === 'normal') {
-    return buildConditionalSingleChoice({
+    return buildSliderItemPayload({
       ready: hasMoved,
       notReadyMessage: '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.',
       isCorrect,
+      toneText,
       correctBody:
         '일반 성악은 음높이(피치)를 안정적으로 유지하며 노래해요. 음이 흔들리지 않고 이어지는지 다시 들어 보세요.',
       wrongBody:
@@ -517,10 +498,11 @@ export function getSbSprechFixedFeedback({ kind, hasMoved, isCorrect, toneText }
     });
   }
 
-  return buildConditionalSingleChoice({
+  return buildSliderItemPayload({
     ready: hasMoved,
     notReadyMessage: '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.',
     isCorrect,
+    toneText,
     correctBody:
       '슈프레흐슈팀메는 말과 노래의 경계에 있어요. 음에 닿을락 말락 하며 말하기에 더 가깝게 들리는지 확인해 보세요.',
     wrongBody:
@@ -710,46 +692,79 @@ const HY_TIMBRE_LISTEN_HINT = {
   low: '이 구간이 가장 낮고 굵은지, 그보다 높은지 음높이만 다시 들어 보세요.'
 };
 
-const HY_TIMBRE_CORRECT = {
-  1: '높은 음역의 현악기가 주선율을 담당해요. 현악 4중주에서 가장 높은 선이 어떻게 노래하는지 이어 들어 보세요.',
-  2: '중간 음역의 현악기가 중성부를 받쳐 줘요. 주선율과 베이스 사이에서 어떻게 채워지는지 들어 보세요.',
-  3: '낮은 음역의 현악기가 베이스를 담당해요. 가장 낮은 선이 앙상블을 어떻게 받치는지 들어 보세요.'
+const HY_TIMBRE_SEGMENT = {
+  1: {
+    scene:
+      '현악 4중주는 네 악기가 서로 다른 음역을 맡아요. 이 클립에서 들리는 선이 높은지·가운데인지·낮은지, 그리고 그 악기가 어떤 역할을 하는지 귀와 선택을 맞춰 보세요.',
+    partialOk:
+      '악기와 역할 중 하나는 이 구간과 잘 맞았어요. 같은 소리를 다시 들으며, 나머지 선택도 음역과 역할이 서로 맞는지 맞춰 보세요.'
+  },
+  2: {
+    scene:
+      '현악 4중주는 네 악기가 서로 다른 음역을 맡아요. 이 클립에서 들리는 선이 높은지·가운데인지·낮은지, 그리고 그 악기가 어떤 역할을 하는지 귀와 선택을 맞춰 보세요.',
+    partialOk:
+      '악기와 역할 중 하나는 이 구간과 잘 맞았어요. 같은 소리를 다시 들으며, 나머지 선택도 음역과 역할이 서로 맞는지 맞춰 보세요.'
+  },
+  3: {
+    scene:
+      '현악 4중주는 네 악기가 서로 다른 음역을 맡아요. 이 클립에서 들리는 선이 높은지·가운데인지·낮은지, 그리고 그 악기가 어떤 역할을 하는지 귀와 선택을 맞춰 보세요.',
+    partialOk:
+      '악기와 역할 중 하나는 이 구간과 잘 맞았어요. 같은 소리를 다시 들으며, 나머지 선택도 음역과 역할이 서로 맞는지 맞춰 보세요.'
+  }
 };
 
-function buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk }) {
+const HY_TIMBRE_CORRECT = {
+  1: '악기와 역할이 모두 맞아요! 바이올린이 가장 높은 선율(주선율)을 맡아요. 종달새처럼 높고 맑게 떠오르는 선이 어떻게 노래하는지 이어 들어 보세요.',
+  2: '악기와 역할이 모두 맞아요! 비올라가 중간 음역(중성부)으로 주선율과 베이스 사이를 채워요. 세 선이 어떻게 겹쳐지는지 비교해 들어 보세요.',
+  3: '악기와 역할이 모두 맞아요! 첼로가 가장 낮은 선(베이스)으로 앙상블을 받쳐요. 무게감 있는 받침이 어떻게 깔리는지 끝까지 들어 보세요.'
+};
+
+function buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk, segmentIdx }) {
+  const seg = HY_TIMBRE_SEGMENT[segmentIdx] || {};
   const instrRange = HY_TIMBRE_RANGE[picked];
   const roleRange = HY_TIMBRE_RANGE[rolePick];
   const instrLabel = HY_TIMBRE_RANGE_LABEL[picked] || '그 음역';
   const roleLabel = HY_TIMBRE_RANGE_LABEL[rolePick] || '그 역할';
+  const lines = [];
+  if (seg.scene) lines.push(seg.scene);
 
   if (!instrOk && !roleOk) {
     if (instrRange && roleRange && instrRange === roleRange) {
-      return [
+      lines.push(
         `「${picked}」·「${rolePick}」를 골랐어요. 둘 다 ${instrLabel}이에요.`,
+        '악기 이름과 역할이 같은 음역을 가리키고 있어요. 이 구간에서 높은 선·가운데 선·낮은 선 중 어디에 해당하는지 한 가지로 맞춰 들어 보세요.',
         HY_TIMBRE_LISTEN_HINT[instrRange],
         '다시 들어보세요.'
-      ].join('\n');
+      );
+    } else {
+      lines.push(
+        `「${picked}」·「${rolePick}」를 골랐어요. ${picked}${koreanEunNeun(picked)} ${instrLabel}, ${rolePick}${koreanEunNeun(rolePick)} ${roleLabel}이에요.`,
+        '악기와 역할이 서로 다른 음역을 가리키고 있어요. 이 구간이 높은지·가운데인지·낮은지 한 가지로 맞춰 들어 보세요.',
+        HY_TIMBRE_LISTEN_HINT[instrRange] || HY_TIMBRE_LISTEN_HINT[roleRange] || '음높이만 다시 들어 보세요.',
+        '다시 들어보세요.'
+      );
     }
-    return [
-      `「${picked}」·「${rolePick}」를 골랐어요. ${picked}${koreanEunNeun(picked)} ${instrLabel}, ${rolePick}${koreanEunNeun(rolePick)} ${roleLabel}이에요.`,
-      '악기와 역할이 서로 다른 음역을 가리키고 있어요. 이 구간이 높은지·가운데인지·낮은지 한 가지로 맞춰 들어 보세요.',
-      '다시 들어보세요.'
-    ].join('\n');
+    return lines.join('\n');
   }
 
   if (!instrOk) {
-    return [
+    if (roleOk && seg.partialOk) lines.push(seg.partialOk);
+    lines.push(
       `「${picked}」를 골랐어요. ${picked}${koreanEunNeun(picked)} ${instrLabel}이에요.`,
-      HY_TIMBRE_LISTEN_HINT[instrRange] || '이 구간이 높은지 낮은지 음높이만 다시 들어 보세요.',
+      '이 구간의 소리와 네가 고른 악기의 음역이 같은지, 역할과도 맞는지 함께 비교해 들어 보세요.',
+      HY_TIMBRE_LISTEN_HINT[instrRange] || '음높이만 다시 들어 보세요.',
       '다시 들어보세요.'
-    ].join('\n');
+    );
+    return lines.join('\n');
   }
 
-  return [
+  if (seg.partialOk) lines.push(seg.partialOk);
+  lines.push(
     `「${rolePick}」를 골랐어요. ${rolePick}${koreanEunNeun(rolePick)} ${roleLabel}이에요.`,
     HY_TIMBRE_LISTEN_HINT[roleRange] || '이 구간이 높은지 낮은지 역할을 다시 들어 보세요.',
     '다시 들어보세요.'
-  ].join('\n');
+  );
+  return lines.join('\n');
 }
 
 export function getHyTimbreFixedFeedback({ picked, rolePick, answer, roleAnswer, segmentIdx }) {
@@ -762,6 +777,6 @@ export function getHyTimbreFixedFeedback({ picked, rolePick, answer, roleAnswer,
     return verification(true, HY_TIMBRE_CORRECT[segmentIdx] || '음역과 역할이 잘 맞아요. 현악 4중주의 음색 나뉨을 이어 들어 보세요.');
   }
   const mark = instrOk || roleOk ? '△' : '✗';
-  return verificationWithMark(mark, buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk }));
+  return verificationWithMark(mark, buildHyTimbreWrongBody({ picked, rolePick, instrOk, roleOk, segmentIdx }));
 }
 

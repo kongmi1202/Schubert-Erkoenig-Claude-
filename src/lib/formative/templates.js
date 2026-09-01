@@ -4,9 +4,20 @@ export const PREFLIGHT = {
 };
 
 export const FOOTER = {
-  noAnswerReveal: '정답 보기는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.',
-  noAnswerRevealFields: '정답 이름·특징 문구는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
+  noAnswerReveal: '정답 보기는 알려 주지 않아요. 힌트만 보고 다시 골라 보세요. 다시 들어보세요.',
+  noAnswerRevealFields: '정답 이름·특징 문구는 알려 주지 않아요. 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
 };
+
+/** △일 때 맞은 항목 — 정답 값·이름은 말하지 않음 */
+export const PARTIAL_FIELD_OK_NOTE =
+  '이 항목은 방향이 맞아요. 왜 그렇게 느꼈는지 한 번 말해 본 뒤, 나머지도 같은 방식으로 들어 보세요.';
+
+export const PARTIAL_SUMMARY_DEFAULT =
+  '일부는 방향이 맞아요. 맞게 느낀 부분을 기준 삼아, 나머지도 같은 구간을 다시 들어 보세요.';
+
+/** A형 기본 오답 — 보기 문구를 인정하고 귀로 비교 유도 (정답 미노출) */
+export const DEFAULT_WRONG_LISTEN_BODY =
+  '네가 고른 보기가 이 구간의 소리와 어떻게 연결되는지, 음높이·셈여림·빠르기·리듬꼴 중 두세 가지를 나란히 비교해 보세요. 다시 들어보세요.';
 
 export function verification(isCorrect, correctBody, wrongBody = '') {
   return isCorrect ? `검증: ✓\n${correctBody}` : `검증: ✗\n${wrongBody}`;

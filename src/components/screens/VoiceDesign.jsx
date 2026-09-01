@@ -6,6 +6,8 @@ import {
   getMawangMelodyOptions,
   isVoiceDesignRowFilled,
   MAWANG_VOICE_ANSWER_KEY,
+  MAWANG_VOICE_CHAR_ORDER,
+  mawangVoiceActivityNum,
   normalizeMawangVoiceDesign,
 } from '../../lib/voiceDesignAnswers';
 import ActivityEndFeedback from '../ActivityEndFeedback';
@@ -46,8 +48,6 @@ const chars = [
     end: 109
   }
 ];
-const VOICE_CHAR_NAMES = ['해설자', '아버지', '아들', '마왕'];
-
 const VOICE_SCALE_TIMBRE_CATEGORIES = [
   {
     key: '음계',
@@ -187,9 +187,10 @@ function VoiceDesign({ go }) {
     normalizeMawangVoiceDesign(voiceDesignState?.voiceDesign || createEmptyMawangVoiceDesign())
   );
   const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
-  const [activityFbDone, setActivityFbDone] = useState(false);
+  const [feedbackViewedByChar, setFeedbackViewedByChar] = useState({});
 
   const active = chars.find((c) => c.name === selectedCharacter) || chars[0];
+  const activityNum = mawangVoiceActivityNum(selectedCharacter) || 1;
   const videoId = '8noeFpdfWcQ';
   const melodyOptions = useMemo(
     () => getMawangMelodyOptions(selectedCharacter),
@@ -232,26 +233,30 @@ function VoiceDesign({ go }) {
       ...prev,
       [selectedCharacter]: { ...prev[selectedCharacter], [category]: value }
     }));
-    setActivityFbDone(false);
+    setFeedbackViewedByChar((prev) => ({ ...prev, [selectedCharacter]: false }));
   };
 
   const isSel = (category, value) => voiceDesign[selectedCharacter]?.[category] === value;
   const isCharacterFilled = (name) => isVoiceDesignRowFilled(voiceDesign[name]);
   const filledChars = useMemo(
-    () => VOICE_CHAR_NAMES.filter((name) => isVoiceDesignRowFilled(voiceDesign[name])),
+    () => MAWANG_VOICE_CHAR_ORDER.filter((name) => isVoiceDesignRowFilled(voiceDesign[name])),
     [voiceDesign]
   );
   /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */
   const canCheckAnswer = useMemo(() => filledChars.length >= 2, [filledChars]);
-  const canProceed = canCheckAnswer && activityFbDone;
+  const allFilledHaveFeedback = useMemo(
+    () => filledChars.length >= 2 && filledChars.every((name) => feedbackViewedByChar[name]),
+    [filledChars, feedbackViewedByChar]
+  );
+  const canProceed = canCheckAnswer && allFilledHaveFeedback;
 
   const getVoiceFeedback = useCallback(
-    () => generateVoiceDesignFormativeAi(filledChars, voiceDesign, answerKey),
-    [filledChars, voiceDesign, answerKey]
+    () => generateVoiceDesignFormativeAi([selectedCharacter], voiceDesign, answerKey),
+    [selectedCharacter, voiceDesign, answerKey]
   );
   const feedbackSnapshot = useMemo(
-    () => JSON.stringify({ filledChars, voiceDesign }),
-    [filledChars, voiceDesign]
+    () => JSON.stringify(voiceDesign[selectedCharacter] || {}),
+    [selectedCharacter, voiceDesign]
   );
 
   useEffect(() => {
@@ -282,13 +287,13 @@ function VoiceDesign({ go }) {
             ))}
           </div>
           <div className="small-note" style={{ marginTop: 10 }}>
-            지금 {selectedCharacter} 설계 중 · 완료 {VOICE_CHAR_NAMES.filter((n) => isCharacterFilled(n)).length}명
+            지금 {selectedCharacter} 설계 중 · 완료 {MAWANG_VOICE_CHAR_ORDER.filter((n) => isCharacterFilled(n)).length}명
             (2명 이상 끝내면 다음으로)
           </div>
         </div>
 
         <div className="sonnet-item voice-activity-block">
-          <div className="sec sonnet-item-num">[감상] {selectedCharacter} 목소리 듣기</div>
+          <div className="sec sonnet-item-num">3-{activityNum}. [감상] {selectedCharacter} 목소리 듣기</div>
           <div className="char-card voice-char-card">
             <div className="char-emoji">{active.icon}</div>
             <div>
@@ -313,7 +318,7 @@ function VoiceDesign({ go }) {
         </div>
 
         <div className="sonnet-item voice-activity-block">
-          <div className="sec sonnet-item-num">[문제] {selectedCharacter} 목소리 설계하기</div>
+          <div className="sec sonnet-item-num">3-{activityNum}. [문제] {selectedCharacter} 목소리 설계하기</div>
           <div className="voice-design-panel">
             <div className="voice-design-panel-head">
               <span className="voice-design-panel-icon" aria-hidden="true">🎙️</span>
@@ -353,9 +358,9 @@ function VoiceDesign({ go }) {
 
         <ActivityEndFeedback
           style={{ marginTop: 4, marginBottom: 12 }}
-          key={`voice-activity-fb-${feedbackSnapshot}`}
+          key={`voice-activity-fb-${selectedCharacter}-${feedbackSnapshot}`}
           requestFn={getVoiceFeedback}
-          onResult={() => setActivityFbDone(true)}
+          onResult={() => setFeedbackViewedByChar((prev) => ({ ...prev, [selectedCharacter]: true }))}
         />
 
         {canProceed ? (

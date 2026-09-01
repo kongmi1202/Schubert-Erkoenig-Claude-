@@ -1,5 +1,5 @@
 import { gradeExact } from './grade';
-import { PREFLIGHT, verification, wrongPickBody } from './templates';
+import { DEFAULT_WRONG_LISTEN_BODY, PREFLIGHT, verification, wrongPickBody } from './templates';
 
 /**
  * A형 활동 — 단일 선택 형성적 피드백 (검증 문자열)
@@ -29,10 +29,7 @@ export function buildSingleChoiceFeedback({
   } else if (wrongHints[pick]) {
     wrongBody = typeof wrongHints[pick] === 'string' ? wrongHints[pick] : wrongPickBody({ pick, ...wrongHints[pick] });
   } else {
-    wrongBody = defaultWrongBody || wrongPickBody({
-      pick,
-      listenFocus: '같은 구간을 다시 들으며 귀로만 비교해 보세요.'
-    });
+    wrongBody = defaultWrongBody || DEFAULT_WRONG_LISTEN_BODY;
   }
 
   return verification(false, '', wrongBody);
@@ -50,6 +47,26 @@ export function buildConditionalSingleChoice({
 }) {
   if (!ready) return notReadyMessage;
   return isCorrect ? verification(true, correctBody) : verification(false, '', wrongBody);
+}
+
+/**
+ * 슬라이더 2단계 — 구간별 맞음/다시 보기 UI용 payload
+ */
+export function buildSliderItemPayload({
+  ready,
+  notReadyMessage,
+  isCorrect,
+  toneText,
+  correctBody,
+  wrongBody
+}) {
+  if (!ready) return notReadyMessage;
+  return {
+    kind: 'slider-item',
+    isCorrect: Boolean(isCorrect),
+    studentPick: toneText || '',
+    body: isCorrect ? correctBody : wrongBody
+  };
 }
 
 /**

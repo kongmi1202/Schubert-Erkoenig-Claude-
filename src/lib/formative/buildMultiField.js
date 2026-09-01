@@ -1,5 +1,5 @@
 import { gradeFields, itemStatusToMark } from './grade';
-import { FOOTER, splitHintExample } from './templates';
+import { FOOTER, PARTIAL_FIELD_OK_NOTE, PARTIAL_SUMMARY_DEFAULT, splitHintExample } from './templates';
 
 /**
  * B형 활동 — 항목별 다중 필드 형성적 피드백 payload
@@ -44,7 +44,7 @@ export function buildMultiFieldSectionsPayload({
         tone: meta.tone,
         status: 'ok',
         studentPick,
-        note: def.okNote || `${meta.label} 선택이 맞아요.`,
+        note: def.okNote || PARTIAL_FIELD_OK_NOTE,
         hint: '',
         example: ''
       };
@@ -88,7 +88,7 @@ export function buildMultiFieldSectionsPayload({
     typeof partialSummary === 'function'
       ? partialSummary(matchedCount, total)
       : partialSummary ||
-        `구간 선택을 항목별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${total - matchedCount}개`;
+        PARTIAL_SUMMARY_DEFAULT;
 
   return {
     kind: 'voice-sections',

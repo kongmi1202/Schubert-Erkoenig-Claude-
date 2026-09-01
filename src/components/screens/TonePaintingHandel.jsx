@@ -141,24 +141,30 @@ function TonePaintingHandel({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
   const tonePaintingHandelState = useAppStore((s) => s.tonePaintingHandelState);
   const setTonePaintingHandelState = useAppStore((s) => s.setTonePaintingHandelState);
-  const [activeSegmentId, setActiveSegmentId] = useState('s1');
-  const [segmentReplaySignal, setSegmentReplaySignal] = useState(0);
+  const [replaySignals, setReplaySignals] = useState(() => ({
+    s1: 0,
+    s2: 0,
+    s3: 0
+  }));
   const [selected, setSelected] = useState(() => tonePaintingHandelState?.selected || {
     s1: null,
     s2: null,
     s3: null
   });
   const [activityFbDone, setActivityFbDone] = useState(false);
-  const activeSegment = SEGMENTS.find((s) => s.id === activeSegmentId) || SEGMENTS[0];
 
   const allAnswered = useMemo(
-    () => SEGMENTS.every((q) => selected[q.id] !== null),
+    () => SEGMENTS.every((q) => selected[q.id] !== null && selected[q.id] !== undefined),
     [selected]
   );
   const canProceed = allAnswered && activityFbDone;
   useEffect(() => {
     setTonePaintingHandelState({ selected });
   }, [selected, setTonePaintingHandelState]);
+
+  const bumpReplay = (segmentId) => {
+    setReplaySignals((prev) => ({ ...prev, [segmentId]: prev[segmentId] + 1 }));
+  };
 
   return (
     <div className="screen active">
@@ -171,67 +177,55 @@ function TonePaintingHandel({ go }) {
       <div className="body voice-body">
         <div className="sec">3. 이 곡은 음 화법(Tone Painting)을 사용하여 가사의 의미를 음악으로 직접 묘사했어요. 각 구간에서 가사를 음악으로 어떻게 표현했는지 살펴 보세요.</div>
 
-        <div className="sec">구간 목차</div>
-        <div className="char-tabs" style={{ marginBottom: 12 }}>
-          {SEGMENTS.map((segment) => (
-            <button
-              key={segment.id}
-              type="button"
-              className={`char-tab ${activeSegmentId === segment.id ? 'active' : ''}`}
-              onClick={() => setActiveSegmentId(segment.id)}
-            >
-              {segment.title}
-            </button>
-          ))}
-        </div>
+        {SEGMENTS.map((segment) => (
+          <section key={segment.id} className="tone-segment" style={{ marginBottom: 24 }}>
+            <div className="sec">{segment.title}</div>
+            <div className="review-card" style={{ marginBottom: 10 }}>
+              <div className="tone-lyric-label">가사</div>
+              <div className="tone-lyric-text" style={{ marginBottom: 10 }}>{segment.lyric}</div>
 
-        <section style={{ marginBottom: 18 }}>
-          <div className="sec">{activeSegment.title}</div>
-          <div className="review-card" style={{ marginBottom: 10 }}>
-            <div className="tone-lyric-label">가사</div>
-            <div className="tone-lyric-text" style={{ marginBottom: 10 }}>{activeSegment.lyric}</div>
-
-            <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                <div className="aud-title-sm">영상 구간 듣기</div>
-                <button
-                  type="button"
-                  className="btn-s"
-                  onClick={() => setSegmentReplaySignal((k) => k + 1)}
-                >
-                  다시 재생
-                </button>
+              <div className="audio-bar voice-audio-bar" style={{ display: 'block' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                  <div className="aud-title-sm">영상 구간 듣기</div>
+                  <button
+                    type="button"
+                    className="btn-s"
+                    onClick={() => bumpReplay(segment.id)}
+                  >
+                    다시 재생
+                  </button>
+                </div>
+                <SegmentYoutubePlayer
+                  videoId="rQ3q54AicNo"
+                  start={segment.start}
+                  end={segment.end}
+                  title={`${segment.title} 영상`}
+                  replaySignal={replaySignals[segment.id]}
+                />
               </div>
-              <SegmentYoutubePlayer
-                videoId="rQ3q54AicNo"
-                start={activeSegment.start}
-                end={activeSegment.end}
-                title={`${activeSegment.title} 영상`}
-                replaySignal={segmentReplaySignal}
-              />
-            </div>
 
-            <div className="tone-q-label">질문</div>
-            <div className="tone-q-text">{activeSegment.question}</div>
-            <div className="vd-opts tone-options" style={{ marginTop: 10 }}>
-              {activeSegment.options.map((opt, i) => (
-                <button
-                  key={opt}
-                  type="button"
-                  className={`vd-opt tone-option ${selected[activeSegment.id] === i ? 'sel' : ''}`}
-                  onClick={() => {
-                    if (selected[activeSegment.id] === i) return;
-                    setActivityFbDone(false);
-                    setSelected((prev) => ({ ...prev, [activeSegment.id]: i }));
-                  }}
-                >
-                  {selected[activeSegment.id] === i ? '● ' : '○ '}
-                  {opt}
-                </button>
-              ))}
+              <div className="tone-q-label">질문</div>
+              <div className="tone-q-text">{segment.question}</div>
+              <div className="vd-opts tone-options" style={{ marginTop: 10 }}>
+                {segment.options.map((opt, i) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    className={`vd-opt tone-option ${selected[segment.id] === i ? 'sel' : ''}`}
+                    onClick={() => {
+                      if (selected[segment.id] === i) return;
+                      setActivityFbDone(false);
+                      setSelected((prev) => ({ ...prev, [segment.id]: i }));
+                    }}
+                  >
+                    {selected[segment.id] === i ? '● ' : '○ '}
+                    {opt}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ))}
 
         <ActivityEndFeedback
           className="tone-ai-feedback"

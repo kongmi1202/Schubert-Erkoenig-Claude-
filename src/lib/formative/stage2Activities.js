@@ -2,12 +2,16 @@ import {
   buildCpFormActivityPayloads,
   buildCpRhythmActivityPayloads
 } from './builders';
+import { CP_RHYTHM_IDS, CP_RHYTHM_META } from './content/cpRhythm';
+import { labeledStage2Item } from './labeledItem';
+import { mawangVoiceActivityLabel } from '../voiceDesignAnswers';
 import {
   getHyThemeMatchFixedFeedback,
   getHyThemePart3FixedFeedback,
   getHyTimbreFixedFeedback,
   getPianoSceneFixedFeedback,
   getSbSprechFixedFeedback,
+  getSbAtonalMatchFixedFeedback,
   getTonePaintingFixedFeedback,
   getVoiceDesignFixedFeedback,
   getVvConcertoFixedFeedback,
@@ -29,7 +33,12 @@ export const STAGE2_ACTIVITIES = {
   },
   'cp-rhythm': {
     title: '쇼팽 — 폴리리듬',
-    buildPayloads: (ctx) => buildCpRhythmActivityPayloads(ctx),
+    buildPayloads: (ctx) => {
+      const payloads = buildCpRhythmActivityPayloads(ctx);
+      return CP_RHYTHM_IDS.map((groupId, index) =>
+        labeledStage2Item(CP_RHYTHM_META[groupId].label, payloads[index])
+      );
+    },
     studentSummary: ({ selectedByGroup }) =>
       ['cp-rh-q', 'cp-lh-q', 'cp-poly-q']
         .map((id) => `${id}: ${selectedByGroup?.[id] || '—'}`)
@@ -42,7 +51,12 @@ export const STAGE2_ACTIVITIES = {
       if (!list.length) {
         return ['인물을 골라 선율·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.'];
       }
-      return list.map((name) => getVoiceDesignFixedFeedback([name], voiceDesign, answerKey));
+      return list.map((name) =>
+        labeledStage2Item(
+          mawangVoiceActivityLabel(name),
+          getVoiceDesignFixedFeedback([name], voiceDesign, answerKey)
+        )
+      );
     },
     studentSummary: ({ names, voiceDesign }) =>
       (names || [])
@@ -58,13 +72,16 @@ export const STAGE2_ACTIVITIES = {
     title: '하이든 — 현악 4중주 음색',
     buildPayloads: ({ segments, selectedByGrid, roleByGrid }) =>
       (segments || []).map((segment) =>
-        getHyTimbreFixedFeedback({
-          picked: selectedByGrid?.[segment.gridId],
-          rolePick: roleByGrid?.[segment.gridId],
-          answer: segment.answer,
-          roleAnswer: segment.roleAnswer,
-          segmentIdx: segment.idx
-        })
+        labeledStage2Item(
+          `구간 ${segment.idx}`,
+          getHyTimbreFixedFeedback({
+            picked: selectedByGrid?.[segment.gridId],
+            rolePick: roleByGrid?.[segment.gridId],
+            answer: segment.answer,
+            roleAnswer: segment.roleAnswer,
+            segmentIdx: segment.idx
+          })
+        )
       ),
     studentSummary: ({ segments, selectedByGrid, roleByGrid }) =>
       (segments || [])
@@ -74,11 +91,14 @@ export const STAGE2_ACTIVITIES = {
   'hy-theme': {
     title: '하이든 — 소나타 주제',
     buildPayloads: ({ placedOptions, selectedDeg }) => [
-      getHyThemeMatchFixedFeedback({
-        theme1Ids: placedOptions?.theme1,
-        theme2Ids: placedOptions?.theme2
-      }),
-      getHyThemePart3FixedFeedback({ selectedDeg })
+      labeledStage2Item(
+        '4-1. 제1·제2주제 매칭',
+        getHyThemeMatchFixedFeedback({
+          theme1Ids: placedOptions?.theme1,
+          theme2Ids: placedOptions?.theme2
+        })
+      ),
+      labeledStage2Item('4-2. 조성(도수)', getHyThemePart3FixedFeedback({ selectedDeg }))
     ],
     studentSummary: ({ placedOptions, selectedDeg }) =>
       `제1주제: ${placedOptions?.theme1?.join(', ') || '—'} / 제2주제: ${placedOptions?.theme2?.join(', ') || '—'} / 도수: ${selectedDeg || '—'}`
@@ -87,14 +107,17 @@ export const STAGE2_ACTIVITIES = {
     title: '할렐루야 — 음화법',
     buildPayloads: ({ segments, selected }) =>
       (segments || []).map((segment) =>
-        getTonePaintingFixedFeedback({
-          segmentId: segment.id,
-          segmentTitle: segment.title,
-          selectedIndex: selected?.[segment.id],
-          selectedLabel: segment.options?.[selected?.[segment.id]],
-          correctIndex: segment.answer,
-          correctElaboration: segment.feedback
-        })
+        labeledStage2Item(
+          segment.title,
+          getTonePaintingFixedFeedback({
+            segmentId: segment.id,
+            segmentTitle: segment.title,
+            selectedIndex: selected?.[segment.id],
+            selectedLabel: segment.options?.[selected?.[segment.id]],
+            correctIndex: segment.answer,
+            correctElaboration: segment.feedback
+          })
+        )
       ),
     studentSummary: ({ segments, selected }) =>
       (segments || []).map((s) => `${s.title}: ${s.options?.[selected?.[s.id]] || '—'}`).join(' / ')
@@ -102,13 +125,16 @@ export const STAGE2_ACTIVITIES = {
   'vv-sonnet': {
     title: '비발디 — 소네트',
     buildPayloads: ({ items }) =>
-      (items || []).map((item) =>
-        getVvSonnetFixedFeedback({
-          userChoice: item.userChoice,
-          correctAnswer: item.correctAnswer,
-          correctElaboration: item.correctElaboration,
-          segmentId: item.segmentId
-        })
+      (items || []).map((item, index) =>
+        labeledStage2Item(
+          `2-${index + 1}.`,
+          getVvSonnetFixedFeedback({
+            userChoice: item.userChoice,
+            correctAnswer: item.correctAnswer,
+            correctElaboration: item.correctElaboration,
+            segmentId: item.segmentId
+          })
+        )
       ),
     studentSummary: ({ items }) =>
       (items || []).map((item) => `${item.segmentId}: ${item.userChoice || '—'}`).join(' / ')
@@ -121,11 +147,19 @@ export const STAGE2_ACTIVITIES = {
   'sb-sprech': {
     title: '쇤베르크 — 말하기와 노래하기',
     buildPayloads: ({ normal, sprech }) => [
-      getSbSprechFixedFeedback({ kind: 'normal', ...normal }),
-      getSbSprechFixedFeedback({ kind: 'sprech', ...sprech })
+      labeledStage2Item('송어(일반 성악)', getSbSprechFixedFeedback({ kind: 'normal', ...normal })),
+      labeledStage2Item('피에로(슈프레흐슈팀메)', getSbSprechFixedFeedback({ kind: 'sprech', ...sprech }))
     ],
     studentSummary: ({ normal, sprech }) =>
       `송어: ${normal?.toneText || '—'} / 피에로: ${sprech?.toneText || '—'}`
+  },
+  'sb-atonal': {
+    title: '쇤베르크 — 조성 vs 무조성',
+    buildPayloads: ({ tonalCards, atonalCards }) => [
+      labeledStage2Item('4. 카드 매칭', getSbAtonalMatchFixedFeedback({ tonalCards, atonalCards }))
+    ],
+    studentSummary: ({ tonalCards, atonalCards }) =>
+      `송어: ${(tonalCards || []).join(', ') || '—'} / 피에로: ${(atonalCards || []).join(', ') || '—'}`
   }
 };
 

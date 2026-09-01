@@ -13,7 +13,7 @@ function VoiceSectionsFeedback({ data }) {
           >
             <header className="voice-fb-card-head">
               <div className="voice-fb-card-titles">
-                <span className="voice-fb-card-label">{section.label}</span>
+                <span className="voice-fb-card-label">[{section.label}]</span>
                 <span className="voice-fb-card-focus">{section.focus}</span>
               </div>
               <span className={`voice-fb-card-badge ${section.status === 'ok' ? 'ok' : 'miss'}`}>
