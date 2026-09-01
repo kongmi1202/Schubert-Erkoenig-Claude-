@@ -144,7 +144,7 @@ function MelodyCanvasHandel({ go }) {
       <div className="stage-header">
         <div className="s-eyebrow">STAGE 2 · 분석적 감상</div>
         <div className="s-title">분석적 감상</div>
-        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
+        <div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div>
       </div>
       <div className="body voice-body">
         <div className="sec">4. 이 곡에서는 다같이 노래하는 구간과 차례로 노래하는 구간이 있어요. 각 구간을 가락선 악보로 표현해 보세요.</div>

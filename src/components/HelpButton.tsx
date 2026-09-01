@@ -125,7 +125,7 @@ export default function HelpButton({ currentStep }: HelpButtonProps) {
   }, []);
 
   return (
-    <>
+    <div className="no-print">
       {!open ? (
         <div
           style={{
@@ -323,7 +323,7 @@ export default function HelpButton({ currentStep }: HelpButtonProps) {
           </div>
         </aside>
       </div>
-    </>
+    </div>
   );
 }
 

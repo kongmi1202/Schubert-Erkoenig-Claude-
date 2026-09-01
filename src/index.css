@@ -1575,14 +1575,173 @@ canvas{display:block;width:100%;touch-action:none}
 }
 
 @media print {
-  .final-essay-card{
-    background:white;
-    color:black;
-    border:1px solid #ccc;
-    padding:40px;
+  @page {
+    margin: 16mm 14mm;
   }
-  .stage-workspace.listening-collapsed .listening-panel .listening-panel-body{
-    display:flex !important;
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    overflow: visible !important;
+  }
+
+  .rain,
+  #prog-wrap,
+  #step-nav,
+  #bottom-widgetbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .screen {
+    min-height: auto !important;
+  }
+
+  .final-print-layout.stage-workspace {
+    display: block !important;
+    min-height: auto !important;
+    padding-top: 0 !important;
+  }
+
+  .final-print-layout .print-journey-page,
+  .final-print-layout .listening-panel {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    background: #fff !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .final-print-layout .listening-panel.is-collapsed .listening-panel-body,
+  .final-print-layout .listening-panel-body,
+  .final-print-layout .final-summary-panel-body {
+    display: block !important;
+    flex: none !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .final-print-layout .print-essay-page,
+  .final-print-layout .stage-workspace-main {
+    min-height: auto !important;
+    border: none !important;
+    background: #fff !important;
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .final-print-layout .print-essay-header {
+    padding: 0 0 16px !important;
+    text-align: center !important;
+  }
+
+  .final-print-layout .print-essay-header .s-title {
+    font-size: 22px !important;
+    color: #111 !important;
+  }
+
+  .final-print-layout .stage-workspace-main .body {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .final-print-layout .summary-card {
+    overflow: visible !important;
+    background: #fff !important;
+    border: 1px solid #ccc !important;
+    color: #111 !important;
+    padding: 24px !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .final-print-layout .print-essay-wrap {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .final-print-layout .summary-card::before {
+    display: none;
+  }
+
+  .final-print-layout .final-summary-card .cmp-mini-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .final-print-layout .summary-ey,
+  .final-print-layout .summary-key,
+  .final-print-layout .small-note {
+    color: #333 !important;
+  }
+
+  .final-print-layout .summary-val,
+  .final-print-layout .review-item {
+    color: #111 !important;
+  }
+
+  .final-print-layout .fb.show {
+    display: block !important;
+    color: #222 !important;
+    background: #f5f5f5 !important;
+    border-color: #999 !important;
+  }
+
+  .final-print-layout .fb.show.gold {
+    background: #fff8e8 !important;
+    border-color: #c4922a !important;
+    color: #5c4a12 !important;
+  }
+
+  .final-print-layout .fb.show.info {
+    background: #f3f0ff !important;
+    border-color: #7c6bb8 !important;
+    color: #3d3560 !important;
+  }
+
+  .final-print-layout .cmp-mini-grid,
+  .final-print-layout .summary-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .final-print-layout .final-essay-card {
+    background: #fff !important;
+    color: #111 !important;
+    border: 1px solid #ccc !important;
+    padding: 32px 28px !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .final-print-layout .final-essay-title,
+  .final-print-layout .final-essay-body,
+  .final-print-layout .final-essay-student {
+    color: #111 !important;
+  }
+
+  .final-print-layout .final-essay-body p {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .final-print-layout.listening-collapsed .listening-panel .listening-panel-body {
+    display: block !important;
   }
 }
 

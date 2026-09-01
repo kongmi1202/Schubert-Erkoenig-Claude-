@@ -466,11 +466,11 @@ function FinalCard({ go }) {
   };
 
   return (
-    <div className={`stage-workspace ${summaryCollapsed ? 'listening-collapsed' : ''}`}>
-      <aside className={`listening-panel ${summaryCollapsed ? 'is-collapsed' : ''}`} aria-label="나의 감상 여정 되돌아보기">
+    <div className={`stage-workspace final-print-layout ${summaryCollapsed ? 'listening-collapsed' : ''}`}>
+      <aside className={`listening-panel print-journey-page ${summaryCollapsed ? 'is-collapsed' : ''}`} aria-label="나의 감상 여정 되돌아보기">
         <button
           type="button"
-          className="listening-panel-toggle"
+          className="listening-panel-toggle no-print"
           onClick={() => setSummaryCollapsed((v) => !v)}
           aria-expanded={!summaryCollapsed}
         >
@@ -791,22 +791,22 @@ function FinalCard({ go }) {
         </div>
       </aside>
 
-      <div className="stage-workspace-main">
+      <div className="stage-workspace-main print-essay-page">
         <div className="screen active">
-          <div className="stage-header">
-            <div className="s-eyebrow">완성 · 최종 감상문</div>
-            <div className="s-title">최종 감상</div>
-            <div className="s-desc">내가 1~3단계(감각적·분석적·심미적 감상)에서 입력한 내용을 바탕으로 최종 감상문을 만들어 보세요.</div>
+          <div className="stage-header print-essay-header">
+            <div className="s-eyebrow no-print">완성 · 최종 감상문</div>
+            <div className="s-title">최종 감상문</div>
+            <div className="s-desc no-print">내가 1~3단계(감각적·분석적·심미적 감상)에서 입력한 내용을 바탕으로 최종 감상문을 만들어 보세요.</div>
           </div>
           <div className="body voice-body">
-            <div className="summary-card">
-              <div className="summary-row">
+            <div className="summary-card print-essay-wrap">
+              <div className="summary-row no-print">
                 <div className="summary-key">생성</div>
                 <button className="btn-p" onClick={onGenerateEssay} disabled={isGeneratingEssay}>
                   {isGeneratingEssay ? '생성 중...' : '최종 감상문 만들기'}
                 </button>
               </div>
-              <div className="summary-div"></div>
+              <div className="summary-div no-print"></div>
               <div className="final-essay-card">
                 <div className="final-essay-title">{essayTitle}</div>
                 <div className="final-essay-student">{studentLine || '학번 이름 미입력'}</div>
@@ -823,7 +823,7 @@ function FinalCard({ go }) {
               </div>
             </div>
 
-            <div className="btn-row final-actions">
+            <div className="btn-row final-actions no-print">
               <button className="btn-s" onClick={() => go('aestheticPage')}>← 다시 수정</button>
               <button className="btn-s" onClick={() => go('studentInfo')}>처음으로</button>
               <button className="btn-p" onClick={() => window.print()}>📄 PDF 저장</button>

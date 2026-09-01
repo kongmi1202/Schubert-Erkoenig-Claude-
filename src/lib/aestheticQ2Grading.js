@@ -2,19 +2,39 @@ import { includesAnyToken } from './overviewGrading';
 
 /**
  * 3단계 Q2 — Sadler V1(형식적 근거) × V2(가치 판단)
- * A: V1=2,V2=2→✓ | B: V1=2,V2≤1→△ | C: V1≤1,V2=2→△ | D: 그 외→✗
+ * V1: 음악 요소의 특징 + 그에 대한 느낌(인상 깊다 등) — 특징 설명
+ * V2: 그 특징 때문에 → 이 곡 전체에 대한 가치 판단(특별하다, 의미 있다 등)
+ * 「인상 깊다」만으로는 V2가 아님. 특징 → 그래서 이 곡은 ~하다 가 필요.
  */
 
-const VALUE_STRONG = [
-  '특별', '가치', '왜', '때문', '좋게', '매력', '의미', '효과', '돋보', '조화',
-  '전달', '표현', '연결', '만들어', '느껴', '느낌', '인상', '중요', '어울'
+/** 곡 전체를 평가하는 맥락 */
+const PIECE_SCOPE = [
+  '이 곡', '이곡', '곡이', '곡은', '곡을', '곡의', '곡에서', '곡 전체',
+  '작품', '이 작품', '작품이', '작품은', '작품을',
+  '이 음악', '음악이', '음악은', '음악을', '이 음악이'
 ];
 
-const VALUE_CONNECTION = [
-  '때문', '그래서', '덕분', '연결', '만들', '느껴', '표현', '전달', '왜', '특별', '가치'
+/** 이 곡이 어떻다는 가치·의미 판단 */
+const PIECE_VALUE_VERDICT = [
+  '특별', '가치', '의미', '중요', '매력', '효과', '돋보', '왜', '생생', '효과적', '가치 있', '의미 있'
 ];
 
-const VALUE_WEAK = ['신기', '재미', '좋아', '멋', '대단', '즐거', '재밌', '흥미', '인상적'];
+const VALUE_CAUSAL_LINK = [
+  '때문', '그래서', '덕분', '왜', '해서', '이어', '따라', '므로', '덕에', '그러므로'
+];
+
+const PIECE_VALUE_SOFT = [
+  '어울', '만들어', '만듦', '살리', '더하', '기여', '한몫', '강화', '느껴지', '느낄', '드러', '전해', '담기'
+];
+
+/** 요소·특징에 대한 느낌 — 가치 판단이 아니라 특징 설명의 일부 */
+const FEATURE_FEELING = [
+  '인상', '느껴', '느낌', '들리', '좋다', '좋아', '좋은', '멋', '신기', '재미', '재밌', '대단', '아름다', '예쁘'
+];
+
+const VALUE_REACTION_ONLY = [
+  '인상 깊', '인상적', '신기', '재미', '좋아', '좋다', '좋은', '멋', '대단', '즐거', '재밌', '흥미', '예쁘', '아름다'
+];
 
 const V1_BY_TYPE = {
   음색: {
@@ -206,16 +226,42 @@ export function scoreAestheticV1(q2Type, q2) {
   return 0;
 }
 
+/** 특징(±느낌)만 있고, 그 특징 → 이 곡의 가치 로 이어지지 않았는지 */
+function isFeatureDescriptionOnly(text) {
+  if (hasFeatureToPieceValueChain(text)) return false;
+  return (
+    FEATURE_FEELING.some((token) => includesAnyToken(text, [token])) ||
+    VALUE_REACTION_ONLY.some((token) => includesAnyToken(text, [token]))
+  );
+}
+
+/** 음악적 특징 때문에 → 이 곡 전체에 대한 가치 판단이 드러나는지 */
+function hasFeatureToPieceValueChain(text) {
+  const hasPiece = PIECE_SCOPE.some((token) => includesAnyToken(text, [token]));
+  const hasVerdict = PIECE_VALUE_VERDICT.some((token) => includesAnyToken(text, [token]));
+  const hasCausal = VALUE_CAUSAL_LINK.some((token) => includesAnyToken(text, [token]));
+  const hasSoftOutcome = PIECE_VALUE_SOFT.some((token) => includesAnyToken(text, [token]));
+
+  if (!hasPiece) return false;
+  if (hasVerdict) return true;
+  if (hasCausal && (hasVerdict || hasSoftOutcome)) return true;
+  if (hasCausal && text.length >= 14) return true;
+  return false;
+}
+
 export function scoreAestheticV2(q2) {
   const text = String(q2 || '').trim();
   if (!text) return 0;
 
-  const strongHits = VALUE_STRONG.filter((token) => includesAnyToken(text, [token])).length;
-  const hasConnection = VALUE_CONNECTION.some((token) => includesAnyToken(text, [token]));
-  const hasWeakReaction = VALUE_WEAK.some((token) => includesAnyToken(text, [token]));
+  if (hasFeatureToPieceValueChain(text)) return 2;
+  if (isFeatureDescriptionOnly(text)) return 1;
 
-  if (strongHits >= 2 || (strongHits >= 1 && hasConnection && text.length >= 20)) return 2;
-  if (strongHits >= 1 || (hasWeakReaction && text.length >= 12)) return 1;
+  const hasPiece = PIECE_SCOPE.some((token) => includesAnyToken(text, [token]));
+  const hasVerdict = PIECE_VALUE_VERDICT.some((token) => includesAnyToken(text, [token]));
+  const hasCausal = VALUE_CAUSAL_LINK.some((token) => includesAnyToken(text, [token]));
+  if (hasPiece && hasVerdict) return 1;
+  if (hasCausal && hasVerdict) return 1;
+
   return 0;
 }
 
@@ -233,17 +279,17 @@ export function markFromAestheticPath(path) {
 }
 
 const PATH_GUIDES = {
-  A: '고른 음악 요소의 특징(근거)과 이 곡의 가치 판단을 잘 연결했어요. 같은 요소로 곡을 한 번 더 들어 보세요.',
-  B: '음악 요소의 특징(2단계에서 배운 근거)은 잘 짚었어요. 그 특징이 이 곡을 왜 특별하게 만드는지, 나의 가치 판단을 한두 문장 더 써 보세요.',
-  C: '가치를 평가하려는 방향은 좋아요. 2단계에서 배운 음악적 특징을 정확한 용어가 아니어도 자기 말로 적어, 그게 어떤 느낌·판단으로 이어졌는지 연결해 보세요.',
-  D: '가치 평가는 음악의 특징과 나의 느낌·판단을 연결해야 해요. 고른 요소 하나를 정해, 어떻게 들리는지(2단계에서 배운 내용을 비슷한 말로 써도 돼요)와 왜 가치 있다고 보는지 함께 써 보세요.'
+  A: '음악적 특징을 잘 짚었고, 그 특징 때문에 이 곡이 어떻게 가치 있다고 느껴지는지도 잘 연결했어요. 같은 요소로 곡을 한 번 더 들어 보세요.',
+  B: '음악적 특징과 그때 느낀 점(인상 깊다 등)은 잘 썼어요. 다만 이건 아직 특징 설명이에요. 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지, 「그래서 이 곡은 ~하다」처럼 이어서 써 보세요.',
+  C: '이 곡에 대한 가치 판단 방향은 좋아요. 어떤 음악적 특징이 그렇게 느껴지게 했는지, 2단계에서 배운 내용을 자기 말로 근거도 함께 써 보세요.',
+  D: '먼저 고른 요소의 음악적 특징(어떻게 들리는지)을 쓰고, 이어서 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지도 함께 써 보세요.'
 };
 
 const PATH_PROMPTS = {
-  A: '근거와 가치 판단이 모두 충족됐어요. 학생이 고른 요소와 답을 짧게 반영하며 칭찬하되 모범 감상문을 베끼지 말 것. 음악적 특징을 비슷한 말로 썼어도 근거로 인정할 것.',
-  B: '근거(V1)는 충족, 가치 판단(V2)이 미흡이에요. 이미 쓴 음악적 특징(정확한 용어가 아니어도 2단계에서 배운 내용과 비슷하면)을 인정한 뒤, 그 특징이 곡의 가치와 어떻게 연결되는지 쓰도록 안내하세요.',
-  C: '가치 판단(V2)은 충족, 근거(V1)가 미흡이에요. 평가 방향은 인정하고, 어떤 음악 요소·특징이 그 판단의 근거인지 짚도록 안내하세요. 키워드를 그대로 쓰지 않아도 비슷한 표현이면 힌트만 주고 용어를 강요하지 말 것.',
-  D: '근거와 가치 판단이 모두 미흡이에요. 고른 요소의 특징 + 가치 연결을 함께 쓰도록 안내하세요. 정답 문장·필수 키워드 암시 금지. 2단계에서 배운 느낌을 자기 말로 써도 된다고 알려 줄 것.'
+  A: '음악적 특징(±느낌)과, 그 특징 때문에 이 곡이 가치 있다는 판단이 모두 있어요. 학생 답을 짧게 반영하며 칭찬하되 모범 문장을 베끼지 말 것.',
+  B: '학생 답은 음악적 특징·느낌(예: 인상 깊다)에 그칩니다. 이는 가치 판단이 아니라 특징 설명임을 분명히 알려 주세요. 인정한 뒤, 그 특징 때문에 이 곡 전체를 어떻게 평가하는지(어째서 가치 있는지) 인과적으로 이어 쓰도록 안내하세요.',
+  C: '이 곡에 대한 가치 판단은 있으나, 어떤 음악적 특징이 그 근거인지가 미흡해요. 평가 방향은 인정하고, 특징 근거를 짚도록 안내하세요.',
+  D: '음악적 특징 설명과 이 곡에 대한 가치 판단이 모두 미흡이에요. ① 특징(어떻게 들리는지) ② 그래서 이 곡은 어떻다(가치 판단) 순서로 쓰도록 안내하세요. 정답 문장·필수 키워드 암시 금지.'
 };
 
 export function evaluateAestheticQ2({ q2Type, q2 }) {

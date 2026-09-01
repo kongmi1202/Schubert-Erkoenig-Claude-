@@ -268,7 +268,7 @@ function VoiceDesign({ go }) {
   }, [selectedChars, voiceDesign, setVoiceDesignState]);
 
   return (
-    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2 · 분석적 감상</div><div className="s-title">분석적 감상</div><div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하고 비교하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div></div>
+    <div className="screen active"><div className="stage-header"><div className="s-eyebrow">STAGE 2 · 분석적 감상</div><div className="s-title">분석적 감상</div><div className="s-desc">목표: 음악 요소, 음악적 특징 및 구성을 분석하여 음악이 어떻게 표현되고 구성되는지 파악해 보세요.</div></div>
       <div className="body voice-body">
         <div className="sec">{isErlkonig ? '3. 이 곡은 한 명의 가수가 4명의 등장인물을 다른 선율, 음계, 음색으로 표현해요. 아래 보기에서 인물을 골라 영상을 통해 그 인물의 목소리를 감상하고, 가수가 각 등장인물을 어떻게 표현하고 있는지 목소리를 설계해보세요.' : '성부 선택 · 설계할 대상 전환'}</div>
 

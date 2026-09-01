@@ -67,7 +67,7 @@ function AestheticPage({ go }) {
         <div className="s-desc">목표: 음악의 다양한 요소들을 바탕으로 음악의 가치를 평가해 보세요.</div>
       </div>
       <div className="body voice-body">
-        <div className="sec">2. 2단계 분석적 감상에서 학습했던 음악 요소를 하나 고르고, 그 음악 요소의 특징과 연결하여 이 곡의 가치를 평가해 보세요.</div>
+        <div className="sec">2. 아래에서 분석적 감상에서 학습했던 음악 요소를 하나 고르고, 그 요소의 어떤 특징으로 인해 이 곡이 어떻게 가치 있다고 느껴지는지 평가해 보세요.</div>
         <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}>
           <option value="">연결할 분석 요소를 선택하세요</option>
           {q2Options.map((opt) => (
@@ -79,7 +79,7 @@ function AestheticPage({ go }) {
             className="txt"
             value={q2}
             onChange={(e) => setQ2(e.target.value)}
-            placeholder="고른 음악 요소가 어떻게 들리는지, 그 특징이 이 곡의 가치와 어떻게 연결되는지 써보세요."
+            placeholder="① 선택한 음악 요소의 특징(어떻게 들리는지, 어떤 느낌인지) → ② 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지"
           />
         ) : null}
 
