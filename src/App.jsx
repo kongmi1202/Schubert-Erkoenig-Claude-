@@ -173,15 +173,23 @@ function App() {
             onToggle={() => setListeningCollapsed((v) => !v)}
           />
           <div className="stage-workspace-main">
-            <Current go={setCurrentScreen} />
+            <div className="stage-workspace-scroll">
+              <Current go={setCurrentScreen} />
+            </div>
+            <div className="stage-workspace-dock">
+              <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
+            </div>
           </div>
         </div>
       ) : (
         <Current go={setCurrentScreen} />
       )}
 
+      {!showListeningShell ? (
+        <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
+      ) : null}
+
       <HelpButton currentStep={helpStep} />
-      <BottomWidgetBar currentScreen={currentScreen} go={setCurrentScreen} />
     </>
   );
 }

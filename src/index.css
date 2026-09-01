@@ -297,6 +297,35 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   min-height:100vh;
   border-left:1px solid var(--border);
   background:var(--bg);
+  display:flex;
+  flex-direction:column;
+}
+.stage-workspace-scroll{
+  flex:1 1 0%;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+.stage-workspace-dock{
+  flex:0 0 auto;
+  z-index:20;
+  padding:6px 12px 12px;
+  background:linear-gradient(180deg, transparent 0%, var(--bg) 28%);
+}
+.stage-workspace-dock #bottom-widgetbar,
+.stage-workspace-dock #stage2-subbar{
+  position:relative;
+  left:auto;
+  right:auto;
+  bottom:auto;
+}
+.stage-workspace-dock #stage2-subbar{
+  margin-bottom:6px;
+  border-radius:14px;
+}
+.stage-workspace-dock #bottom-widgetbar{
+  border-radius:18px;
 }
 .stage-workspace-main > .screen{
   min-height:100%;
@@ -354,7 +383,8 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
-  padding:12px 12px calc(28px + var(--bottom-widget-h) + 16px);
+  touch-action:pan-y;
+  padding:12px 12px 20px;
   display:flex;
   flex-direction:column;
   gap:10px;
@@ -409,6 +439,14 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   display:none;
 }
 @media (min-width: 901px){
+  .stage-workspace-main{
+    min-height:calc(100vh - 28px);
+    max-height:calc(100vh - 28px);
+    overflow:hidden;
+  }
+  .stage-workspace-main .body{
+    padding-bottom:32px;
+  }
   .stage-workspace.listening-collapsed{
     grid-template-columns:52px minmax(0, 1fr);
   }
@@ -450,12 +488,40 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   }
   .stage-workspace-main{
     min-height:auto;
+    max-height:none;
+    overflow:visible;
+    display:block;
     border-left:none;
+  }
+  .stage-workspace-scroll{
+    overflow:visible;
+    flex:none;
   }
   .stage-workspace-main .stage-header{text-align:center}
   .stage-workspace-main .body{
     max-width:100%;
     margin:0 auto;
+    padding-bottom:calc(28px + var(--bottom-widget-h) + 56px);
+  }
+  .stage-workspace-dock{
+    position:fixed;
+    left:8px;
+    right:8px;
+    bottom:8px;
+    z-index:500;
+    padding:0;
+    background:transparent;
+    pointer-events:none;
+  }
+  .stage-workspace-dock > *{
+    pointer-events:auto;
+  }
+  .stage-workspace-dock #bottom-widgetbar,
+  .stage-workspace-dock #stage2-subbar{
+    position:relative;
+  }
+  .listening-panel-body{
+    padding-bottom:20px;
   }
 }
 
