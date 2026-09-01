@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { normalizeFormativeChoice } from '../../lib/compareFeedback';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import {
-  getCpFormAbaDiscoveryFixedFeedback,
-  getCpFormSegmentFixedFeedback
-} from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
 const FORM_CARDS = [
   { id: 'cp-f1', num: '구간 1', subtitle: '처음 30초' },
@@ -34,14 +29,6 @@ const featureCorrect = {
   'cp-f2': '느리고 부드럽다',
   'cp-f3': '빠르고 강하다'
 };
-
-const CP_FORM_DISCOVERY_Q = 'cp-form-aba-discovery';
-const CP_FORM_DISCOVERY_CORRECT = '서로 다른 느낌을 대비시키기 위해';
-const CP_FORM_DISCOVERY_CHOICES = [
-  '곡을 더 길게 만들기 위해',
-  CP_FORM_DISCOVERY_CORRECT,
-  '연주자가 쉬기 위해'
-];
 
 function AbaDiagram() {
   return (
@@ -87,9 +74,6 @@ function CpForm({ go }) {
   const [featureById, setFeatureById] = useState(() => cpFormState?.featureById || {});
   const [activityFbDone, setActivityFbDone] = useState(false);
 
-  const [discoveryChoice, setDiscoveryChoice] = useState(() => cpFormState?.discoveryChoice || '');
-  const [discoveryQuizResult, setDiscoveryQuizResult] = useState(() => cpFormState?.discoveryQuizResult || '');
-
   const [currentSegmentId, setCurrentSegmentId] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const currentSegmentRef = useRef('');
@@ -105,12 +89,6 @@ function CpForm({ go }) {
   function selFeature(cardId, value) {
     setFeatureById((prev) => ({ ...prev, [cardId]: value }));
     setActivityFbDone(false);
-  }
-
-  function pickDiscovery(choice) {
-    setDiscoveryChoice(choice);
-    setActivityFbDone(false);
-    setDiscoveryQuizResult('');
   }
 
   const stopWatcher = () => {
@@ -157,21 +135,14 @@ function CpForm({ go }) {
     [formAnswers, featureById]
   );
 
-  const allAnswered = allSegmentsAnswered && Boolean(discoveryChoice);
-
-  const discoveryCorrect =
-    normalizeFormativeChoice(discoveryChoice) === normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
-
-  const canProceed = activityFbDone && discoveryCorrect;
+  const canProceed = allSegmentsAnswered && activityFbDone;
 
   useEffect(() => {
     setCpFormState({
       formAnswers,
-      featureById,
-      discoveryChoice,
-      discoveryQuizResult
+      featureById
     });
-  }, [formAnswers, featureById, discoveryChoice, discoveryQuizResult, setCpFormState]);
+  }, [formAnswers, featureById, setCpFormState]);
 
   useEffect(() => {
     currentSegmentRef.current = currentSegmentId;
@@ -359,74 +330,22 @@ function CpForm({ go }) {
           })}
         </div>
 
-        {allSegmentsAnswered ? (
-          <>
-            <div className="sec" style={{ marginTop: 22 }}>
-              형식의 의미를 찾아보세요
-            </div>
-            <div className="small-note" style={{ marginBottom: 10, lineHeight: 1.65 }}>
-              ABA 형식에서 B구간은
-              <br />
-              왜 존재할까요?
-            </div>
-            <div id={CP_FORM_DISCOVERY_Q} className="choice-list" style={{ marginBottom: 10 }}>
-              {CP_FORM_DISCOVERY_CHOICES.map((choice) => (
-                <button
-                  key={choice}
-                  type="button"
-                  className={`choice-item ${discoveryChoice === choice ? 'selected' : ''}`}
-                  onClick={() => pickDiscovery(choice)}
-                >
-                  {discoveryChoice === choice ? '●' : '○'} {choice}
-                </button>
-              ))}
-            </div>
-
-            {activityFbDone && discoveryCorrect ? <AbaDiagram /> : null}
-          </>
-        ) : null}
-
         <ActivityEndFeedback
           style={{ marginTop: 4, marginBottom: 12 }}
-          key={`cp-form-activity-fb-${JSON.stringify({ formAnswers, featureById, discoveryChoice })}`}
+          key={`cp-form-activity-fb-${JSON.stringify({ formAnswers, featureById })}`}
           requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: [
-                ...FORM_CARDS.map((card) =>
-                  getCpFormSegmentFixedFeedback({
-                    cardId: card.id,
-                    label: formAnswers[card.id] || '',
-                    feature: featureById[card.id] || '',
-                    correctLabel: formCorrect[card.id],
-                    correctFeature: featureCorrect[card.id]
-                  })
-                ),
-                getCpFormAbaDiscoveryFixedFeedback({
-                  userChoice: discoveryChoice || '',
-                  correctAnswer: CP_FORM_DISCOVERY_CORRECT
-                })
-              ],
-              activityTitle: '쇼팽 — ABA 형식',
-              studentSummary: [
-                ...FORM_CARDS.map(
-                  (c) => `${c.num}: ${formAnswers[c.id] || '—'} / ${featureById[c.id] || '—'}`
-                ),
-                `B구간 질문: ${discoveryChoice || '—'}`
-              ].join(' · ')
-            })
+            generateStage2ActivityFeedback('cp-form', { formAnswers, featureById })
           }
           onResult={() => {
-            const ok =
-              normalizeFormativeChoice(discoveryChoice) ===
-              normalizeFormativeChoice(CP_FORM_DISCOVERY_CORRECT);
             setActivityFbDone(true);
-            setDiscoveryQuizResult(ok ? 'ok' : 'ng');
-            if (ok) setStageCompletion('voice', true);
+            setStageCompletion('voice', true);
           }}
         />
 
         {canProceed ? (
-          <div className="feat-card">
+          <>
+            <AbaDiagram />
+            <div className="feat-card">
             <div className="feat-num">FEATURE</div>
             <div className="feat-title">환상 즉흥곡의 특징 ①</div>
             <div className="feat-body">
@@ -443,6 +362,7 @@ function CpForm({ go }) {
               음악 형식으로 구현해요.
             </div>
           </div>
+          </>
         ) : null}
 
         <div className="btn-row">

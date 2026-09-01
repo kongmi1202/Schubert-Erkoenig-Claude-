@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import { getTonePaintingFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 import { useAppStore } from '../../store/useAppStore';
 
 const SEGMENTS = [
@@ -238,22 +237,7 @@ function TonePaintingHandel({ go }) {
           className="tone-ai-feedback"
           style={{ marginTop: 12, marginBottom: 12 }}
           key={`tone-activity-fb-${JSON.stringify(selected)}`}
-          requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: SEGMENTS.map((segment) =>
-                getTonePaintingFixedFeedback({
-                  segmentId: segment.id,
-                  segmentTitle: segment.title,
-                  selectedIndex: selected[segment.id],
-                  selectedLabel: segment.options[selected[segment.id]],
-                  correctIndex: segment.answer,
-                  correctElaboration: segment.feedback
-                })
-              ),
-              activityTitle: '할렐루야 — 음화법',
-              studentSummary: SEGMENTS.map((s) => `${s.title}: ${s.options[selected[s.id]] || '—'}`).join(' / ')
-            })
-          }
+          requestFn={() => generateStage2ActivityFeedback('tone-painting', { segments: SEGMENTS, selected })}
           onResult={() => setActivityFbDone(true)}
         />
 

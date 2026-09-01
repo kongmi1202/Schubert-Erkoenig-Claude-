@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import { getVvSonnetFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 
 /** 비발디 사계 여름 — 표제음악(소네트) 구간: https://youtu.be/wVAq3CzHf9E */
@@ -188,17 +187,13 @@ function VvSonnet({ go }) {
           style={{ marginTop: 12, marginBottom: 12 }}
           key={`vv-sonnet-activity-fb-${JSON.stringify(selectedById)}`}
           requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: SEGMENTS.map((segment) =>
-                getVvSonnetFixedFeedback({
-                  segmentId: segment.id,
-                  userChoice: selectedById[segment.id] || '',
-                  correctAnswer: segment.answer,
-                  correctElaboration: segment.feedback
-                })
-              ),
-              activityTitle: '비발디 — 소네트(표제음악)',
-              studentSummary: SEGMENTS.map((s) => `${s.id}: ${selectedById[s.id] || '—'}`).join(' / ')
+            generateStage2ActivityFeedback('vv-sonnet', {
+              items: SEGMENTS.map((segment) => ({
+                segmentId: segment.id,
+                userChoice: selectedById[segment.id] || '',
+                correctAnswer: segment.answer,
+                correctElaboration: segment.feedback
+              }))
             })
           }
           onResult={() => {

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import { getSbSprechFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
 const SEGMENTS = {
   normal: {
@@ -303,23 +302,17 @@ function SbSprech({ go }) {
           style={{ marginTop: 12, marginBottom: 12 }}
           key={`sb-sprech-activity-fb-${normalValue}-${sprechValue}`}
           requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: [
-                getSbSprechFixedFeedback({
-                  kind: 'normal',
-                  hasMoved: canCheckNormal,
-                  isCorrect: normalIsCorrect,
-                  toneText: getSliderToneText(normalValue)
-                }),
-                getSbSprechFixedFeedback({
-                  kind: 'sprech',
-                  hasMoved: canCheckSprech,
-                  isCorrect: sprechIsCorrect,
-                  toneText: getSliderToneText(sprechValue)
-                })
-              ],
-              activityTitle: '슈베르트·쇤베르크 — 말하기와 노래하기',
-              studentSummary: `송어: ${getSliderToneText(normalValue)} / 피에로: ${getSliderToneText(sprechValue)}`
+            generateStage2ActivityFeedback('sb-sprech', {
+              normal: {
+                hasMoved: canCheckNormal,
+                isCorrect: normalIsCorrect,
+                toneText: getSliderToneText(normalValue)
+              },
+              sprech: {
+                hasMoved: canCheckSprech,
+                isCorrect: sprechIsCorrect,
+                toneText: getSliderToneText(sprechValue)
+              }
             })
           }
           onResult={() => {

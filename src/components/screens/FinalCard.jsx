@@ -291,7 +291,6 @@ function FinalCard({ go }) {
       pushCheck(stage2Checks, step2Flags.featureF1, cpFormState?.featureById?.['cp-f1'] === cpFeatureCorrect['cp-f1']);
       pushCheck(stage2Checks, step2Flags.featureF2, cpFormState?.featureById?.['cp-f2'] === cpFeatureCorrect['cp-f2']);
       pushCheck(stage2Checks, step2Flags.featureF3, cpFormState?.featureById?.['cp-f3'] === cpFeatureCorrect['cp-f3']);
-      pushCheck(stage2Checks, step2Flags.formDiscovery, cpFormState?.discoveryChoice === '서로 다른 느낌을 대비시키기 위해');
       pushCheck(stage2Checks, step2Flags.rhythmRh, cpRhythmState?.selectedByGroup?.['cp-rh-q'] === cpRhythmCorrect['cp-rh-q']);
       pushCheck(stage2Checks, step2Flags.rhythmLh, cpRhythmState?.selectedByGroup?.['cp-lh-q'] === cpRhythmCorrect['cp-lh-q']);
       pushCheck(stage2Checks, step2Flags.rhythmPoly, cpRhythmState?.selectedByGroup?.['cp-poly-q'] === cpRhythmCorrect['cp-poly-q']);
@@ -717,12 +716,6 @@ function FinalCard({ go }) {
               <div className="cmp-mini-grid">
                 <div className="fb show info">2-B 구간3 특징: {cpFormState?.featureById?.['cp-f3'] || '없음'}</div>
                 <div className="fb show gold">정답: {cpFeatureCorrect['cp-f3']}</div>
-              </div>
-              ) : null}
-              {step2Flags.formDiscovery ? (
-              <div className="cmp-mini-grid">
-                <div className="fb show info">2-B ABA 발견 질문: {cpFormState?.discoveryChoice || '없음'}</div>
-                <div className="fb show gold">정답: 서로 다른 느낌을 대비시키기 위해</div>
               </div>
               ) : null}
               {step2Flags.rhythmRh ? (

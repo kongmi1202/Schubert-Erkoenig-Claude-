@@ -238,7 +238,7 @@ function VoiceDesign({ go }) {
   const isSel = (category, value) => voiceDesign[selectedCharacter]?.[category] === value;
   const isCharacterFilled = (name) => isVoiceDesignRowFilled(voiceDesign[name]);
   const filledChars = useMemo(
-    () => VOICE_CHAR_NAMES.filter((name) => isCharacterFilled(voiceDesign[name])),
+    () => VOICE_CHAR_NAMES.filter((name) => isVoiceDesignRowFilled(voiceDesign[name])),
     [voiceDesign]
   );
   /** 상단 ‘2명 선택’과 무관하게, 네 인물 중 아무 두 명이든 네 항목을 모두 채우면 다음 단계 가능 */

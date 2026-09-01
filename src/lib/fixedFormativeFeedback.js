@@ -1,5 +1,4 @@
 import { normalizeFormativeChoice } from './compareFeedback';
-import { gradePianoLhScene, gradePianoRhScene } from './pianoSceneAnswers';
 import { VOICE_DESIGN_FIELD_KEYS, normalizeVoiceDesignRow } from './voiceDesignAnswers';
 import {
   countTokenHits,
@@ -8,30 +7,24 @@ import {
   gradeOverviewQ2,
   includesAnyToken
 } from './overviewGrading';
-
-function verification(isCorrect, correctBody, wrongBody) {
-  return isCorrect ? `검증: ✓\n${correctBody}` : `검증: ✗\n${wrongBody}`;
-}
-
-function verificationWithMark(mark, body) {
-  return `검증: ${mark}\n${body}`;
-}
+import { buildMultiFieldSectionsPayload } from './formative/buildMultiField';
+import { buildSingleChoiceFeedback, buildConditionalSingleChoice } from './formative/buildSingleChoice';
+import { buildCpFormSegmentPayload, buildCpRhythmItemPayload } from './formative/builders';
+import { FOOTER, verification, verificationWithMark } from './formative/templates';
+import { PIANO_LH_SCENE_CORRECT, PIANO_RH_SCENE_CORRECT } from './pianoSceneAnswers';
 
 export function getVvSonnetFixedFeedback({ userChoice, correctAnswer, correctElaboration, segmentId }) {
-  if (!normalizeFormativeChoice(userChoice)) {
-    return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
-  }
-  const isCorrect =
-    normalizeFormativeChoice(userChoice) === normalizeFormativeChoice(correctAnswer);
-  if (isCorrect) {
-    const body = correctElaboration
+  return buildSingleChoiceFeedback({
+    userChoice,
+    correctAnswer,
+    normalize: normalizeFormativeChoice,
+    correctBody: correctElaboration
       ? `${String(correctElaboration).replace(/^[✓✔]\s*/, '')}`
-      : '표제음악에서는 시의 장면과 음악의 셈여림·빠르기·리듬꼴이 맞물려요.';
-    return verification(true, body);
-  }
-  const wrongBody = VV_SONNET_WRONG_FEEDBACK[segmentId]?.[userChoice]
-    || '같은 구간을 다시 들으며 셈여림(소리의 세기)·속도(템포)·리듬꼴 중 어디가 달라지는지 들어 보세요. 다시 생각해보세요.';
-  return verification(false, '', wrongBody);
+      : '표제음악에서는 시의 장면과 음악의 셈여림·빠르기·리듬꼴이 맞물려요.',
+    wrongHints: VV_SONNET_WRONG_FEEDBACK[segmentId],
+    defaultWrongBody:
+      '같은 구간을 다시 들으며 셈여림(소리의 세기)·속도(템포)·리듬꼴 중 어디가 달라지는지 들어 보세요. 다시 생각해보세요.'
+  });
 }
 
 const VV_SONNET_WRONG_FEEDBACK = {
@@ -50,20 +43,16 @@ const VV_SONNET_WRONG_FEEDBACK = {
 };
 
 export function getVvConcertoFixedFeedback({ userChoice, correctAnswer }) {
-  if (!normalizeFormativeChoice(userChoice)) {
-    return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
-  }
-  const isCorrect =
-    normalizeFormativeChoice(userChoice) === normalizeFormativeChoice(correctAnswer);
-  if (isCorrect) {
-    return verification(
-      true,
-      '바이올린 협주곡에서는 독주와 총주의 음색·밀도 대비가 중요해요. 영상에서 솔로와 앙상블 구간이 어떻게 바뀌는지 귀로 비교해 보세요.'
-    );
-  }
-  const wrongBody = VV_CONCERTO_WRONG_FEEDBACK[userChoice]
-    || '영상에서 바이올린 한 대가 두드러지는 구간과 현악 전체가 함께 울리는 구간을 번갈아 짚어 보세요. 다시 들어보세요.';
-  return verification(false, '', wrongBody);
+  return buildSingleChoiceFeedback({
+    userChoice,
+    correctAnswer,
+    normalize: normalizeFormativeChoice,
+    correctBody:
+      '바이올린 협주곡에서는 독주와 총주의 음색·밀도 대비가 중요해요. 영상에서 솔로와 앙상블 구간이 어떻게 바뀌는지 귀로 비교해 보세요.',
+    wrongHints: VV_CONCERTO_WRONG_FEEDBACK,
+    defaultWrongBody:
+      '영상에서 바이올린 한 대가 두드러지는 구간과 현악 전체가 함께 울리는 구간을 번갈아 짚어 보세요. 다시 들어보세요.'
+  });
 }
 
 const VV_CONCERTO_WRONG_FEEDBACK = {
@@ -73,219 +62,13 @@ const VV_CONCERTO_WRONG_FEEDBACK = {
     '「총주만 계속 나온다」를 골랐어요. 현악 그룹이 함께 울리는 울림이 크게 들렸나 봐요.\n영상 가운데를 다시 들으며, 전체가 계속 나오는지, 한 대가 앞으로 나와 소리가 얇아지는 순간도 있는지 독주와 그룹의 교대를 찾아 보세요.\n다시 들어보세요.'
 };
 
-export function getCpFormAbaDiscoveryFixedFeedback({ userChoice, correctAnswer }) {
-  if (!normalizeFormativeChoice(userChoice)) {
-    return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
-  }
-  const isCorrect =
-    normalizeFormativeChoice(userChoice) === normalizeFormativeChoice(correctAnswer);
-  if (isCorrect) {
-    return verification(
-      true,
-      'ABA 형식에서 가운데 구간은 앞·뒤와 다른 느낌을 만듭니다. A·B·A\u2019를 이어 들으며 셈여림과 빠르기가 어떻게 달라지는지 짚어 보세요.'
-    );
-  }
-  const wrongBody = CP_FORM_DISCOVERY_WRONG_FEEDBACK[userChoice]
-    || '세 구간의 셈여림(소리의 세기)과 빠르기만 귀로 비교해 보세요. 가운데 구간이 앞·뒤와 어떻게 다른지 들어 보세요. 다시 들어보세요.';
-  return verification(false, '', wrongBody);
+export function getCpFormSegmentFixedFeedback({ cardId, label, feature }) {
+  return buildCpFormSegmentPayload({ cardId, label, feature });
 }
 
-const CP_FORM_DISCOVERY_WRONG_FEEDBACK = {
-  '곡을 더 길게 만들기 위해':
-    '「곡을 더 길게 만들기 위해」를 골랐어요. 가운데 구간이 시간만 늘리는 역할처럼 들렸나 봐요.\n세 구간을 이어서 들으며, 가운데가 앞·뒤와 같은 빠르기·세기로 그냥 이어지는지, 아니면 소리가 확 바뀌는지 셈여림과 템포만 비교해 보세요.\n다시 들어보세요.',
-  '연주자가 쉬기 위해':
-    '「연주자가 쉬기 위해」를 골랐어요. 가운데가 쉬는 시간처럼 잠잠해진다고 느꼈나 봐요.\n가운데 구간이 정말 멈추고 쉬는지, 아니면 다른 빠르기와 세기로 계속 연주되는지 소리의 움직임만 다시 들어 보세요.\n다시 들어보세요.'
-};
-
-const CP_FORM_SEGMENT_CORRECT_BODY = {
-  'cp-f1':
-    '이 구간은 형식의 첫 부분(A)이에요. 빠르기(템포)가 빠르고 셈여림(ff)이 강하게 들려 긴장감·에너지를 만듭니다.',
-  'cp-f2':
-    '이 구간은 A와 대비되는 가운데 부분(B)이에요. 빠르기가 느리고 셈여림(pp)이 부드럽게 들려 앞 구간과 극적으로 달라집니다.',
-  'cp-f3':
-    "이 구간은 A와 비슷한 마지막 부분(A')이에요. 다시 빠르고 강하게 돌아오지만, 끝에서는 셈여림이 조용히 줄어들어요."
-};
-
-const CP_FORM_LABEL_WRONG_HINT = {
-  A: {
-    hint: '「A」는 곡의 처음처럼 같은 출발점이라는 뜻으로 자주 쓰여요. 이 구간이 시작 부분과 같은 에너지로 열리는지, 아니면 분위기가 바뀐 한가운데인지 앞·뒤와 비교해 들어 보세요.',
-    example: '빠르기·셈여림이 처음과 비슷한지, 확 달라졌는지 한 문장으로 말해 본 뒤 이름을 다시 골라 보세요.'
-  },
-  B: {
-    hint: '「B」는 가운데처럼 앞뒤와 다른 부분이라는 뜻으로 자주 쓰여요. 이 구간이 정말 앞·뒤와 다른 빠르기·세기인지, 아니면 처음과 비슷한 에너지로 다시 열리는지 들어 보세요.',
-    example: '부드럽게 느려지는지, 빠르고 강하게 밀어붙이는지 귀로만 비교해 보세요.'
-  },
-  "A'": {
-    hint: '「A\u2019」는 처음과 비슷하게 다시 돌아오는 느낌으로 자주 쓰여요. 이 구간이 처음과 비슷한 에너지로 돌아오는지, 아니면 한가운데처럼 다른 분위기인지 들어 보세요.',
-    example: '끝으로 갈수록 처음과 닮아지는지, 전혀 다른 색으로 남는지만 비교해 보세요.'
-  }
-};
-
-const CP_FORM_FEATURE_WRONG_HINT = {
-  '빠르고 강하다': {
-    hint: '「빠르고 강하다」를 골랐어요. 빠르게 몰아치고 세게 울리는 구간처럼 들렸나 봐요. 이 구간만 다시 들으며 템포가 급한지, 셈여림이 세게 밀어붙이는지 확인해 보세요.',
-    example: '심장이 빨라지는 느낌인지, 숨이 느려지는 느낌인지 한 단어로 말해 본 뒤 보기를 다시 고르세요.'
-  },
-  '느리고 부드럽다': {
-    hint: '「느리고 부드럽다」를 골랐어요. 숨이 느려지고 소리가 감싸는 구간처럼 들렸나 봐요. 이 구간만 다시 들으며 템포가 느린지, 셈여림이 여린지 확인해 보세요.',
-    example: '살살 감싸는지, 세게 밀어붙이는지 귀로만 비교해 보세요.'
-  }
-};
-
-/**
- * 쇼팽 ABA 구간 카드 — 이름(A/B/A') + 특징(빠르기·셈여림) 형성적 피드백
- * @returns {{ kind: 'voice-sections', ... } | { kind: 'plain', text: string }}
- */
-export function getCpFormSegmentFixedFeedback({
-  cardId,
-  label,
-  feature,
-  correctLabel,
-  correctFeature
-}) {
-  const pickedLabel = String(label || '').trim();
-  const pickedFeature = String(feature || '').trim();
-  if (!pickedLabel || !pickedFeature) {
-    return {
-      kind: 'plain',
-      text: '구간 이름(A·B·A\u2019)과 특징을 모두 고른 뒤 피드백 보기를 눌러 주세요.'
-    };
-  }
-
-  const labelOk = pickedLabel === correctLabel;
-  const featureOk = pickedFeature === correctFeature;
-  const allMatch = labelOk && featureOk;
-  const matchedCount = (labelOk ? 1 : 0) + (featureOk ? 1 : 0);
-  const labelHint = CP_FORM_LABEL_WRONG_HINT[pickedLabel] || {
-    hint: '앞·뒤 구간과 비교해, 이 구간이 처음과 비슷한지·가운데처럼 다른지·다시 돌아오는 느낌인지 들어 보세요.',
-    example: '빠르기·셈여림이 비슷한 구간끼리 같은 이름, 확 달라지면 다른 이름을 떠올려 보세요.'
-  };
-  const featureHint = CP_FORM_FEATURE_WRONG_HINT[pickedFeature] || {
-    hint: '같은 구간을 다시 들으며 빠르기(템포)와 셈여림(소리의 세기)만 귀로 비교해 보세요.',
-    example: '빠른지·느린지, 강하게 밀어붙이는지·부드럽게 감싸는지 한 문장으로 말한 뒤 보기를 다시 고르세요.'
-  };
-
-  const sections = [
-    {
-      field: 'label',
-      label: '구간 이름',
-      focus: '형식 · A / B / A\u2019',
-      tone: 'pitch',
-      status: labelOk ? 'ok' : 'miss',
-      studentPick: pickedLabel,
-      note: labelOk
-        ? '구간 이름 선택이 맞아요.'
-        : `네가 고른 「${pickedLabel}」은 이 구간의 형식 위치와 잘 맞지 않아요.`,
-      hint: labelOk ? '' : labelHint.hint,
-      example: labelOk ? '' : labelHint.example
-    },
-    {
-      field: 'feature',
-      label: '구간 특징',
-      focus: '빠르기 · 셈여림',
-      tone: 'timbre',
-      status: featureOk ? 'ok' : 'miss',
-      studentPick: pickedFeature,
-      note: featureOk
-        ? '구간 특징 선택이 맞아요.'
-        : `네가 고른 「${pickedFeature}」은 이 구간의 소리 특징과 잘 맞지 않아요.`,
-      hint: featureOk ? '' : featureHint.hint,
-      example: featureOk ? '' : featureHint.example
-    }
-  ];
-
-  const mark = allMatch ? '✓' : (matchedCount > 0 ? '△' : '✗');
-
-  if (allMatch) {
-    return {
-      kind: 'voice-sections',
-      isCorrect: true,
-      verification: '검증: ✓',
-      character: cardId,
-      summary: '구간 이름과 특징이 모두 맞아요.',
-      sections,
-      footer: CP_FORM_SEGMENT_CORRECT_BODY[cardId] || '형식·빠르기·셈여림이 어떻게 맞물리는지 다시 들어 보세요.'
-    };
-  }
-
-  return {
-    kind: 'voice-sections',
-    isCorrect: false,
-    verification: `검증: ${mark}`,
-    character: cardId,
-    summary: `구간 선택을 항목별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
-    sections,
-    footer: '정답 이름·특징 문구는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
-  };
+export function getCpRhythmFixedFeedback({ groupId, userChoice }) {
+  return buildCpRhythmItemPayload({ groupId, userChoice });
 }
-
-/**
- * 쇼팽 폴리리듬 활동 — 오른손/왼손 묶음·양손 겹침 객관식 형성적 피드백
- */
-export function getCpRhythmFixedFeedback({ groupId, userChoice, correctAnswer }) {
-  if (!normalizeFormativeChoice(userChoice)) {
-    return '먼저 보기 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
-  }
-  const isCorrect =
-    normalizeFormativeChoice(userChoice) === normalizeFormativeChoice(correctAnswer);
-
-  if (groupId === 'cp-rh-q') {
-    if (isCorrect) {
-      return verification(
-        true,
-        '오른손 선율은 16분음표가 짧게 이어져요. 한 박 안에 음표가 몇 개씩 묶이는지 귀와 악보를 함께 확인해 보세요.'
-      );
-    }
-    const wrongBody = CP_RHYTHM_WRONG_FEEDBACK['cp-rh-q']?.[userChoice]
-      || '오른손만 다시 들으며, 한 박 안에서 음표가 몇 개씩 묶여 빠르게 이어지는지 손으로 세어 보세요. 다시 들어보세요.';
-    return verification(false, '', wrongBody);
-  }
-
-  if (groupId === 'cp-lh-q') {
-    if (isCorrect) {
-      return verification(
-        true,
-        '왼손 반주는 셋잇단음표로 묶여요. 오른손보다 조금 넓게 움직이는 리듬꼴을 귀로 비교해 보세요.'
-      );
-    }
-    const wrongBody = CP_RHYTHM_WRONG_FEEDBACK['cp-lh-q']?.[userChoice]
-      || '왼손만 다시 들으며, 한 묶음에 음표가 몇 개씩 모이는지 손바닥으로 박을 맞춰 세어 보세요. 다시 들어보세요.';
-    return verification(false, '', wrongBody);
-  }
-
-  if (isCorrect) {
-    return verification(
-      true,
-      '서로 다른 리듬꼴이 동시에 겹치는 것을 폴리리듬이라고 해요. 오른손·왼손의 박자가 같은지·다른지 격자표와 함께 다시 들어 보세요.'
-    );
-  }
-  const wrongBody = CP_RHYTHM_WRONG_FEEDBACK['cp-poly-q']?.[userChoice]
-    || '양손을 함께 들으며, 두 손이 같은 박으로 맞추는지·서로 다른 묶음으로 겹치는지·번갈아만 나오는지 비교해 보세요. 다시 들어보세요.';
-  return verification(false, '', wrongBody);
-}
-
-const CP_RHYTHM_WRONG_FEEDBACK = {
-  'cp-rh-q': {
-    '2개씩':
-      '「2개씩」을 골랐어요. 한 박에 음이 둘만 묶인다고 들렸나 봐요.\n오른손만 다시 들으며, 한 박 안에서 음이 두 번만 떨어지는지, 그보다 잘게 쪼개져 톡톡 지나가는지 손가락으로 세어 보세요.\n다시 들어보세요.',
-    '3개씩':
-      '「3개씩」을 골랐어요. 셋잇단처럼 세 개로 묶인다고 들렸나 봐요.\n오른손만 다시 들으며, 한 박의 음이 셋인지, 그보다 더 잘게 이어지는지 손으로 박을 맞춰 세어 보세요.\n다시 들어보세요.'
-  },
-  'cp-lh-q': {
-    '2개씩':
-      '「2개씩」을 골랐어요. 왼손이 둘씩 움직인다고 들렸나 봐요.\n왼손만 다시 들으며, 한 묶음이 둘로만 떨어지는지, 셋처럼 출렁이며 모이는지 손바닥으로 박을 맞춰 보세요.\n다시 들어보세요.',
-    '4개씩':
-      '「4개씩」을 골랐어요. 왼손도 오른손처럼 넷씩 잘게 쪼개진다고 들렸나 봐요.\n왼손만 다시 들으며, 오른손만큼 촘촘한지, 조금 더 넓은 묶음으로 움직이는지 비교해 보세요.\n다시 들어보세요.'
-  },
-  'cp-poly-q': {
-    '같은 박자로 함께 맞춰 연주한다':
-      '「같은 박자로 함께 맞춰 연주한다」를 골랐어요. 두 손이 나란히 걷는 것처럼 들렸나 봐요.\n양손을 함께 들으며, 박이 동시에 떨어지는지, 조금씩 어긋나며 겹치는지 격자표와 함께 비교해 보세요.\n다시 들어보세요.',
-    '한 손씩 번갈아 연주한다':
-      '「한 손씩 번갈아 연주한다」를 골랐어요. 한 손이 쉬고 다른 손이 나온다고 들렸나 봐요.\n양손을 함께 들으며, 정말 한 손만 나오는지, 두 손이 동시에 울리는지 귀로 확인해 보세요.\n다시 들어보세요.',
-    '두 손이 같은 음표 묶음으로 움직인다':
-      '「두 손이 같은 음표 묶음으로 움직인다」를 골랐어요. 오른손과 왼손의 묶음 개수가 같다고 들렸나 봐요.\n한 손씩 나눠 들으며, 한 박 안의 음 개수가 같은지 다른지 손가락으로 세어 보세요.\n다시 들어보세요.'
-  }
-};
 
 export function getTonePaintingFixedFeedback({
   segmentId,
@@ -503,24 +286,6 @@ const VOICE_WRONG_PICK_HINTS = {
   }
 };
 
-function splitHintExample(pack) {
-  if (!pack) {
-    return {
-      hint: '해당 구간을 다시 들으며 소리의 높낮이·밝고 어두운 느낌·목소리 굵기를 비교해 보세요.',
-      example: ''
-    };
-  }
-  if (typeof pack === 'string') {
-    const [hint, ...rest] = pack.split(/\n예:\s*/);
-    return { hint: hint.trim(), example: rest.join(' ').trim() };
-  }
-  return { hint: pack.hint || '', example: pack.example || '' };
-}
-
-/**
- * 음색 설계 피드백 — UI 카드 렌더용 구조 + 게이트용 verification 문자열
- * @returns {{ kind: 'voice-sections', isCorrect: boolean, verification: string, character: string, summary: string, sections: Array, footer: string } | { kind: 'plain', text: string }}
- */
 export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKey) {
   const keys = VOICE_DESIGN_FIELD_KEYS;
   const name = selectedChars?.[0];
@@ -529,71 +294,25 @@ export function getVoiceDesignFixedFeedback(selectedChars, voiceDesign, answerKe
   }
   const row = normalizeVoiceDesignRow(voiceDesign?.[name]);
   const answer = answerKey?.[name] || {};
-  const filled = keys.every((k) => row[k]);
-  if (!filled) {
-    return { kind: 'plain', text: '선율·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
-  }
 
-  const matched = keys.filter((k) => row[k] === answer[k]);
-  const missed = keys.filter((k) => row[k] !== answer[k]);
-  const allMatch = missed.length === 0;
-
-  const sections = keys.map((field) => {
-    const meta = VOICE_FIELD_META[field] || { label: field, focus: '', tone: 'pitch' };
-    const ok = row[field] === answer[field];
-    const studentPick = row[field] || '미선택';
-    if (ok) {
-      return {
-        field,
-        label: meta.label,
-        focus: meta.focus,
-        tone: meta.tone,
-        status: 'ok',
-        studentPick,
-        note: `${meta.label} 선택이 맞아요.`,
-        hint: '',
-        example: ''
-      };
-    }
-    const { hint, example } = splitHintExample(
-      VOICE_WRONG_PICK_HINTS[name]?.[field]?.[studentPick] || VOICE_FIELD_LISTEN_HINTS[name]?.[field]
-    );
-    return {
-      field,
-      label: meta.label,
-      focus: meta.focus,
-      tone: meta.tone,
-      status: 'miss',
-      studentPick,
-      note: `네가 고른 「${studentPick}」은 이 구간과 잘 맞지 않아요.`,
-      hint,
-      example
-    };
+  return buildMultiFieldSectionsPayload({
+    itemId: name,
+    preflightMessage: '선율·음계·음색을 모두 고른 뒤 피드백 보기를 눌러 주세요.',
+    fields: keys.map((field) => ({
+      key: field,
+      student: row[field],
+      correct: answer[field],
+      wrongHints: VOICE_WRONG_PICK_HINTS[name]?.[field],
+      defaultWrongHint: VOICE_FIELD_LISTEN_HINTS[name]?.[field],
+      missNote: (pick) => `네가 고른 「${pick}」은 이 구간과 잘 맞지 않아요.`
+    })),
+    fieldMeta: VOICE_FIELD_META,
+    correctSummary: `「${name}」선율·음계·음색이 모두 맞아요.`,
+    correctFooter: '영상을 한 번 더 들으며 세 가지가 어떻게 함께 들리는지 확인해 보세요.',
+    wrongFooter: FOOTER.noAnswerReveal,
+    partialSummary: (matched, total) =>
+      `「${name}」설계를 항목별로 점검했어요. 맞은 항목 ${matched}개 · 다시 볼 항목 ${total - matched}개`
   });
-
-  const mark = allMatch ? '✓' : (matched.length > 0 ? '△' : '✗');
-
-  if (allMatch) {
-    return {
-      kind: 'voice-sections',
-      isCorrect: true,
-      verification: '검증: ✓',
-      character: name,
-      summary: `「${name}」선율·음계·음색이 모두 맞아요.`,
-      sections,
-      footer: '영상을 한 번 더 들으며 세 가지가 어떻게 함께 들리는지 확인해 보세요.'
-    };
-  }
-
-  return {
-    kind: 'voice-sections',
-    isCorrect: false,
-    verification: `검증: ${mark}`,
-    character: name,
-    summary: `「${name}」설계를 항목별로 점검했어요. 맞은 항목 ${matched.length}개 · 다시 볼 항목 ${missed.length}개`,
-    sections,
-    footer: '정답 보기는 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
-  };
 }
 
 const PIANO_RH_WRONG_HINT = {
@@ -626,69 +345,47 @@ const PIANO_LH_WRONG_HINT = {
   }
 };
 
-/**
- * 마왕 2-C 피아노 반주 · 오른손/왼손 장면 선택 형성적 피드백 (정답 보기 미포함)
- */
 export function getPianoSceneFixedFeedback({ rhScene, lhScene }) {
-  const rh = String(rhScene || '').trim();
-  const lh = String(lhScene || '').trim();
-  if (!rh || !lh) {
-    return { kind: 'plain', text: '오른손·왼손 장면을 모두 고른 뒤 피드백 보기를 눌러 주세요.' };
-  }
-
-  const rhOk = gradePianoRhScene(rh);
-  const lhOk = gradePianoLhScene(lh);
-  const allMatch = rhOk && lhOk;
-  const matchedCount = (rhOk ? 1 : 0) + (lhOk ? 1 : 0);
-
-  const sections = [
-    {
-      field: 'rh',
-      label: '오른손 장면',
-      focus: '빠른 반복 리듬 · 움직임',
-      tone: 'pitch',
-      status: rhOk ? 'ok' : 'miss',
-      studentPick: rh,
-      note: rhOk ? '오른손 장면 선택이 맞아요.' : `네가 고른 「${rh}」은 오른손 반주와 잘 맞지 않아요.`,
-      hint: rhOk ? '' : (PIANO_RH_WRONG_HINT[rh]?.hint || '오른손만 다시 들으며, 빠르고 촘촘하게 반복되는 리듬이 어떤 움직임을 떠올리게 하는지 비교해 보세요.'),
-      example: rhOk ? '' : (PIANO_RH_WRONG_HINT[rh]?.example || '잔잔한 물결처럼 느리게 흔들리는지, 달리듯이 짧게 자주 뛰어가는지 손으로 박자를 쳐 보며 골라 보세요.')
+  return buildMultiFieldSectionsPayload({
+    itemId: 'piano-scene',
+    preflightMessage: '오른손·왼손 장면을 모두 고른 뒤 피드백 보기를 눌러 주세요.',
+    fields: [
+      {
+        key: 'rh',
+        student: rhScene,
+        correct: PIANO_RH_SCENE_CORRECT,
+        wrongHints: PIANO_RH_WRONG_HINT,
+        missNote: (pick) => `네가 고른 「${pick}」은 오른손 반주와 잘 맞지 않아요.`,
+        defaultWrongHint: {
+          hint: '오른손만 다시 들으며, 빠르고 촘촘하게 반복되는 리듬이 어떤 움직임을 떠올리게 하는지 비교해 보세요.',
+          example:
+            '잔잔한 물결처럼 느리게 흔들리는지, 달리듯이 짧게 자주 뛰어가는지 손으로 박자를 쳐 보며 골라 보세요.'
+        }
+      },
+      {
+        key: 'lh',
+        student: lhScene,
+        correct: PIANO_LH_SCENE_CORRECT,
+        wrongHints: PIANO_LH_WRONG_HINT,
+        missNote: (pick) => `네가 고른 「${pick}」은 왼손 반주와 잘 맞지 않아요.`,
+        defaultWrongHint: {
+          hint: '왼손만 다시 들으며, 낮고 강하게 반복되는 베이스가 어떤 박동·무게감을 주는지 비교해 보세요.',
+          example:
+            '부드럽게 흐르는 느낌인지, 가슴이 뛰듯 짧게 쿵쿵 찍히는 느낌인지 손바닥으로 박을 맞춰 보며 골라 보세요.'
+        }
+      }
+    ],
+    fieldMeta: {
+      rh: { label: '오른손 장면', focus: '빠른 반복 리듬 · 움직임', tone: 'pitch' },
+      lh: { label: '왼손 장면', focus: '낮은 베이스 · 박동/무게', tone: 'timbre' }
     },
-    {
-      field: 'lh',
-      label: '왼손 장면',
-      focus: '낮은 베이스 · 박동/무게',
-      tone: 'timbre',
-      status: lhOk ? 'ok' : 'miss',
-      studentPick: lh,
-      note: lhOk ? '왼손 장면 선택이 맞아요.' : `네가 고른 「${lh}」은 왼손 반주와 잘 맞지 않아요.`,
-      hint: lhOk ? '' : (PIANO_LH_WRONG_HINT[lh]?.hint || '왼손만 다시 들으며, 낮고 강하게 반복되는 베이스가 어떤 박동·무게감을 주는지 비교해 보세요.'),
-      example: lhOk ? '' : (PIANO_LH_WRONG_HINT[lh]?.example || '부드럽게 흐르는 느낌인지, 가슴이 뛰듯 짧게 쿵쿵 찍히는 느낌인지 손바닥으로 박을 맞춰 보며 골라 보세요.')
-    }
-  ];
-
-  const mark = allMatch ? '✓' : (matchedCount > 0 ? '△' : '✗');
-
-  if (allMatch) {
-    return {
-      kind: 'voice-sections',
-      isCorrect: true,
-      verification: '검증: ✓',
-      character: 'piano-scene',
-      summary: '오른손·왼손 장면이 모두 맞아요.',
-      sections,
-      footer: '각 손 반주를 다시 들으며, 고른 장면이 소리의 리듬·무게와 어떻게 연결되는지 확인해 보세요.'
-    };
-  }
-
-  return {
-    kind: 'voice-sections',
-    isCorrect: false,
-    verification: `검증: ${mark}`,
-    character: 'piano-scene',
-    summary: `장면 선택을 손별로 점검했어요. 맞은 항목 ${matchedCount}개 · 다시 볼 항목 ${2 - matchedCount}개`,
-    sections,
-    footer: '정답 장면 이름은 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.'
-  };
+    correctSummary: '오른손·왼손 장면이 모두 맞아요.',
+    correctFooter:
+      '각 손 반주를 다시 들으며, 고른 장면이 소리의 리듬·무게와 어떻게 연결되는지 확인해 보세요.',
+    wrongFooter: '정답 장면 이름은 알려 주지 않아요. 각 영역의 힌트만 보고 다시 골라 보세요. 다시 들어보세요.',
+    partialSummary: (matched, total) =>
+      `장면 선택을 손별로 점검했어요. 맞은 항목 ${matched}개 · 다시 볼 항목 ${total - matched}개`
+  });
 }
 
 const HY_THEME_T1_CORRECT = new Set(['o1', 'o3', 'o5']);
@@ -783,19 +480,16 @@ export function getHyThemeMatchFixedFeedback({ theme1Ids, theme2Ids }) {
 }
 
 export function getHyThemePart3FixedFeedback({ selectedDeg }) {
-  if (!selectedDeg) {
-    return '3도·5도·8도 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.';
-  }
-  const isCorrect = selectedDeg === '5도';
-  if (isCorrect) {
-    return verification(
-      true,
-      'G에서 D까지의 간격을 건반에서 세어 보았어요. 두 주제의 조성 관계를 선율과 연결해 생각해 보세요.'
-    );
-  }
-  const wrongBody = HY_THEME_DEG_WRONG_FEEDBACK[selectedDeg]
-    || '시작음 G와 목표음 D를 건반에서 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.';
-  return verification(false, '', wrongBody);
+  return buildSingleChoiceFeedback({
+    userChoice: selectedDeg,
+    correctAnswer: '5도',
+    preflightMessage: '3도·5도·8도 중 하나를 고른 뒤 피드백 보기를 눌러 주세요.',
+    correctBody:
+      'G에서 D까지의 간격을 건반에서 세어 보았어요. 두 주제의 조성 관계를 선율과 연결해 생각해 보세요.',
+    wrongHints: HY_THEME_DEG_WRONG_FEEDBACK,
+    defaultWrongBody:
+      '시작음 G와 목표음 D를 건반에서 함께 누른 뒤, 그 사이를 한 칸씩 세어 보세요. 다시 생각해보세요.'
+  });
 }
 
 const HY_THEME_DEG_WRONG_FEEDBACK = {
@@ -810,31 +504,29 @@ const HY_THEME_DEG_WRONG_FEEDBACK = {
  * @param {'normal' | 'sprech'} kind
  */
 export function getSbSprechFixedFeedback({ kind, hasMoved, isCorrect, toneText }) {
-  if (!hasMoved) {
-    return '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.';
-  }
-
   if (kind === 'normal') {
-    if (isCorrect) {
-      return verification(
-        true,
-        '일반 성악은 음높이(피치)를 안정적으로 유지하며 노래해요. 음이 흔들리지 않고 이어지는지 다시 들어 보세요.'
-      );
-    }
-    const wrongBody = SB_SPRECH_WRONG_FEEDBACK.normal[toneText]
-      || '송어 구간을 다시 들으며, 음이 한자리에 오래 머무는지·말하기처럼 짧게 끊기는지 비교해 보세요. 다시 들어보세요.';
-    return verification(false, '', wrongBody);
+    return buildConditionalSingleChoice({
+      ready: hasMoved,
+      notReadyMessage: '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.',
+      isCorrect,
+      correctBody:
+        '일반 성악은 음높이(피치)를 안정적으로 유지하며 노래해요. 음이 흔들리지 않고 이어지는지 다시 들어 보세요.',
+      wrongBody:
+        SB_SPRECH_WRONG_FEEDBACK.normal[toneText] ||
+        '송어 구간을 다시 들으며, 음이 한자리에 오래 머무는지·말하기처럼 짧게 끊기는지 비교해 보세요. 다시 들어보세요.'
+    });
   }
 
-  if (isCorrect) {
-    return verification(
-      true,
-      '슈프레흐슈팀메는 말과 노래의 경계에 있어요. 음에 닿을락 말락 하며 말하기에 더 가깝게 들리는지 확인해 보세요.'
-    );
-  }
-  const wrongBody = SB_SPRECH_WRONG_FEEDBACK.sprech[toneText]
-    || '피에로 구간을 다시 들으며, 음이 고정되어 이어지는지·바로 흔들리며 말처럼 들리는지 비교해 보세요. 다시 들어보세요.';
-  return verification(false, '', wrongBody);
+  return buildConditionalSingleChoice({
+    ready: hasMoved,
+    notReadyMessage: '먼저 슬라이더를 움직여 본 뒤 피드백 보기를 눌러 주세요.',
+    isCorrect,
+    correctBody:
+      '슈프레흐슈팀메는 말과 노래의 경계에 있어요. 음에 닿을락 말락 하며 말하기에 더 가깝게 들리는지 확인해 보세요.',
+    wrongBody:
+      SB_SPRECH_WRONG_FEEDBACK.sprech[toneText] ||
+      '피에로 구간을 다시 들으며, 음이 고정되어 이어지는지·바로 흔들리며 말처럼 들리는지 비교해 보세요. 다시 들어보세요.'
+  });
 }
 
 const SB_SPRECH_WRONG_FEEDBACK = {

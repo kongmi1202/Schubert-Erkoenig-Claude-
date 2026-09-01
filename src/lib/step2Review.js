@@ -92,7 +92,6 @@ export function getStep2ResponseFlags(selectedSong, state) {
       featureF1: hasText(form.featureById?.['cp-f1']),
       featureF2: hasText(form.featureById?.['cp-f2']),
       featureF3: hasText(form.featureById?.['cp-f3']),
-      formDiscovery: hasText(form.discoveryChoice),
       rhythmRh: hasText(rhythm.selectedByGroup?.['cp-rh-q']),
       rhythmLh: hasText(rhythm.selectedByGroup?.['cp-lh-q']),
       rhythmPoly: hasText(rhythm.selectedByGroup?.['cp-poly-q'])

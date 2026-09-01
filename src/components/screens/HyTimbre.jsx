@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import { getHyTimbreFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
 const AUDIO_SRC = {
   'hy-instr1': '/audio/haydn-violin.mp3',
@@ -206,20 +205,10 @@ function HyTimbre({ go }) {
           style={{ marginTop: 4, marginBottom: 12 }}
           key={`hy-timbre-activity-fb-${JSON.stringify({ selectedByGrid, roleByGrid })}`}
           requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: SEGMENTS.map((segment) =>
-                getHyTimbreFixedFeedback({
-                  picked: selectedByGrid[segment.gridId],
-                  rolePick: roleByGrid[segment.gridId],
-                  answer: segment.answer,
-                  roleAnswer: segment.roleAnswer,
-                  segmentIdx: segment.idx
-                })
-              ),
-              activityTitle: '하이든 — 현악 4중주 음색',
-              studentSummary: SEGMENTS.map(
-                (s) => `구간${s.idx}: ${selectedByGrid[s.gridId] || '—'} / ${roleByGrid[s.gridId] || '—'}`
-              ).join(' · ')
+            generateStage2ActivityFeedback('hy-timbre', {
+              segments: SEGMENTS,
+              selectedByGrid,
+              roleByGrid
             })
           }
           onResult={() => {

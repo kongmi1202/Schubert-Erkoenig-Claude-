@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ArtSongTakeaway from '../ArtSongTakeaway';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import {
-  getHyThemeMatchFixedFeedback,
-  getHyThemePart3FixedFeedback
-} from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 import ActivityEndFeedback from '../ActivityEndFeedback';
 
 const HY_THEME1_YT_VIDEO_ID = 'ShXocJtmNeg';
@@ -647,17 +643,7 @@ function HyTheme({ go }) {
           style={{ marginTop: 4, marginBottom: 12 }}
           key={`hy-theme-activity-fb-${placedOptions.theme1.join('|')}-${placedOptions.theme2.join('|')}-${selectedDeg}`}
           requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: [
-                getHyThemeMatchFixedFeedback({
-                  theme1Ids: placedOptions.theme1,
-                  theme2Ids: placedOptions.theme2
-                }),
-                getHyThemePart3FixedFeedback({ selectedDeg })
-              ],
-              activityTitle: '하이든 — 소나타 주제',
-              studentSummary: `제1주제: ${placedOptions.theme1.join(', ') || '—'} / 제2주제: ${placedOptions.theme2.join(', ') || '—'} / 도수: ${selectedDeg || '—'}`
-            })
+            generateStage2ActivityFeedback('hy-theme', { placedOptions, selectedDeg })
           }
           onResult={() => {
             setActivityFbDone(true);

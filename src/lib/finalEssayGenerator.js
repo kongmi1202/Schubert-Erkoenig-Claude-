@@ -264,8 +264,6 @@ export function buildStep2EssayEntries(data) {
       form.featureById?.['cp-f2'] === CP_FEATURE_CORRECT['cp-f2']);
     push('featureF3', '구간3 음악적 특징', form.featureById?.['cp-f3'], CP_FEATURE_CORRECT['cp-f3'],
       form.featureById?.['cp-f3'] === CP_FEATURE_CORRECT['cp-f3']);
-    push('formDiscovery', 'ABA 발견 질문', form.discoveryChoice, '서로 다른 느낌을 대비시키기 위해',
-      clean(form.discoveryChoice) === '서로 다른 느낌을 대비시키기 위해');
     const rhythm = data.cpRhythmState?.selectedByGroup || {};
     push('rhythmRh', '폴리리듬 오른손', rhythm['cp-rh-q'], CP_RHYTHM_CORRECT['cp-rh-q'],
       rhythm['cp-rh-q'] === CP_RHYTHM_CORRECT['cp-rh-q']);

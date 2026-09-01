@@ -1,7 +1,6 @@
 import { getApiKeySetupMessage, requestOpenAiText } from './openaiClient';
 import { evaluateAestheticQ2 } from './aestheticQ2Grading';
 import {
-  getCpFormAbaDiscoveryFixedFeedback,
   getCpFormSegmentFixedFeedback,
   getCpRhythmFixedFeedback,
   getHyThemeMatchFixedFeedback,
@@ -14,6 +13,7 @@ import {
   getVvConcertoFixedFeedback,
   getVvSonnetFixedFeedback
 } from './fixedFormativeFeedback';
+import { buildStage2ActivityRequest } from './formative/stage2Activities';
 
 const MSG_NO_KEY = getApiKeySetupMessage();
 
@@ -84,6 +84,10 @@ async function requestFormativeText(prompt, fallbackBody) {
 export function buildVoiceSectionsExplanation(payload, mark) {
   const lines = [];
   if (payload.summary) lines.push(payload.summary);
+  if (mark === '✓' && payload.footer) {
+    lines.push('');
+    lines.push(payload.footer);
+  }
   (payload.sections || []).filter((s) => s.status === 'miss').forEach((section) => {
     lines.push('');
     lines.push(section.note);
@@ -243,25 +247,8 @@ async function generateFormativeFromGuides({
   if (!displayGuide && !gptGuide) return '피드백을 준비하지 못했어요.';
   if (isPreflightFeedbackMessage(displayGuide || gptGuide)) return displayGuide || gptGuide;
 
-  const fallback = formatStage2Display(mark, displayGuide);
-  const taskPrompt = `활동: ${activityTitle}
-학생 응답: ${studentSummary || '(없음)'}
-내부 판정: 검증: ${mark}
-
-[내부 가이드 — 아래 문장만 재구성. 새 정보 금지]
-${gptGuide}
-
-출력 형식(검증 줄은 그대로, 설명만 한 덩어리):
-검증: ${mark}
-설명: (본문)`;
-
-  const raw = await requestFormativeText(`${STAGE2_RULES_KO}\n\n${taskPrompt}`, fallback);
-  const normalized = normalizeStage2AiOutput(raw, mark, displayGuide);
-  const body = extractExplanationBody(normalized);
-  if (stage2ExplanationLooksUnsafe(mark, body, displayGuide)) {
-    return fallback;
-  }
-  return normalized;
+  // 2단계: 고정 가이드만 표시 (검증·힌트는 코드에서 결정, GPT 재구성 생략)
+  return formatStage2Display(mark, displayGuide);
 }
 
 async function generateFormativeFromFixedGuide({
@@ -287,8 +274,12 @@ export async function generateCombinedFormativeAi({
   studentSummary = ''
 }) {
   const items = (fixedPayloads || []).filter(Boolean);
-  const preflight = items.find((p) => typeof p === 'string' && isPreflightFeedbackMessage(p));
-  if (preflight) return preflight;
+  const preflight = items.find(
+    (p) =>
+      (typeof p === 'string' && isPreflightFeedbackMessage(p)) ||
+      (p?.kind === 'plain' && isPreflightFeedbackMessage(p.text))
+  );
+  if (preflight) return typeof preflight === 'string' ? preflight : preflight.text;
   if (!items.length) return '먼저 모든 문항을 완료한 뒤 피드백 보기를 눌러 주세요.';
 
   const mark = combineMarkFromPayloads(items);
@@ -301,6 +292,12 @@ export async function generateCombinedFormativeAi({
     activityTitle,
     studentSummary
   });
+}
+
+/** 2단계 활동 ID 기반 형성 피드백 (고정 문구, 유형별 검증·정교화) */
+export async function generateStage2ActivityFeedback(activityId, context) {
+  const req = buildStage2ActivityRequest(activityId, context);
+  return generateCombinedFormativeAi(req);
 }
 
 function formatAestheticFallback({ goal, mark, guide }) {
@@ -316,25 +313,15 @@ function normalizeAestheticAiOutput(raw, mark, goal, guide) {
 }
 
 export async function generateVoiceDesignFormativeAi(selectedChars, voiceDesign, answerKey) {
-  const names = (selectedChars || []).filter(Boolean);
-  const fixedPayloads = names.map((name) =>
-    getVoiceDesignFixedFeedback([name], voiceDesign, answerKey)
-  );
-  return generateCombinedFormativeAi({
-    fixedPayloads,
-    activityTitle: '마왕 — 등장인물 음색 설계',
-    studentSummary: names
-      .map((name) => `${name}: ${JSON.stringify(voiceDesign?.[name] || {})}`)
-      .join(' / ')
+  return generateStage2ActivityFeedback('voice-design', {
+    names: selectedChars,
+    voiceDesign,
+    answerKey
   });
 }
 
 export async function generatePianoSceneFormativeAi(params) {
-  return generateFormativeFromFixedGuide({
-    fixedPayload: getPianoSceneFixedFeedback(params),
-    activityTitle: '마왕 — 피아노 반주 장면',
-    studentSummary: `오른손: ${params.rhScene || '—'} / 왼손: ${params.lhScene || '—'}`
-  });
+  return generateStage2ActivityFeedback('piano-scene', params);
 }
 
 export async function generateTonePaintingFormativeAi(params) {
@@ -378,11 +365,7 @@ export async function generateVvSonnetFormativeAi(params) {
 }
 
 export async function generateVvConcertoFormativeAi(params) {
-  return generateFormativeFromFixedGuide({
-    fixedPayload: getVvConcertoFixedFeedback(params),
-    activityTitle: '비발디 — 바이올린 협주곡',
-    studentSummary: `선택: ${params.userChoice || '—'}`
-  });
+  return generateStage2ActivityFeedback('vv-concerto', params);
 }
 
 export async function generateCpFormSegmentFormativeAi(params) {
@@ -473,14 +456,6 @@ export async function generateSbAtonalFormativeAi({ tonalCards, atonalCards }) {
     fixedPayload: fixedGuide,
     activityTitle: '쇤베르크 — 무조성 카드 매칭',
     studentSummary: `조성: ${(tonalCards || []).join(', ')} / 무조: ${(atonalCards || []).join(', ')}`
-  });
-}
-
-export async function generateCpFormAbaDiscoveryFormativeAi(params) {
-  return generateFormativeFromFixedGuide({
-    fixedPayload: getCpFormAbaDiscoveryFixedFeedback(params),
-    activityTitle: '쇼팽 — ABA B구간 역할',
-    studentSummary: `선택: ${params.userChoice || '—'}`
   });
 }
 

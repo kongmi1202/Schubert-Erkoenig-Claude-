@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ActivityEndFeedback from '../ActivityEndFeedback';
-import { generateCombinedFormativeAi } from '../../lib/formativeAiFeedback';
-import { getCpRhythmFixedFeedback } from '../../lib/fixedFormativeFeedback';
+import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
 const AUDIO_SRC = {
   'cp-rh': '/audio/cp-rh.mp3',
@@ -266,19 +265,7 @@ function CpRhythm({ go }) {
         <ActivityEndFeedback
           style={{ marginTop: 12, marginBottom: 12 }}
           key={`cp-rhythm-activity-fb-${JSON.stringify(selectedByGroup)}`}
-          requestFn={() =>
-            generateCombinedFormativeAi({
-              fixedPayloads: QUIZ_IDS.map((groupId) =>
-                getCpRhythmFixedFeedback({
-                  groupId,
-                  userChoice: selectedByGroup[groupId] || '',
-                  correctAnswer: QUIZ_META[groupId].correct
-                })
-              ),
-              activityTitle: '쇼팽 — 폴리리듬',
-              studentSummary: QUIZ_IDS.map((id) => `${id}: ${selectedByGroup[id] || '—'}`).join(' / ')
-            })
-          }
+          requestFn={() => generateStage2ActivityFeedback('cp-rhythm', { selectedByGroup })}
           onResult={() => {
             setActivityFbDone(true);
             setStageCompletion('piano', true);
