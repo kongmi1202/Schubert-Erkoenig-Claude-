@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
-const AUDIO_SRC = {
-  tonal: '/audio/sb-tonal-aud.mp3',
-  atonal: '/audio/sb-atonal-aud.mp3'
+const SEGMENTS = {
+  tonal: {
+    videoId: 'ZNHHeGwwC3Y',
+    start: 13,
+    end: 45
+  },
+  atonal: {
+    videoId: '-FUySRVF75k',
+    start: 4,
+    end: 28
+  }
 };
 
 const MATCH_CARDS = [
@@ -37,8 +46,9 @@ function SbAtonal({ go }) {
     sbAtonalState?.placedCards || { tonal: [], atonal: [] }
   ));
   const [fbDone, setFbDone] = useState(false);
-  const tonalRef = useRef(null);
-  const atonalRef = useRef(null);
+  const [audioReady, setAudioReady] = useState({ tonal: false, atonal: false });
+  const tonalPlayerRef = useRef(null);
+  const atonalPlayerRef = useRef(null);
 
   const usedCards = [...placedCards.tonal, ...placedCards.atonal];
   const canCheck = usedCards.length === MATCH_CARDS.length;
@@ -79,10 +89,10 @@ function SbAtonal({ go }) {
     resetAfterPlacementChange();
   };
 
-  const playAudio = async (kind) => {
-    const current = kind === 'tonal' ? tonalRef.current : atonalRef.current;
-    const other = kind === 'tonal' ? atonalRef.current : tonalRef.current;
-    if (!current) return;
+  const playAudio = (kind) => {
+    const current = kind === 'tonal' ? tonalPlayerRef.current : atonalPlayerRef.current;
+    const other = kind === 'tonal' ? atonalPlayerRef.current : tonalPlayerRef.current;
+    if (!current?.isReady?.()) return;
 
     if (playing === kind) {
       current.pause();
@@ -90,13 +100,10 @@ function SbAtonal({ go }) {
       return;
     }
 
-    if (other) other.pause();
-    try {
-      await current.play();
-      setPlaying(kind);
-    } catch {
-      setPlaying('');
-    }
+    other?.pause?.();
+    other?.stop?.();
+    current.play();
+    setPlaying(kind);
   };
 
   return (
@@ -111,19 +118,49 @@ function SbAtonal({ go }) {
         <div className="sec">
           4. 두 곡을 들으며 아래 카드 중 알맞은 것을 각 곡 칸에 넣어보세요.
         </div>
-        <audio id="sb-tonal-source" ref={tonalRef} src={AUDIO_SRC.tonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'tonal' ? '' : p))} />
-        <audio id="sb-atonal-source" ref={atonalRef} src={AUDIO_SRC.atonal} preload="metadata" onEnded={() => setPlaying((p) => (p === 'atonal' ? '' : p))} />
+        <VvSonnetYoutubeAudio
+          ref={tonalPlayerRef}
+          videoId={SEGMENTS.tonal.videoId}
+          start={SEGMENTS.tonal.start}
+          end={SEGMENTS.tonal.end}
+          onReady={() => setAudioReady((prev) => ({ ...prev, tonal: true }))}
+          onPlaybackStateChange={(isPlaying) => {
+            setPlaying((prev) => (isPlaying ? 'tonal' : prev === 'tonal' ? '' : prev));
+          }}
+        />
+        <VvSonnetYoutubeAudio
+          ref={atonalPlayerRef}
+          videoId={SEGMENTS.atonal.videoId}
+          start={SEGMENTS.atonal.start}
+          end={SEGMENTS.atonal.end}
+          onReady={() => setAudioReady((prev) => ({ ...prev, atonal: true }))}
+          onPlaybackStateChange={(isPlaying) => {
+            setPlaying((prev) => (isPlaying ? 'atonal' : prev === 'atonal' ? '' : prev));
+          }}
+        />
         <div className="sb-atonal-activity">
         <div className="compare-listen" style={{ marginBottom: 14 }}>
           <div className="cl-card tonal">
             <div className="cl-label" style={{ fontSize: 16, fontWeight: 700, color: '#9fd0ff' }}>슈베르트 "송어"</div>
-            <button id="sb-tonal-aud" type="button" className="btn-s" onClick={() => playAudio('tonal')}>
+            <button
+              id="sb-tonal-aud"
+              type="button"
+              className="btn-s"
+              disabled={!audioReady.tonal}
+              onClick={() => playAudio('tonal')}
+            >
               {playing === 'tonal' ? '❚❚ 일시정지' : '▶ 재생'}
             </button>
           </div>
           <div className="cl-card atonal">
             <div className="cl-label" style={{ fontSize: 16, fontWeight: 700, color: '#f5c76a' }}>달에 홀린 피에로 중 "달에 취하여"</div>
-            <button id="sb-atonal-aud" type="button" className="btn-s" onClick={() => playAudio('atonal')}>
+            <button
+              id="sb-atonal-aud"
+              type="button"
+              className="btn-s"
+              disabled={!audioReady.atonal}
+              onClick={() => playAudio('atonal')}
+            >
               {playing === 'atonal' ? '❚❚ 일시정지' : '▶ 재생'}
             </button>
           </div>

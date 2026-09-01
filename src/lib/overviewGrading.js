@@ -34,10 +34,10 @@ export const MAWANG_Q1_ROLE_ALIASES = {
  * 모두 포함되면 정답. 서술 방식·문장 순서는 달라도 됨.
  */
 export const MAWANG_Q2_KEYWORD_GROUPS = [
-  { id: 'father', label: '아버지', keywords: ['아버지', '아빠'] },
-  { id: 'son', label: '아들', keywords: ['아들', '아이'] },
-  { id: 'erlkonig', label: '마왕', keywords: ['마왕'] },
-  { id: 'death', label: '결말(죽음)', keywords: ['죽', '죽음', '죽어'] }
+  { id: 'father', label: '아버지', keywords: ['아버지', '아빠', '부모'] },
+  { id: 'son', label: '아들', keywords: ['아들', '아이', '어린'] },
+  { id: 'erlkonig', label: '마왕', keywords: ['마왕', '유혹', '유령'] },
+  { id: 'death', label: '결말(죽음)', keywords: ['죽', '죽음', '죽어', '죽었', '별세'] }
 ];
 
 /** Q2 보조 키워드 — 피드백 정교화용(채점 필수 아님) */
@@ -97,8 +97,19 @@ export function gradeMawangOverviewQ2(story) {
   return evaluateMawangOverviewQ2(story).isCorrect;
 }
 
+/** 대비·변화 표현 — 2축 질문에서 한 축 + 대비면 유사 정답으로 인정 */
+const OVERVIEW_CONTRAST_TOKENS = ['대비', '바뀌', '달라', '다르', '전환', '극적', '변화', '느낌이'];
+
+function groupTokens(group) {
+  return [...(group.keywords || []), ...(group.softKeywords || [])];
+}
+
+function groupMatchesText(text, group) {
+  return includesAnyToken(text, groupTokens(group));
+}
+
 /**
- * 서술형 개요 — 축마다 동의어 하나 이상. 모든 축이 있어야 정답.
+ * 서술형 개요 — 축마다 동의어·유사 표현. 모든 축이 있어야 정답(관대 모드 포함).
  * hint는 학생/AI 피드백용이며 정답 단어를 넣지 않는다.
  */
 export const OVERVIEW_KEYWORD_GROUPS = {
@@ -106,11 +117,14 @@ export const OVERVIEW_KEYWORD_GROUPS = {
     {
       id: 'source',
       keywords: ['성경', '종교', '계시록', '요한', '신앙'],
+      softKeywords: ['하나님', '신', '기독', '말씀', '이야기'],
       hint: '가사가 어떤 이야기·주제를 바탕으로 하는지 한 줄을 더 넣어 보세요.'
     },
     {
       id: 'praise',
-      keywords: ['찬양', '할렐루야', '기리', '주님', '하나님', '왕'],
+      keywords: ['찬양', '할렐루야', '기리', '주님', '하나님', '왕', '주'],
+      softKeywords: ['경배', '영광', '위대', '신', '축복'],
+      sufficientAlone: true,
       hint: '후렴이 누구를 기리는지, 어떤 마음으로 노래하는지 적어 보세요.'
     }
   ],
@@ -118,23 +132,51 @@ export const OVERVIEW_KEYWORD_GROUPS = {
     {
       id: 'genre',
       keywords: ['오라토리오', '오페라'],
+      softKeywords: ['장르', '합창곡', '종교음악', '종교', '종교적', '합창', '관현악'],
       hint: '이 곡의 장르와 오페라를 비교해 적어 보세요.'
     },
     {
       id: 'staging',
       keywords: ['무대', '의상', '연기', '연출'],
+      softKeywords: [
+        '배우', '배역', '무대공연', '눈에 보이', '보이지', '없이', '없다', '없어',
+        '안 입', '안입', '안 한', '안한', '하지 않', '안 한다', '안한다', '하지않',
+        '합창만', '노래만'
+      ],
       hint: '무대·의상·연기처럼 눈에 보이는 연출이 있는지 없는지를 비교해 적어 보세요.'
+    }
+  ],
+  'haydn:q1': [
+    {
+      id: 'violins',
+      keywords: ['바이올린', '제1바이올린', '제2바이올린', '1바이올린', '2바이올린'],
+      softKeywords: ['현악', '4중주', '사중주', '두 개의 바이올린'],
+      hint: '현악 4중주의 바이올린 성부가 빠졌는지 확인해 보세요.'
+    },
+    {
+      id: 'viola',
+      keywords: ['비올라'],
+      softKeywords: ['중간', '중성'],
+      hint: '비올라(중간 음역)가 있는지 들어 보세요.'
+    },
+    {
+      id: 'cello',
+      keywords: ['첼로'],
+      softKeywords: ['낮은', '베이스', '초벌'],
+      hint: '첼로(낮은 음역)가 있는지 들어 보세요.'
     }
   ],
   'haydn:q2': [
     {
       id: 'animal',
       keywords: ['종달새'],
+      softKeywords: ['새', '지저', '짹짹', 'bird'],
       hint: '떠오르는 동물의 이름을 분명히 적어 보세요.'
     },
     {
       id: 'reason',
       keywords: ['바이올린', '선율', '가락', '멜로디', '높', '가볍', '지저', '맑', '빠르'],
+      softKeywords: ['제1', '가벼', '얇', '올라', '경쾌', '소리', '이유', '때문'],
       hint: '어느 악기의 선율이, 어떻게 들려서 그렇게 느껴지는지 이유를 적어 보세요.'
     }
   ],
@@ -142,23 +184,38 @@ export const OVERVIEW_KEYWORD_GROUPS = {
     {
       id: 'summer',
       keywords: ['여름'],
+      softKeywords: ['summer', '계절', '무더'],
       hint: '어느 계절의 장면인지도 넣어 보세요.'
     },
     {
       id: 'weather',
       keywords: ['폭풍', '폭풍우', '천둥', '번개', '우박'],
+      softKeywords: ['비', '바람', '날씨', '하늘', '무서', '격렬', '태양', '더위', '목동'],
       hint: '소네트의 하늘·날씨 장면이 드러나는지 다시 읽어 보세요.'
+    }
+  ],
+  'chopin:q1': [
+    {
+      id: 'piano_solo',
+      keywords: ['피아노', '건반'],
+      softKeywords: [
+        '독주', '한 대', '한대', '혼자', '다른 악기 없', '피아노만', '오케스트라 없',
+        '단독', '선율', '반주', '양손', 'piano'
+      ],
+      hint: '한 대의 피아노가 선율과 반주를 모두 맡는지 확인해 보세요.'
     }
   ],
   'chopin:q2': [
     {
       id: 'fast',
       keywords: ['빠르', '격렬'],
+      softKeywords: ['강하', '세게', '앞부분', '앞', '처음', 'a구간', '에너지', '활기'],
       hint: '앞부분의 빠르기·세기가 어떤지 적어 보세요.'
     },
     {
       id: 'slow',
       keywords: ['느리', '서정', '부드'],
+      softKeywords: ['잔잔', '여유', '중간', '가운데', 'b구간', '조용', 'pp', '부드럽'],
       hint: '중간부에서 빠르기·분위기가 바뀌는지도 적어 보세요.'
     }
   ],
@@ -166,34 +223,112 @@ export const OVERVIEW_KEYWORD_GROUPS = {
     {
       id: 'tension',
       keywords: ['불안', '긴장', '공포', '두려'],
+      softKeywords: ['무서', '불편', '긴장감', '도취', '표현주의'],
       hint: '긴장되거나 편한지, 감정을 형용사로 적어 보세요.'
     },
     {
       id: 'dream',
       keywords: ['몽환', '신비', '낯설', '환상'],
+      softKeywords: ['달빛', '달', '몽롱', '아득', '이상', '신비로'],
       hint: '달빛 속 장면이 또렷한지 아득한지, 분위기를 한 단어 더 적어 보세요.'
     }
   ]
 };
 
-export function evaluateOverviewKeywordGroups(text, groups) {
+function isOverviewContrastAnswer(text) {
+  return includesAnyToken(text, OVERVIEW_CONTRAST_TOKENS);
+}
+
+function isOverviewSimilarToReference(student, reference, groups, groupedEval) {
+  const text = clean(student);
+  const ref = clean(reference);
+  if (!text || !ref || !groups?.length || !groupedEval) return false;
+
+  const softMatched = groups.filter((g) => groupMatchesText(text, g));
+  if (softMatched.length === groups.length) return true;
+
+  if (softMatched.some((g) => g.sufficientAlone)) return true;
+
+  const refConcepts = groups
+    .flatMap((g) => groupTokens(g))
+    .filter((token) => includesAnyToken(ref, [token]));
+  if (!refConcepts.length) return false;
+
+  const matchedConcepts = softMatched.flatMap((g) => groupTokens(g));
+  const studentConceptHits = matchedConcepts.filter((token) => includesAnyToken(text, [token])).length;
+
+  if (softMatched.length >= Math.ceil(groups.length / 2) && studentConceptHits >= 1) {
+    return true;
+  }
+
+  const refHits = refConcepts.filter((token) => includesAnyToken(text, [token])).length;
+  const minConceptHits = Math.max(1, Math.ceil(refConcepts.length * 0.35));
+  if (refHits >= minConceptHits && softMatched.length >= 1) {
+    return true;
+  }
+
+  if (
+    groups.length === 2
+    && softMatched.length >= 1
+    && isOverviewContrastAnswer(text)
+    && text.length >= 10
+  ) {
+    return true;
+  }
+
+  return groupedEval.matchedGroups.length > 0 && refHits >= minConceptHits;
+}
+
+export function evaluateOverviewKeywordGroups(text, groups, options = {}) {
   const list = groups || [];
-  const matchedGroups = list.filter((group) => includesAnyToken(text, group.keywords));
+  const body = clean(text);
+  if (!list.length || !body) {
+    return { isCorrect: false, matchedGroups: [], missingGroups: list };
+  }
+
+  const matchedGroups = list.filter((group) => groupMatchesText(body, group));
   const missingGroups = list.filter((group) => !matchedGroups.some((g) => g.id === group.id));
+
+  let isCorrect = missingGroups.length === 0;
+
+  if (!isCorrect && options.lenient !== false) {
+    if (matchedGroups.some((g) => g.sufficientAlone)) {
+      isCorrect = true;
+    } else if (
+      list.length === 2
+      && matchedGroups.length >= 1
+      && isOverviewContrastAnswer(body)
+      && body.length >= 10
+    ) {
+      isCorrect = true;
+    } else if (list.length >= 2 && matchedGroups.length >= Math.ceil(list.length / 2)) {
+      isCorrect = true;
+    }
+  }
+
   return {
-    isCorrect: list.length > 0 && missingGroups.length === 0 && clean(text).length > 0,
+    isCorrect,
     matchedGroups,
-    missingGroups
+    missingGroups: isCorrect ? [] : missingGroups
   };
 }
 
-export function evaluateOverviewQuestion(song, question, data) {
+export function evaluateOverviewQuestion(song, question, data, options = {}) {
   const groups = OVERVIEW_KEYWORD_GROUPS[`${song}:${question}`];
   if (!groups) return null;
   const text = question === 'q1'
     ? getOverviewStudentQ1(song, data)
     : getOverviewStudentQ2(song, data);
-  return evaluateOverviewKeywordGroups(text, groups);
+  const grouped = evaluateOverviewKeywordGroups(text, groups, options);
+  if (grouped.isCorrect || options.lenient === false) return grouped;
+
+  const reference = question === 'q1'
+    ? getOverviewReferenceQ1(song)
+    : getOverviewReferenceQ2(song);
+  if (isOverviewSimilarToReference(text, reference, groups, grouped)) {
+    return { ...grouped, isCorrect: true, missingGroups: [] };
+  }
+  return grouped;
 }
 
 const HAYDN_Q1_INSTRUMENTS = ['제1바이올린', '제2바이올린', '비올라', '첼로'];
@@ -262,6 +397,8 @@ export function getOverviewReferenceQ2(song) {
 function gradeHaydnOverviewQ1(chars) {
   const slots = (chars || []).map((c) => clean(c)).filter(Boolean);
   const joined = slots.join(' ');
+  const grouped = evaluateOverviewKeywordGroups(joined, OVERVIEW_KEYWORD_GROUPS['haydn:q1']);
+  if (grouped.isCorrect) return true;
   const hasViola = includesAnyToken(joined, ['비올라']);
   const hasCello = includesAnyToken(joined, ['첼로']);
   const hasVln1 = includesAnyToken(joined, ['제1바이올린', '제1 바이올린', '1바이올린']);
@@ -272,9 +409,13 @@ function gradeHaydnOverviewQ1(chars) {
 }
 
 function gradeSchoenbergOverviewQ1(text) {
-  const voiceOk = includesAnyToken(text, SCHOENBERG_Q1_VOICE_TOKENS);
+  const voiceOk = includesAnyToken(text, [
+    ...SCHOENBERG_Q1_VOICE_TOKENS,
+    '노래', '목소리', '가창', '성부', '여성'
+  ]);
   const instrumentHits = countTokenHits(text, SCHOENBERG_Q1_INSTRUMENT_TOKENS);
-  return voiceOk && instrumentHits >= 4;
+  if (voiceOk && instrumentHits >= 3) return true;
+  return includesAnyToken(text, ['실내악', '편성']) && instrumentHits >= 3;
 }
 
 /** @returns {boolean | null} null when the song has no overview Q1 */
@@ -287,8 +428,6 @@ export function gradeOverviewQ1(song, data) {
       return gradeMawangOverviewQ1(chars);
     case 'haydn':
       return gradeHaydnOverviewQ1(chars);
-    case 'chopin':
-      return includesAnyToken(chars[0], ['피아노']);
     case 'schoenberg':
       return gradeSchoenbergOverviewQ1(getOverviewStudentQ1(song, data));
     default:
