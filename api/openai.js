@@ -9,13 +9,14 @@ export async function handler(event) {
   const body = parseEventBody(event);
   const model = typeof body?.model === 'string' ? body.model.trim() : '';
   const input = body?.input;
+  const textFormat = body?.textFormat;
 
   if (!model || input === undefined || input === null) {
     return jsonResponse(400, { error: 'model과 input이 필요합니다.' });
   }
 
   try {
-    const json = await callOpenAiResponses({ model, input });
+    const json = await callOpenAiResponses({ model, input, textFormat });
     return jsonResponse(200, json);
   } catch (err) {
     const status = err?.statusCode || 500;

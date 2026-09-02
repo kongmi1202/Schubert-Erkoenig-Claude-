@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
-import { generateAestheticQ2FormativeAi } from '../../lib/formativeAiFeedback';
+import {
+  generateAestheticQ2FormativeAi,
+  generateAestheticQ3FormativeAi
+} from '../../lib/formativeAiFeedback';
 
 function AestheticPage({ go }) {
   const {
@@ -54,9 +57,14 @@ function AestheticPage({ go }) {
     [q2Options, q2Type]
   );
   const canShowQ2Feedback = Boolean(q2Type && q2.trim().length >= 8);
+  const canShowQ3Feedback = Boolean(q2Type && q2.trim().length >= 8 && q3.trim().length >= 8);
   const q2FeedbackKey = useMemo(
     () => `${q2Type}|${q2.trim()}`,
     [q2Type, q2]
+  );
+  const q3FeedbackKey = useMemo(
+    () => `${q2Type}|${q2.trim()}|${q3.trim()}`,
+    [q2Type, q2, q3]
   );
 
   return (
@@ -67,9 +75,11 @@ function AestheticPage({ go }) {
         <div className="s-desc">목표: 음악의 다양한 요소들을 바탕으로 음악의 가치를 평가해 보세요.</div>
       </div>
       <div className="body voice-body">
-        <div className="sec">2. 아래에서 분석적 감상에서 학습했던 음악 요소를 하나 고르고, 그 요소의 어떤 특징으로 인해 이 곡이 어떻게 가치 있다고 느껴지는지 평가해 보세요.</div>
+        <div className="sec">
+          2. 악곡에서 특별하다고 생각했던 음악 요소를 아래에서 고르고, 그렇게 생각한 이유를 적어 보세요.
+        </div>
         <select className="dropdown" value={q2Type} onChange={(e) => setQ2Type(e.target.value)}>
-          <option value="">연결할 분석 요소를 선택하세요</option>
+          <option value="">특별하다고 느낀 음악 요소를 선택하세요</option>
           {q2Options.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
@@ -79,7 +89,7 @@ function AestheticPage({ go }) {
             className="txt"
             value={q2}
             onChange={(e) => setQ2(e.target.value)}
-            placeholder="① 선택한 음악 요소의 특징(어떻게 들리는지, 어떤 느낌인지) → ② 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지"
+            placeholder="어떻게 들리는지·어떤 느낌인지, 왜 특별하게 느껴졌는지"
           />
         ) : null}
 
@@ -97,13 +107,36 @@ function AestheticPage({ go }) {
           />
         ) : null}
 
-        <div className="sec">3. 이 곡을 나의 삶에서 어떤 순간에 어떻게 사용할 수 있을까요?</div>
+        <div className="sec">
+          3. 2번에서 고른 음악 요소와 그 이유를 바탕으로, 이 곡에 대해 어떻게 평가하고 싶은지 적어 보세요.
+        </div>
         <textarea
           className="txt"
           value={q3}
           onChange={(e) => setQ3(e.target.value)}
-          placeholder="예: 긴장될 때, 슬플 때, 집중할 때 등 — 언제·어떻게 쓸지 써보세요."
+          disabled={!q2Type || q2.trim().length < 8}
+          placeholder={
+            q2Type && q2.trim().length >= 8
+              ? '2번의 특징과 나의 판단을 바탕으로, 이 곡 전체를 어떻게 평가하고 싶은지 써 보세요.'
+              : '2번을 먼저 완성해 주세요.'
+          }
         />
+
+        {canShowQ3Feedback ? (
+          <CompareAiFeedbackBlock
+            key={q3FeedbackKey}
+            requestFn={() =>
+              generateAestheticQ3FormativeAi({
+                selectedSong,
+                q2Type,
+                q2Label,
+                q2,
+                q3
+              })
+            }
+          />
+        ) : null}
+
         <div className="btn-row">
           <button className="btn-s" onClick={() => go('historyCards')}>← 이전</button>
           <button className="btn-p" onClick={() => { setStageCompletion('aesthetic', true); go('finalCard'); }}>최종 감상문 만들기 →</button>

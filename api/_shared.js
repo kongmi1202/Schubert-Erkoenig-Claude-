@@ -14,7 +14,7 @@ export function getOpenAiApiKey() {
   return typeof key === 'string' ? key.trim() : '';
 }
 
-export async function callOpenAiResponses({ model, input }) {
+export async function callOpenAiResponses({ model, input, textFormat }) {
   const apiKey = getOpenAiApiKey();
   if (!apiKey) {
     const err = new Error('OPENAI_API_KEY가 설정되지 않았습니다.');
@@ -22,13 +22,16 @@ export async function callOpenAiResponses({ model, input }) {
     throw err;
   }
 
+  const payload = { model, input };
+  if (textFormat) payload.text = { format: textFormat };
+
   const openAiRes = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`
     },
-    body: JSON.stringify({ model, input })
+    body: JSON.stringify(payload)
   });
 
   const json = await openAiRes.json();

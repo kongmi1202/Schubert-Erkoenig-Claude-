@@ -1,307 +1,87 @@
-import { includesAnyToken } from './overviewGrading';
+import { requestOpenAiText } from './openaiClient';
+import {
+  AESTHETIC_Q2_RUBRIC_KO,
+  Q2_SCORE_PROMPTS,
+  markFromAestheticQ2Score,
+  parseRubricScoresJson
+} from './aestheticRubric';
 
-/**
- * 3단계 Q2 — Sadler V1(형식적 근거) × V2(가치 판단)
- * V1: 음악 요소의 특징 + 그에 대한 느낌(인상 깊다 등) — 특징 설명
- * V2: 그 특징 때문에 → 이 곡 전체에 대한 가치 판단(특별하다, 의미 있다 등)
- * 「인상 깊다」만으로는 V2가 아님. 특징 → 그래서 이 곡은 ~하다 가 필요.
- */
-
-/** 곡 전체를 평가하는 맥락 */
-const PIECE_SCOPE = [
-  '이 곡', '이곡', '곡이', '곡은', '곡을', '곡의', '곡에서', '곡 전체',
-  '작품', '이 작품', '작품이', '작품은', '작품을',
-  '이 음악', '음악이', '음악은', '음악을', '이 음악이'
-];
-
-/** 이 곡이 어떻다는 가치·의미 판단 */
-const PIECE_VALUE_VERDICT = [
-  '특별', '가치', '의미', '중요', '매력', '효과', '돋보', '왜', '생생', '효과적', '가치 있', '의미 있'
-];
-
-const VALUE_CAUSAL_LINK = [
-  '때문', '그래서', '덕분', '왜', '해서', '이어', '따라', '므로', '덕에', '그러므로'
-];
-
-const PIECE_VALUE_SOFT = [
-  '어울', '만들어', '만듦', '살리', '더하', '기여', '한몫', '강화', '느껴지', '느낄', '드러', '전해', '담기'
-];
-
-/** 요소·특징에 대한 느낌 — 가치 판단이 아니라 특징 설명의 일부 */
-const FEATURE_FEELING = [
-  '인상', '느껴', '느낌', '들리', '좋다', '좋아', '좋은', '멋', '신기', '재미', '재밌', '대단', '아름다', '예쁘'
-];
-
-const VALUE_REACTION_ONLY = [
-  '인상 깊', '인상적', '신기', '재미', '좋아', '좋다', '좋은', '멋', '대단', '즐거', '재밌', '흥미', '예쁘', '아름다'
-];
-
-const V1_BY_TYPE = {
-  음색: {
-    groups: [
-      ['음색', '목소리', '성부', '톤', '소리'],
-      ['아버지', '아들', '마왕', '해설', '인물', '4명', '다른', '한명', '캐릭터', '등장'],
-      ['선율', '가락', '두꺼', '얇', '낮', '높', '음계', '장조', '단조', '굵', '여림', '밝', '어둡']
-    ],
-    soft: [
-      ['말하듯', '노래하듯', '속삭', '외치', '차분', '긴장', '무섭', '다정'],
-      ['성량', '세기', '크기', '높낮', '음높', '울림', '질감']
-    ],
-    minimum: ['음색', '목소리', '가수', '인물', '소리', '톤', '선율']
-  },
-  반주: {
-    groups: [
-      ['반주', '피아노', '반복', '리듬'],
-      ['오른손', '왼손', '손', '양손'],
-      ['장면', '몰아치', '달리', '폭풍', '말', '심장', '두근', '쿵쿵', '질주']
-    ],
-    soft: [
-      ['빠르게', '촘촘', '박동', '추격', '긴박', '낮은', '베이스', '무거'],
-      ['배경', '분위기', '긴장감', '압박', '울림']
-    ],
-    minimum: ['반주', '피아노', '손', '리듬', '장면']
-  },
-  음화법: {
-    groups: [
-      ['음화', '가사', '선율', '음색', '가락'],
-      ['반복', '음높', '올라', '내려', '할렐루야', '장면', '웅장', '크게'],
-      ['대비', '어울', '맞', '그림', '묘사', '표현']
-    ],
-    soft: [
-      ['의미', '단어', '구절', '찬양', '종교'],
-      ['강조', '높여', '낮춰', '늘어나', '짧게']
-    ],
-    minimum: ['음화', '가사', '선율', '장면', '표현']
-  },
-  화성다성음악: {
-    groups: [
-      ['화성', '다성', '성부', '네성부', '4성부', '합창'],
-      ['함께', '어울', '겹', '조화', '같이', '동시', '레이어'],
-      ['번갈아', '교대', '나누', '겹쳐', '대비', '선율', '리듬', '여러']
-    ],
-    soft: [
-      ['두껍', '풍부', '울림', '쌓', '포르타'],
-      ['한목소리', '여러목소리', '군중', '무리']
-    ],
-    minimum: ['화성', '다성', '성부', '합창', '함께']
-  },
-  현악음색: {
-    groups: [
-      ['바이올린', '비올라', '첼로', '현악', '4중주'],
-      ['주선율', '중성', '베이스', '음역', '역할', '높은', '낮은', '가운데'],
-      ['음색', '선율', '어울', '앙상블', '네 개', '4개']
-    ],
-    soft: [
-      ['노래하듯', '받치', '채우', '굵', '얇'],
-      ['제1', '제2', '첫', '둘째']
-    ],
-    minimum: ['바이올린', '현악', '음색', '악기', '4중주']
-  },
-  주제비교: {
-    groups: [
-      ['제1', '제2', '주제', '1주제', '2주제', '첫', '둘째'],
-      ['선율', '가락', '리듬', '느낌', '대비', '다르'],
-      ['조성', '음계', '움직', '도약', '순차', '끊김', '밝', '활기', '서정']
-    ],
-    soft: [
-      ['장조', '조성', '5도', '키', '조'],
-      ['에너지', '분위기', '색깔', '캐릭터']
-    ],
-    minimum: ['주제', '제1', '제2', '가락', '선율']
-  },
-  슈프레흐슈팀메: {
-    groups: [
-      ['슈프레', '말하기', '노래', '성악'],
-      ['피에로', '경계', '반쯤', '사이', '말하듯'],
-      ['분위기', '표현', '긴장', '낯설', '이상']
-    ],
-    soft: [
-      ['흔들', '불안', '미끄', '떨림', '말투'],
-      ['송어', '일반', '가곡', '대비']
-    ],
-    minimum: ['슈프레', '말하기', '노래', '피에로', '경계']
-  },
-  무조성: {
-    groups: [
-      ['무조', '조성', '조성감', '키'],
-      ['안정', '긴장', '낯설', '불안', '어색', '자유'],
-      ['어울', '따로', '화음', '소리', '떠', '분리']
-    ],
-    soft: [
-      ['편안', '안정적', '긴장감', '불편'],
-      ['조성곡', '무조곡', '비교', '대비']
-    ],
-    minimum: ['무조', '조성', '안정', '긴장', '낯설']
-  },
-  소네트: {
-    groups: [
-      ['소네트', '표제', '시', '가사', '장면'],
-      ['폭풍', '천둥', '번개', '우박', '비', '묘사'],
-      ['음악', '셈여림', '빠르', '느리', '리듬', '강하', '부드럽', '터지']
-    ],
-    soft: [
-      ['갑자기', '급격', '격렬', '조용', '잔잔'],
-      ['그림', '상상', '연출', '맞춰']
-    ],
-    minimum: ['소네트', '표제', '시', '장면', '묘사']
-  },
-  바이올린협주곡: {
-    groups: [
-      ['협주', '독주', '총주', '바이올린', '솔로'],
-      ['앙상블', '오케스트라', '형식', '전체', '한 대', '그룹'],
-      ['대비', '어울', '선율', '번갈', '교대', '밀도']
-    ],
-    soft: [
-      ['앞서', '뒤이', '두껍', '얇', '강조'],
-      ['영상', '연주', '손', '활']
-    ],
-    minimum: ['협주', '바이올린', '독주', '총주', '솔로']
-  },
-  ABA형식: {
-    groups: [
-      ['aba', '형식', 'a구간', 'b구간', '구간', '앞', '가운데', '뒤', '처음', '중간', '마지막'],
-      ['대비', '다르', '빠르', '느리', '셈여림', '강하', '부드럽', '격렬', '서정', '템포'],
-      ['비슷', '같', '돌아', '반복', '유사', '에너지', '분위기']
-    ],
-    soft: [
-      ['ff', 'pp', '세게', '약하게', '크게', '작게', '소리'],
-      ['긴장', '쉬어', '전환', '극적', '변화']
-    ],
-    minimum: ['aba', '형식', '구간', '대비', '앞', '가운데', '뒤']
-  },
-  폴리리듬: {
-    groups: [
-      ['폴리', '리듬', '양손', '겹', '겹치', '동시'],
-      ['오른손', '왼손', '손', '박자'],
-      ['4박', '3박', '셋잇단', '16분', '촘촘', '복잡', '긴장', '추진', '분위기']
-    ],
-    soft: [
-      ['어긋', '다르게', '나란히', '교차', '밀도'],
-      ['빠르', '쏟아', '몰아', '역동']
-    ],
-    minimum: ['리듬', '폴리', '오른손', '왼손', '양손', '겹']
-  },
-  맥락: {
-    groups: [
-      ['시대', '역사', '맥락', '당시', '배경', '바로크', '낭만', '고전', '표현'],
-      ['작곡', '사회', '종교', '문화', '예술', '전통'],
-      ['음악', '곡', '표현', '의미', '가치', '역할']
-    ],
-    soft: [
-      ['당대', '유행', '관습', '청중', '무대'],
-      ['정치', '신앙', '일상', '삶']
-    ],
-    minimum: ['시대', '역사', '맥락', '배경', '사회']
+const Q2_SCORE_JSON_FORMAT = {
+  type: 'json_schema',
+  name: 'aesthetic_q2_score',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      score: { type: 'integer', enum: [0, 1, 2] }
+    },
+    required: ['score'],
+    additionalProperties: false
   }
 };
 
-function countGroupHits(text, groups) {
-  return groups.filter((group) => group.some((token) => includesAnyToken(text, [token]))).length;
+const SCORE_PROMPT_RULES = `[채점 지침]
+· 위 판정 준거만 사용. V1·V2로 나누지 말고 score 하나만 부여.
+· 학생이 선택한 음악 요소와 서술형 응답을 비교하여 판단하라.
+· 고정 키워드 목록을 만들지 말 것.
+· 응답은 JSON만: {"score":0|1|2}`;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function scoreAestheticV1(q2Type, q2) {
+export async function scoreAestheticQ2WithAi({ q2Type, q2Label, q2 }) {
   const text = String(q2 || '').trim();
-  if (!text) return 0;
+  const prompt = `${AESTHETIC_Q2_RUBRIC_KO}
 
-  const rubric = V1_BY_TYPE[q2Type];
-  if (!rubric) {
-    const genericHits = countGroupHits(text, [
-      ['음악', '소리', '선율', '리듬', '음색', '형식', '화성'],
-      ['들', '느낌', '구간', '장면', '대비']
-    ]);
-    if (genericHits >= 2 && text.length >= 25) return 2;
-    if (genericHits >= 1 && text.length >= 15) return 1;
-    return 0;
+${SCORE_PROMPT_RULES}
+
+고른 음악 요소: ${q2Label || q2Type}
+학생 답변(이유): ${text}`;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const raw = await requestOpenAiText({
+        model: 'gpt-4o-mini',
+        input: prompt,
+        textFormat: Q2_SCORE_JSON_FORMAT
+      });
+      const parsed = parseRubricScoresJson(raw, ['score']);
+      if (parsed) return parsed.score;
+    } catch {
+      // retry
+    }
+    if (attempt < 2) await sleep(1000 * (attempt + 1));
   }
 
-  const groupHits = countGroupHits(text, rubric.groups);
-  const softHits = rubric.soft ? countGroupHits(text, rubric.soft) : 0;
-  const hasMinimum = rubric.minimum.some((token) => includesAnyToken(text, [token]));
-
-  // 정확한 용어 2축 이상, 또는 1축+유사 표현이면 2단계에서 배운 특징으로 인정
-  if (groupHits >= 2) return 2;
-  if (groupHits >= 1 && (softHits >= 1 || text.length >= 12)) return 2;
-  if (softHits >= 2 && text.length >= 14) return 2;
-  if (groupHits >= 1 || softHits >= 1 || hasMinimum) return 1;
-  return 0;
+  return null;
 }
 
-/** 특징(±느낌)만 있고, 그 특징 → 이 곡의 가치 로 이어지지 않았는지 */
-function isFeatureDescriptionOnly(text) {
-  if (hasFeatureToPieceValueChain(text)) return false;
-  return (
-    FEATURE_FEELING.some((token) => includesAnyToken(text, [token])) ||
-    VALUE_REACTION_ONLY.some((token) => includesAnyToken(text, [token]))
-  );
+export function evaluateAestheticQ2FromScore(score) {
+  const s = score;
+  const mark = markFromAestheticQ2Score(s);
+  return {
+    score: s,
+    mark,
+    pathPrompt: Q2_SCORE_PROMPTS[s] ?? Q2_SCORE_PROMPTS[0]
+  };
 }
 
-/** 음악적 특징 때문에 → 이 곡 전체에 대한 가치 판단이 드러나는지 */
-function hasFeatureToPieceValueChain(text) {
-  const hasPiece = PIECE_SCOPE.some((token) => includesAnyToken(text, [token]));
-  const hasVerdict = PIECE_VALUE_VERDICT.some((token) => includesAnyToken(text, [token]));
-  const hasCausal = VALUE_CAUSAL_LINK.some((token) => includesAnyToken(text, [token]));
-  const hasSoftOutcome = PIECE_VALUE_SOFT.some((token) => includesAnyToken(text, [token]));
-
-  if (!hasPiece) return false;
-  if (hasVerdict) return true;
-  if (hasCausal && (hasVerdict || hasSoftOutcome)) return true;
-  if (hasCausal && text.length >= 14) return true;
-  return false;
-}
-
-export function scoreAestheticV2(q2) {
+export function evaluateAestheticQ2Preflight({ q2Type, q2 }) {
   const text = String(q2 || '').trim();
-  if (!text) return 0;
-
-  if (hasFeatureToPieceValueChain(text)) return 2;
-  if (isFeatureDescriptionOnly(text)) return 1;
-
-  const hasPiece = PIECE_SCOPE.some((token) => includesAnyToken(text, [token]));
-  const hasVerdict = PIECE_VALUE_VERDICT.some((token) => includesAnyToken(text, [token]));
-  const hasCausal = VALUE_CAUSAL_LINK.some((token) => includesAnyToken(text, [token]));
-  if (hasPiece && hasVerdict) return 1;
-  if (hasCausal && hasVerdict) return 1;
-
-  return 0;
-}
-
-export function getAestheticQ2Path(v1, v2) {
-  if (v1 === 2 && v2 === 2) return 'A';
-  if (v1 === 2 && v2 <= 1) return 'B';
-  if (v1 <= 1 && v2 === 2) return 'C';
-  return 'D';
-}
-
-export function markFromAestheticPath(path) {
-  if (path === 'A') return '✓';
-  if (path === 'B' || path === 'C') return '△';
-  return '✗';
-}
-
-const PATH_GUIDES = {
-  A: '음악적 특징을 잘 짚었고, 그 특징 때문에 이 곡이 어떻게 가치 있다고 느껴지는지도 잘 연결했어요. 같은 요소로 곡을 한 번 더 들어 보세요.',
-  B: '음악적 특징과 그때 느낀 점(인상 깊다 등)은 잘 썼어요. 다만 이건 아직 특징 설명이에요. 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지, 「그래서 이 곡은 ~하다」처럼 이어서 써 보세요.',
-  C: '이 곡에 대한 가치 판단 방향은 좋아요. 어떤 음악적 특징이 그렇게 느껴지게 했는지, 2단계에서 배운 내용을 자기 말로 근거도 함께 써 보세요.',
-  D: '먼저 고른 요소의 음악적 특징(어떻게 들리는지)을 쓰고, 이어서 그 특징 때문에 이 곡이 어떤 점에서 가치 있다고 느껴지는지도 함께 써 보세요.'
-};
-
-const PATH_PROMPTS = {
-  A: '음악적 특징(±느낌)과, 그 특징 때문에 이 곡이 가치 있다는 판단이 모두 있어요. 학생 답을 짧게 반영하며 칭찬하되 모범 문장을 베끼지 말 것.',
-  B: '학생 답은 음악적 특징·느낌(예: 인상 깊다)에 그칩니다. 이는 가치 판단이 아니라 특징 설명임을 분명히 알려 주세요. 인정한 뒤, 그 특징 때문에 이 곡 전체를 어떻게 평가하는지(어째서 가치 있는지) 인과적으로 이어 쓰도록 안내하세요.',
-  C: '이 곡에 대한 가치 판단은 있으나, 어떤 음악적 특징이 그 근거인지가 미흡해요. 평가 방향은 인정하고, 특징 근거를 짚도록 안내하세요.',
-  D: '음악적 특징 설명과 이 곡에 대한 가치 판단이 모두 미흡이에요. ① 특징(어떻게 들리는지) ② 그래서 이 곡은 어떻다(가치 판단) 순서로 쓰도록 안내하세요. 정답 문장·필수 키워드 암시 금지.'
-};
-
-export function evaluateAestheticQ2({ q2Type, q2 }) {
-  const text = String(q2 || '').trim();
-  if (!q2Type || text.length < 10) {
-    return { v1: 0, v2: 0, path: 'D', mark: '✗', guide: PATH_GUIDES.D, pathPrompt: PATH_PROMPTS.D };
+  if (!q2Type || text.length < 8) {
+    return evaluateAestheticQ2FromScore(0);
   }
-
-  const v1 = scoreAestheticV1(q2Type, text);
-  const v2 = scoreAestheticV2(text);
-  const path = getAestheticQ2Path(v1, v2);
-  const mark = markFromAestheticPath(path);
-
-  return { v1, v2, path, mark, guide: PATH_GUIDES[path], pathPrompt: PATH_PROMPTS[path] };
+  return null;
 }
+
+export async function evaluateAestheticQ2({ q2Type, q2Label, q2 }) {
+  const preflight = evaluateAestheticQ2Preflight({ q2Type, q2 });
+  if (preflight) return preflight;
+
+  const score = await scoreAestheticQ2WithAi({ q2Type, q2Label, q2 });
+  if (score === null) return evaluateAestheticQ2FromScore(0);
+  return evaluateAestheticQ2FromScore(score);
+}
+
+export { markFromAestheticQ2Score };

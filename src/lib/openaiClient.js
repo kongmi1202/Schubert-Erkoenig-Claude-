@@ -39,11 +39,11 @@ export async function analyzeEmotionViaApi(text) {
   return res.json();
 }
 
-export async function callOpenAiResponsesViaApi({ model, input }) {
+export async function callOpenAiResponsesViaApi({ model, input, textFormat }) {
   const res = await fetch('/api/openai', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, input })
+    body: JSON.stringify({ model, input, textFormat })
   });
 
   if (!res.ok) {
@@ -59,7 +59,7 @@ export async function callOpenAiResponsesViaApi({ model, input }) {
   return res.json();
 }
 
-export async function requestOpenAiText({ model, input }) {
-  const json = await callOpenAiResponsesViaApi({ model, input });
+export async function requestOpenAiText({ model, input, textFormat }) {
+  const json = await callOpenAiResponsesViaApi({ model, input, textFormat });
   return extractTextFromResponse(json);
 }
