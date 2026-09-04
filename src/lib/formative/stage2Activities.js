@@ -2,20 +2,19 @@ import {
   buildCpFormActivityPayloads,
   buildCpRhythmActivityPayloads
 } from './builders';
-import { CP_RHYTHM_IDS, CP_RHYTHM_META } from './content/cpRhythm';
 import { labeledStage2Item } from './labeledItem';
 import { mawangVoiceActivityLabel } from '../voiceDesignAnswers';
 import {
   getHyThemeMatchFixedFeedback,
   getHyThemePart3FixedFeedback,
-  getHyTimbreFixedFeedback,
+  getHyTimbreActivityFixedFeedback,
   getPianoSceneFixedFeedback,
   getSbSprechFixedFeedback,
   getSbAtonalMatchFixedFeedback,
-  getTonePaintingFixedFeedback,
+  getTonePaintingActivityFixedFeedback,
   getVoiceDesignFixedFeedback,
   getVvConcertoFixedFeedback,
-  getVvSonnetFixedFeedback
+  getVvSonnetActivityFixedFeedback
 } from '../fixedFormativeFeedback';
 
 /**
@@ -33,12 +32,7 @@ export const STAGE2_ACTIVITIES = {
   },
   'cp-rhythm': {
     title: '쇼팽 — 폴리리듬',
-    buildPayloads: (ctx) => {
-      const payloads = buildCpRhythmActivityPayloads(ctx);
-      return CP_RHYTHM_IDS.map((groupId, index) =>
-        labeledStage2Item(CP_RHYTHM_META[groupId].label, payloads[index])
-      );
-    },
+    buildPayloads: (ctx) => buildCpRhythmActivityPayloads(ctx),
     studentSummary: ({ selectedByGroup }) =>
       ['cp-rh-q', 'cp-lh-q', 'cp-poly-q']
         .map((id) => `${id}: ${selectedByGroup?.[id] || '—'}`)
@@ -70,19 +64,9 @@ export const STAGE2_ACTIVITIES = {
   },
   'hy-timbre': {
     title: '하이든 — 현악 4중주 음색',
-    buildPayloads: ({ segments, selectedByGrid, roleByGrid }) =>
-      (segments || []).map((segment) =>
-        labeledStage2Item(
-          `구간 ${segment.idx}`,
-          getHyTimbreFixedFeedback({
-            picked: selectedByGrid?.[segment.gridId],
-            rolePick: roleByGrid?.[segment.gridId],
-            answer: segment.answer,
-            roleAnswer: segment.roleAnswer,
-            segmentIdx: segment.idx
-          })
-        )
-      ),
+    buildPayloads: ({ segments, selectedByGrid, roleByGrid }) => [
+      getHyTimbreActivityFixedFeedback({ segments, selectedByGrid, roleByGrid })
+    ],
     studentSummary: ({ segments, selectedByGrid, roleByGrid }) =>
       (segments || [])
         .map((s) => `구간${s.idx}: ${selectedByGrid?.[s.gridId] || '—'} / ${roleByGrid?.[s.gridId] || '—'}`)
@@ -105,37 +89,15 @@ export const STAGE2_ACTIVITIES = {
   },
   'tone-painting': {
     title: '할렐루야 — 음화법',
-    buildPayloads: ({ segments, selected }) =>
-      (segments || []).map((segment) =>
-        labeledStage2Item(
-          segment.title,
-          getTonePaintingFixedFeedback({
-            segmentId: segment.id,
-            segmentTitle: segment.title,
-            selectedIndex: selected?.[segment.id],
-            selectedLabel: segment.options?.[selected?.[segment.id]],
-            correctIndex: segment.answer,
-            correctElaboration: segment.feedback
-          })
-        )
-      ),
+    buildPayloads: ({ segments, selected }) => [
+      getTonePaintingActivityFixedFeedback({ segments, selected })
+    ],
     studentSummary: ({ segments, selected }) =>
       (segments || []).map((s) => `${s.title}: ${s.options?.[selected?.[s.id]] || '—'}`).join(' / ')
   },
   'vv-sonnet': {
     title: '비발디 — 소네트',
-    buildPayloads: ({ items }) =>
-      (items || []).map((item, index) =>
-        labeledStage2Item(
-          `2-${index + 1}.`,
-          getVvSonnetFixedFeedback({
-            userChoice: item.userChoice,
-            correctAnswer: item.correctAnswer,
-            correctElaboration: item.correctElaboration,
-            segmentId: item.segmentId
-          })
-        )
-      ),
+    buildPayloads: ({ items }) => [getVvSonnetActivityFixedFeedback({ items })],
     studentSummary: ({ items }) =>
       (items || []).map((item) => `${item.segmentId}: ${item.userChoice || '—'}`).join(' / ')
   },

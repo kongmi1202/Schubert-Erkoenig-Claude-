@@ -41,10 +41,32 @@ export function wrongPickBody({ pick, empathize, listenFocus, retry = '다시 �
 export function splitHintExample(pack) {
   if (!pack) return { hint: '', example: '' };
   if (typeof pack === 'string') {
-    const [hint, ...rest] = pack.split(/\n예:\s*/);
-    return { hint: hint.trim(), example: rest.join(' ').trim() };
+    const byExample = pack.split(/\n예:\s*/);
+    if (byExample.length > 1) {
+      return { hint: byExample[0].trim(), example: byExample.slice(1).join(' ').trim() };
+    }
+    const parts = pack
+      .split(/\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((p) => !/^다시 (들어|생각)/.test(p));
+    const withoutPick = parts.filter((p) => !/^「[^」]+」/.test(p));
+    const lines = withoutPick.length ? withoutPick : parts;
+    if (lines.length >= 2) {
+      return { hint: lines.slice(0, -1).join(' '), example: lines[lines.length - 1] };
+    }
+    return { hint: (lines[0] || pack).trim(), example: '' };
   }
-  return { hint: pack.hint || '', example: pack.example || '' };
+  if (pack.hint || pack.example) {
+    return { hint: pack.hint || '', example: pack.example || '' };
+  }
+  if (pack.empathize || pack.listenFocus) {
+    return {
+      hint: [pack.empathize, pack.listenFocus].filter(Boolean).join(' '),
+      example: pack.example || ''
+    };
+  }
+  return { hint: '', example: '' };
 }
 
 export function resolveWrongHint(wrongHints, pick, fallback) {

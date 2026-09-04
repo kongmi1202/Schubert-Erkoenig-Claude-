@@ -388,6 +388,14 @@ function labelForCombinedPayload(payload) {
     const nums = { 'cp-f1': '1', 'cp-f2': '2', 'cp-f3': '3' };
     return `구간 ${nums[id] || id}`;
   }
+  // 활동 단위 카드 패널(소네트·협주곡·음화법·폴리리듬·음색 등)은 상단 라벨 생략
+  if (
+    /^(vv-sonnet|vv-concerto|tone-painting|cp-rhythm|hy-timbre|hy-theme-match|hy-theme-deg)$/.test(
+      id
+    )
+  ) {
+    return '';
+  }
   return `「${id}」`;
 }
 

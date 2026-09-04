@@ -12,6 +12,7 @@ export {
   resolveWrongHint
 } from './templates';
 export { buildMultiFieldSectionsPayload } from './buildMultiField';
+export { buildChoiceSectionsPayload } from './buildChoiceSections';
 export { buildSingleChoiceFeedback, buildConditionalSingleChoice, buildSliderItemPayload, isChoiceCorrect } from './buildSingleChoice';
 export {
   buildCpFormSegmentPayload,

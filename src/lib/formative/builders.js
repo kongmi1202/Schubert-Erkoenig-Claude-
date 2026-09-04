@@ -85,10 +85,33 @@ export function buildCpRhythmItemPayload({ groupId, userChoice }) {
 }
 
 export function buildCpRhythmActivityPayloads({ selectedByGroup }) {
-  return CP_RHYTHM_IDS.map((groupId) =>
-    buildCpRhythmItemPayload({
-      groupId,
-      userChoice: selectedByGroup?.[groupId]
+  return [
+    buildMultiFieldSectionsPayload({
+      itemId: 'cp-rhythm',
+      preflightMessage: '오른손·왼손·양손 겹침을 모두 고른 뒤 피드백 보기를 눌러 주세요.',
+      fields: CP_RHYTHM_IDS.map((groupId) => ({
+        key: groupId,
+        student: selectedByGroup?.[groupId],
+        correct: CP_RHYTHM_META[groupId].correct,
+        wrongHints: CP_RHYTHM_WRONG_HINTS[groupId],
+        defaultWrongHint: CP_RHYTHM_DEFAULT_WRONG[groupId],
+        missNote: (pick) =>
+          `네가 고른 「${pick}」은 「${CP_RHYTHM_META[groupId].label}」과 잘 맞지 않아요.`
+      })),
+      fieldMeta: Object.fromEntries(
+        CP_RHYTHM_IDS.map((groupId) => [
+          groupId,
+          {
+            label: CP_RHYTHM_META[groupId].label,
+            focus: CP_RHYTHM_META[groupId].focus,
+            tone: CP_RHYTHM_META[groupId].tone
+          }
+        ])
+      ),
+      correctSummary: '오른손·왼손·양손 겹침이 모두 맞아요.',
+      correctFooter:
+        '서로 다른 리듬꼴이 동시에 겹치는 폴리리듬을, 격자표와 함께 한 번 더 들어 보세요.',
+      wrongFooter: FOOTER.noAnswerReveal
     })
-  );
+  ];
 }
