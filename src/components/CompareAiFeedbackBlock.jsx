@@ -14,11 +14,18 @@ function MatchCardChips({ cards }) {
   }
   return (
     <div className="stage2-match-chips">
-      {cards.map((label) => (
-        <span key={label} className="stage2-match-chip">
-          {label}
-        </span>
-      ))}
+      {cards.map((card) => {
+        const label = typeof card === 'string' ? card : card.label;
+        const status = typeof card === 'string' ? '' : card.status;
+        return (
+          <span
+            key={label}
+            className={`stage2-match-chip${status ? ` stage2-match-chip--${status}` : ''}`}
+          >
+            {label}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -36,20 +43,40 @@ function HyThemeMatchSection({ data }) {
               <th scope="col">구분</th>
               <th scope="col">{col1Header}</th>
               <th scope="col">{col2Header}</th>
+              <th scope="col">판정</th>
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((row) => (
-              <tr key={row.dim} className={row.needsWork ? 'is-focus' : ''}>
-                <th scope="row">{row.dim}</th>
-                <td>
-                  <MatchCardChips cards={row.theme1} />
-                </td>
-                <td>
-                  <MatchCardChips cards={row.theme2} />
-                </td>
-              </tr>
-            ))}
+            {data.rows.map((row) => {
+              const rowStatus = row.status || (row.needsWork ? 'miss' : 'ok');
+              return (
+                <tr key={row.dim} className={row.needsWork ? 'is-focus' : 'is-ok'}>
+                  <th scope="row">
+                    <div className="stage2-match-dim">
+                      <span>{row.dim}</span>
+                      {row.focus ? <span className="stage2-match-dim-focus">{row.focus}</span> : null}
+                    </div>
+                  </th>
+                  <td>
+                    <MatchCardChips cards={row.theme1Cards || row.theme1} />
+                    {row.t1Status === 'empty' ? (
+                      <div className="stage2-match-cell-note">이 칸에 해당 구분 카드가 없어요</div>
+                    ) : null}
+                  </td>
+                  <td>
+                    <MatchCardChips cards={row.theme2Cards || row.theme2} />
+                    {row.t2Status === 'empty' ? (
+                      <div className="stage2-match-cell-note">이 칸에 해당 구분 카드가 없어요</div>
+                    ) : null}
+                  </td>
+                  <td>
+                    <span className={`stage2-match-badge ${rowStatus === 'ok' ? 'ok' : 'miss'}`}>
+                      {rowStatus === 'ok' ? '맞음' : '다시 보기'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -59,7 +86,17 @@ function HyThemeMatchSection({ data }) {
           <ul>
             {data.hints.map((hint) => (
               <li key={hint.dim}>
-                <strong>{hint.dim}</strong> {hint.text}
+                <div className="stage2-match-hint-head">
+                  <strong>{hint.dim}</strong>
+                  {hint.note ? <span className="stage2-match-hint-note">{hint.note}</span> : null}
+                </div>
+                <p className="stage2-match-hint-text">{hint.text}</p>
+                {hint.example ? (
+                  <p className="stage2-match-hint-example">
+                    <span className="stage2-match-hint-example-label">예시</span>
+                    {hint.example}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

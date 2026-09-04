@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import ActivityEndFeedback from '../ActivityEndFeedback';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
 const SEGMENTS = {
@@ -366,24 +367,12 @@ function SbSprech({ go }) {
           </div>
         ) : null}
 
-        {hasCheckedAll && bothCorrect ? (
-          <div className="feat-card">
-            <div className="feat-num">FEATURE</div>
-            <div className="feat-title">달에 홀린 피에로의 특징</div>
-            <div className="feat-body">
-              슈프레흐슈팀메(Sprechstimme) — 말과 노래의 경계를 허문다
-              <br />
-              쇤베르크는 이 작품에서 성악가에게
-              <br />
-              전통적인 아름다운 음색 대신
-              <br />
-              말하듯 노래하는 슈프레흐슈팀메를 요구해요.
-              <br />
-              이 낯선 음색이 표현주의 특유의
-              <br />
-              불안하고 몽환적인 분위기를 만들어냅니다.
-            </div>
-          </div>
+        {hasCheckedAll ? (
+          <ArtSongTakeaway
+            eyebrow="① 달에 홀린 피에로의 특징 1"
+            title="슈프레흐슈팀메"
+            description="슈프레흐슈팀메(Sprechstimme)는 말과 노래의 경계를 허뭅니다. 쇤베르크는 이 작품에서 성악가에게 전통적인 아름다운 음색 대신 말하듯 노래하는 슈프레흐슈팀메를 요구해요. 이 낯선 음색이 표현주의 특유의 불안하고 몽환적인 분위기를 만들어냅니다."
+          />
         ) : null}
 
         <div className="btn-row">

@@ -3,7 +3,7 @@ import { isVoiceDesignRowFilled } from './voiceDesignAnswers';
 const hasText = (v) => typeof v === 'string' && v.trim().length > 0;
 
 export const SB_ATONAL_CARD_GOLD =
-  '송어: 조성 음악, 편안하고 안정적, 음들이 서로 잘 어울린다. / 피에로: 무조성 음악, 낯설고 긴장감, 음들이 따로 논다.';
+  '송어: 조성이 있다, 편안하고 안정적, 음들이 서로 잘 어울린다. / 피에로: 조성이 없다, 낯설고 긴장감, 음들이 따로 논다.';
 
 export function formatSbAtonalStudentResponse(atonalState) {
   if (hasText(atonalState?.selectedChoice)) return atonalState.selectedChoice;

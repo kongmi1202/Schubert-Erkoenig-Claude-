@@ -55,7 +55,11 @@ const VV_SONNET_CORRECT = {
 };
 
 const CP_FORM_CORRECT = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
-const CP_FEATURE_CORRECT = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
+const CP_FEATURE_CORRECT = {
+  'cp-f1': '빠르고 강하다',
+  'cp-f2': '느리고 부드러우며, 구간 1과 대비되는 느낌이다.',
+  'cp-f3': '빠르고 강하며, 구간 1과 비슷한 느낌이다.'
+};
 const CP_RHYTHM_CORRECT = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '오른손 4박과 왼손 3박이 동시에 진행된다' };
 
 const EMOTION_LABELS = {
@@ -218,9 +222,9 @@ export function buildStep2EssayEntries(data) {
     if (flags.atonalCards || flags.atonalChoice) {
       const studentText = formatSbAtonalStudentResponse(data.sbAtonalState);
       const placed = data.sbAtonalState?.placedCards;
-      const tonalOk = ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'].every((c) =>
+      const tonalOk = ['조성이 있다', '편안하고 안정적', '음들이 서로 잘 어울린다.'].every((c) =>
         (placed?.tonal || []).includes(c));
-      const atonalOk = ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'].every((c) =>
+      const atonalOk = ['조성이 없다', '낯설고 긴장감', '음들이 따로 논다.'].every((c) =>
         (placed?.atonal || []).includes(c));
       entries.push(makeEntry(
         '무조성 카드 배치',
@@ -544,12 +548,15 @@ ${WRONG_ANSWER_ESSAY_EXAMPLE}
 
 [문체]
 - 1인칭(나는), 중학생 수준, 자연스럽게
+- 문장 끝은 반드시 평서형 '~다.'로 통일 (예: 느꼈다, 알게 되었다, 생각했다)
+- '~습니다', '~아요', '~어요', '~해요' 등 존댓말·해요체 금지
 - 주어진 JSON 밖 내용 금지`;
 
   const userPrompt = `아래 JSON의 paragraphs에 있는 학생 응답만으로 최종 감상문을 작성하세요.
 작성할 단락: ${inputLevel.activeParagraphs.join('단락, ')}단락 (총 ${inputLevel.activeParagraphCount}개)
 - 1단락 항목 ${inputLevel.paragraph1ItemCount}개, 2단락 ${inputLevel.paragraph2ItemCount}개, 3단락 ${inputLevel.paragraph3ItemCount}개, 4단락 ${inputLevel.paragraph4ItemCount}개
 - 없는 단락은 생략. 있는 단락만 순서대로 이어 쓸 것.
+- 말투는 반드시 '~다.'로 끝내고, '~습니다/~아요/~어요'는 쓰지 말 것.
 
 ${JSON.stringify(payload, null, 2)}`;
 

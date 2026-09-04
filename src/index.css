@@ -790,14 +790,25 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   border-bottom:1px solid var(--border);
 }
 .stage2-match-table tbody th[scope="row"]{
-  width:56px;
+  width:88px;
   padding:12px;
-  text-align:center;
+  text-align:left;
   font-weight:700;
   color:var(--text);
   background:rgba(255,255,255,.03);
   border-right:1px solid var(--border);
   vertical-align:top;
+}
+.stage2-match-dim{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.stage2-match-dim-focus{
+  font-size:11px;
+  font-weight:400;
+  line-height:1.35;
+  color:var(--text-dim);
 }
 .stage2-match-table td{
   padding:10px 12px;
@@ -808,6 +819,9 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .stage2-match-table tbody tr:last-child td,
 .stage2-match-table tbody tr:last-child th[scope="row"]{
   border-bottom:none;
+}
+.stage2-match-table tbody tr.is-ok td{
+  background:rgba(34,197,94,.05);
 }
 .stage2-match-table tbody tr.is-focus th[scope="row"]{
   color:var(--gold);
@@ -830,6 +844,42 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
   background:rgba(120,90,200,.15);
   border:1px solid rgba(120,90,200,.25);
 }
+.stage2-match-chip--ok{
+  background:rgba(34,197,94,.14);
+  border-color:rgba(34,197,94,.35);
+  color:#bbf7d0;
+}
+.stage2-match-chip--miss{
+  background:rgba(248,113,113,.14);
+  border-color:rgba(248,113,113,.35);
+  color:#fecaca;
+}
+.stage2-match-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:64px;
+  padding:5px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.stage2-match-badge.ok{
+  background:rgba(34,197,94,.18);
+  color:#86efac;
+  border:1px solid rgba(34,197,94,.35);
+}
+.stage2-match-badge.miss{
+  background:rgba(248,113,113,.16);
+  color:#fca5a5;
+  border:1px solid rgba(248,113,113,.35);
+}
+.stage2-match-cell-note{
+  margin-top:6px;
+  font-size:11px;
+  color:var(--text-faint);
+}
 .stage2-match-empty{
   font-size:12px;
   color:var(--text-faint);
@@ -849,9 +899,50 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 }
 .stage2-match-hints ul{
   margin:0;
-  padding-left:1.1em;
+  padding-left:0;
+  list-style:none;
   display:grid;
-  gap:8px;
+  gap:12px;
+}
+.stage2-match-hints li{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid rgba(232,197,106,.2);
+  background:rgba(232,197,106,.06);
+}
+.stage2-match-hint-head{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-bottom:6px;
+}
+.stage2-match-hint-note{
+  font-size:13px;
+  color:var(--text);
+  line-height:1.5;
+}
+.stage2-match-hint-text{
+  margin:0;
+  font-size:14px;
+  line-height:1.65;
+  color:var(--text-dim);
+}
+.stage2-match-hint-example{
+  margin:8px 0 0;
+  font-size:13px;
+  line-height:1.6;
+  color:var(--text);
+}
+.stage2-match-hint-example-label{
+  display:inline-block;
+  margin-right:6px;
+  padding:1px 6px;
+  border-radius:4px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--gold);
+  background:rgba(232,197,106,.12);
+  border:1px solid rgba(232,197,106,.25);
 }
 .stage2-match-hints li{
   font-size:14px;
@@ -1640,6 +1731,81 @@ canvas{display:block;width:100%;touch-action:none}
   grid-template-columns:1fr;
 }
 
+/* 최종 감상문: 고정 하단 위젯에 가리지 않도록 스크롤·여백 */
+.final-print-layout.stage-workspace{
+  min-height:100vh;
+  max-height:100vh;
+  overflow:hidden;
+}
+.final-print-layout .listening-panel{
+  height:calc(100vh - 28px - var(--bottom-widget-h) - 24px);
+  max-height:calc(100vh - 28px - var(--bottom-widget-h) - 24px);
+}
+.final-print-layout .listening-panel-body,
+.final-print-layout .final-summary-panel-body{
+  padding-bottom:28px;
+}
+.final-print-layout .stage-workspace-main{
+  min-height:0;
+  max-height:calc(100vh - 28px - var(--bottom-widget-h) - 24px);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.final-print-layout .stage-workspace-main > .screen{
+  flex:1 1 0%;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.final-print-layout .stage-workspace-main .stage-header{
+  flex:0 0 auto;
+}
+.final-print-layout .stage-workspace-main .body{
+  flex:1 1 0%;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding-bottom:36px;
+  max-width:760px;
+}
+
+@media (max-width: 900px){
+  .final-print-layout.stage-workspace{
+    max-height:none;
+    overflow:visible;
+    min-height:auto;
+  }
+  .final-print-layout .listening-panel{
+    height:auto;
+    max-height:none;
+  }
+  .final-print-layout .listening-panel:not(.is-collapsed){
+    max-height:min(70vh, calc(100vh - var(--bottom-widget-h) - 120px));
+  }
+  .final-print-layout .listening-panel:not(.is-collapsed) .listening-panel-body{
+    max-height:calc(min(70vh, calc(100vh - var(--bottom-widget-h) - 120px)) - 52px);
+    padding-bottom:24px;
+  }
+  .final-print-layout .stage-workspace-main{
+    max-height:none;
+    overflow:visible;
+    display:block;
+  }
+  .final-print-layout .stage-workspace-main > .screen{
+    display:block;
+    overflow:visible;
+    min-height:auto;
+  }
+  .final-print-layout .stage-workspace-main .body{
+    overflow:visible;
+    padding-bottom:calc(28px + var(--bottom-widget-h) + 56px);
+    max-width:100%;
+  }
+}
+
 @media print {
   @page {
     margin: 16mm 14mm;
@@ -1673,6 +1839,8 @@ canvas{display:block;width:100%;touch-action:none}
   .final-print-layout.stage-workspace {
     display: block !important;
     min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     padding-top: 0 !important;
   }
 
@@ -1704,6 +1872,9 @@ canvas{display:block;width:100%;touch-action:none}
   .final-print-layout .print-essay-page,
   .final-print-layout .stage-workspace-main {
     min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
     border: none !important;
     background: #fff !important;
     break-before: page;
@@ -1723,6 +1894,9 @@ canvas{display:block;width:100%;touch-action:none}
   .final-print-layout .stage-workspace-main .body {
     max-width: none !important;
     padding: 0 !important;
+    overflow: visible !important;
+    flex: none !important;
+    min-height: auto !important;
   }
 
   .final-print-layout .summary-card {

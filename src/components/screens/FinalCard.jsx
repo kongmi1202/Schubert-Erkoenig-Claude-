@@ -165,7 +165,11 @@ function FinalCard({ go }) {
   const hyTimbreCorrectRole = { 'ig-1': '주선율', 'ig-2': '중성부', 'ig-3': '베이스' };
   const vvSonnetCorrect = { 'vv-c1': '음이 갑자기 강하고 빠르게 터진다', 'vv-c2': '음이 짧고 강하게 반복된다' };
   const cpFormCorrect = { 'cp-f1': 'A', 'cp-f2': 'B', 'cp-f3': "A'" };
-  const cpFeatureCorrect = { 'cp-f1': '빠르고 강하다', 'cp-f2': '느리고 부드럽다', 'cp-f3': '빠르고 강하다' };
+  const cpFeatureCorrect = {
+    'cp-f1': '빠르고 강하다',
+    'cp-f2': '느리고 부드러우며, 구간 1과 대비되는 느낌이다.',
+    'cp-f3': '빠르고 강하며, 구간 1과 비슷한 느낌이다.'
+  };
   const cpRhythmCorrect = { 'cp-rh-q': '4개씩', 'cp-lh-q': '3개씩', 'cp-poly-q': '오른손 4박과 왼손 3박이 동시에 진행된다' };
   const step2State = useMemo(() => ({
     analyticalCharacters,
@@ -301,8 +305,8 @@ function FinalCard({ go }) {
       pushCheck(
         stage2Checks,
         step2Flags.atonalCards || step2Flags.atonalChoice,
-        arraysEqualAsSet(sbAtonalState?.placedCards?.tonal || [], ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'])
-          && arraysEqualAsSet(sbAtonalState?.placedCards?.atonal || [], ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'])
+        arraysEqualAsSet(sbAtonalState?.placedCards?.tonal || [], ['조성이 있다', '편안하고 안정적', '음들이 서로 잘 어울린다.'])
+          && arraysEqualAsSet(sbAtonalState?.placedCards?.atonal || [], ['조성이 없다', '낯설고 긴장감', '음들이 따로 논다.'])
       );
     } else {
       pushCheck(stage2Checks, step2Flags.overviewQ1, gradeOverviewQ1('mawang', overviewState));

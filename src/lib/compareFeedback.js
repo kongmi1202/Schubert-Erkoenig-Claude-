@@ -1035,13 +1035,13 @@ function sbAtonalColumnOk(placedCards, correctSet, wrongSet) {
 function buildSbAtonalMatchFallback({ tonalCards, atonalCards }) {
   const tonal = tonalCards || [];
   const atonal = atonalCards || [];
-  const tonalWrong = tonal.filter((card) => ['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.'].includes(card));
-  const atonalWrong = atonal.filter((card) => ['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.'].includes(card));
+  const tonalWrong = tonal.filter((card) => ['조성이 없다', '낯설고 긴장감', '음들이 따로 논다.'].includes(card));
+  const atonalWrong = atonal.filter((card) => ['조성이 있다', '편안하고 안정적', '음들이 서로 잘 어울린다.'].includes(card));
   const parts = [];
 
   tonalWrong.forEach((card) => {
-    if (card === '무조성 음악') {
-      parts.push('송어 칸의 「무조성 음악」을 다시 들어 보세요. 송어의 음들이 중심음 없이 떠다니는지, 편안하게 한곳으로 모이는지 조성감만 비교해 보세요.');
+    if (card === '조성이 없다') {
+      parts.push('송어 칸의 「조성이 없다」를 다시 들어 보세요. 송어의 음들이 중심음 없이 떠다니는지, 편안하게 한곳으로 모이는지 조성감만 비교해 보세요.');
     } else if (card === '낯설고 긴장감') {
       parts.push('송어 칸의 「낯설고 긴장감」을 다시 들어 보세요. 송어가 낯설고 긴장되는지, 편안하고 안정적인지 분위기만 비교해 보세요.');
     } else if (card === '음들이 따로 논다.') {
@@ -1049,8 +1049,8 @@ function buildSbAtonalMatchFallback({ tonalCards, atonalCards }) {
     }
   });
   atonalWrong.forEach((card) => {
-    if (card === '조성 음악') {
-      parts.push('피에로 칸의 「조성 음악」을 다시 들어 보세요. 피에로의 음들이 편안하게 한곳으로 모이는지, 중심음 없이 떠다니는지 조성감만 비교해 보세요.');
+    if (card === '조성이 있다') {
+      parts.push('피에로 칸의 「조성이 있다」를 다시 들어 보세요. 피에로의 음들이 편안하게 한곳으로 모이는지, 중심음 없이 떠다니는지 조성감만 비교해 보세요.');
     } else if (card === '편안하고 안정적') {
       parts.push('피에로 칸의 「편안하고 안정적」을 다시 들어 보세요. 피에로가 편안하고 안정적인지, 낯설고 긴장되는지 분위기만 비교해 보세요.');
     } else if (card === '음들이 서로 잘 어울린다.') {
@@ -1069,10 +1069,10 @@ function buildSbAtonalMatchFallback({ tonalCards, atonalCards }) {
  */
 export async function generateSbAtonalMatchFeedback({ tonalCards, atonalCards }) {
   const fallback = buildSbAtonalMatchFallback({ tonalCards, atonalCards });
-  const tonalCorrect = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
-  const tonalWrong = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
-  const atonalCorrect = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
-  const atonalWrong = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const tonalCorrect = new Set(['조성이 있다', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
+  const tonalWrong = new Set(['조성이 없다', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalCorrect = new Set(['조성이 없다', '낯설고 긴장감', '음들이 따로 논다.']);
+  const atonalWrong = new Set(['조성이 있다', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
   const colTonalOk = sbAtonalColumnOk(tonalCards, tonalCorrect, tonalWrong);
   const colAtonalOk = sbAtonalColumnOk(atonalCards, atonalCorrect, atonalWrong);
   const bothOk = colTonalOk && colAtonalOk;

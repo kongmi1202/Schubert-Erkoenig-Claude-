@@ -31,8 +31,10 @@ export function buildCpFormSegmentPayload({ cardId, label, feature }) {
         correct: correct.label,
         wrongHints: CP_FORM_LABEL_WRONG_HINT,
         defaultWrongHint: {
-          hint: '앞·뒤 구간과 비교해, 이 구간이 처음과 비슷한지·가운데처럼 다른지·다시 돌아오는 느낌인지 들어 보세요.',
-          example: '빠르기·셈여림이 비슷한 구간끼리 같은 이름, 확 달라지면 다른 이름을 떠올려 보세요.'
+          hint:
+            '앞·뒤 구간과 번갈아 들으며, 이 구간의 빠르기·셈여림이 처음과 비슷한 에너지인지, 가운데처럼 분위기가 확 바뀌는지, 다시 처음과 닮아 돌아오는지 귀로만 비교해 보세요. 이름보다 소리의 닮음·다름을 먼저 말해 보는 게 좋아요.',
+          example:
+            '「처음과 비슷함 / 가운데처럼 대비됨 / 다시 닮아 돌아옴」 중 어디에 가까운지 한 문장으로 말한 뒤 이름을 다시 골라 보세요.'
         },
         missNote: (pick) => `네가 고른 「${pick}」은 이 구간의 형식 위치와 잘 맞지 않아요.`
       },
@@ -42,10 +44,13 @@ export function buildCpFormSegmentPayload({ cardId, label, feature }) {
         correct: correct.feature,
         wrongHints: CP_FORM_FEATURE_WRONG_HINT,
         defaultWrongHint: {
-          hint: '같은 구간을 다시 들으며 빠르기(템포)와 셈여림(소리의 세기)만 귀로 비교해 보세요.',
-          example: '빠른지·느린지, 강하게 밀어붙이는지·부드럽게 감싸는지 한 문장으로 말한 뒤 보기를 다시 고르세요.'
+          hint:
+            '같은 구간을 다시 들으며 빠르기(템포)와 셈여림(소리의 세기)을 따로 짚어 보세요. 박이 급하게 몰아치는지·숨이 느려지듯 여유로운지, 소리가 세게 밀어붙이는지·여리게 감싸는지 손바닥으로 박을 맞춰 가며 비교해 보세요. 구간 2·3이라면 구간 1과 번갈아 들어, 에너지가 비슷한지 분위기가 확 달라지는지도 살펴보세요.',
+          example:
+            '「박의 느낌」과 「소리의 세기」를 각각 한 단어로 말한 뒤, 구간 1과 비슷한지·대비되는지도 한 문장으로 정리해 보기를 다시 고르세요.'
         },
-        missNote: (pick) => `네가 고른 「${pick}」은 이 구간의 소리 특징과 잘 맞지 않아요.`
+        missNote: (pick) =>
+          `네가 고른 「${pick}」은 이 구간의 빠르기·셈여림 느낌과 잘 맞지 않아요.`
       }
     ],
     fieldMeta: CP_FORM_FIELD_META,

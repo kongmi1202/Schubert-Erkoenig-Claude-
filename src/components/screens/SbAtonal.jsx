@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import CompareAiFeedbackBlock from '../CompareAiFeedbackBlock';
+import ArtSongTakeaway from '../ArtSongTakeaway';
 import VvSonnetYoutubeAudio from '../VvSonnetYoutubeAudio';
 import { generateStage2ActivityFeedback } from '../../lib/formativeAiFeedback';
 
@@ -18,23 +19,13 @@ const SEGMENTS = {
 };
 
 const MATCH_CARDS = [
-  '조성 음악',
-  '무조성 음악',
+  '조성이 있다',
+  '조성이 없다',
   '편안하고 안정적',
   '낯설고 긴장감',
   '음들이 따로 논다.',
   '음들이 서로 잘 어울린다.'
 ];
-
-const TONAL_ANSWERS = new Set(['조성 음악', '편안하고 안정적', '음들이 서로 잘 어울린다.']);
-const ATONAL_ANSWERS = new Set(['무조성 음악', '낯설고 긴장감', '음들이 따로 논다.']);
-
-function columnOk(placed, correctSet, wrongSet) {
-  if (!Array.isArray(placed) || placed.length === 0) return false;
-  const hasCorrect = placed.some((card) => correctSet.has(card));
-  const hasWrong = placed.some((card) => wrongSet.has(card));
-  return hasCorrect && !hasWrong;
-}
 
 function SbAtonal({ go }) {
   const setStageCompletion = useAppStore((s) => s.setStageCompletion);
@@ -52,9 +43,6 @@ function SbAtonal({ go }) {
 
   const usedCards = [...placedCards.tonal, ...placedCards.atonal];
   const canCheck = usedCards.length === MATCH_CARDS.length;
-  const tonalColOk = columnOk(placedCards.tonal, TONAL_ANSWERS, ATONAL_ANSWERS);
-  const atonalColOk = columnOk(placedCards.atonal, ATONAL_ANSWERS, TONAL_ANSWERS);
-  const isCorrect = canCheck && tonalColOk && atonalColOk;
 
   const matchSnapshot = useMemo(
     () =>
@@ -325,26 +313,12 @@ function SbAtonal({ go }) {
           </div>
         ) : null}
 
-        {fbDone && isCorrect ? (
-          <div className="feat-card">
-            <div className="feat-num">FEATURE</div>
-            <div className="feat-title">표현주의 음악의 특징</div>
-            <div className="feat-body">
-              내면의 불안과 공포를 음악으로 표현한다
-              <br />
-              표현주의는 겉으로 보이는 아름다움보다
-              <br />
-              인간 내면의 불안·공포·혼란을
-              <br />
-              극단적으로 드러내는 것을 목표로 해요.
-              <br />
-              무조성은 조성 음악의 안정감을 깨뜨리며
-              <br />
-              이러한 감정을 음악으로 표현하는
-              <br />
-              핵심 수단이 됩니다.
-            </div>
-          </div>
+        {fbDone ? (
+          <ArtSongTakeaway
+            eyebrow="② 달에 홀린 피에로의 특징 2"
+            title="무조성 음악"
+            description="무조성 음악은 중심음이 분명하지 않아 음이 떠다니는 듯 들립니다. 표현주의는 겉으로 보이는 아름다움보다 인간 내면의 불안·공포·혼란을 극단적으로 드러내는 것을 목표로 해요. 무조성은 조성 음악의 안정감을 깨뜨리며 이러한 감정을 음악으로 표현하는 핵심 수단이 됩니다."
+          />
         ) : null}
 
         <div className="btn-row">

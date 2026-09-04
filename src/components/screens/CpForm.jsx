@@ -22,12 +22,22 @@ const formCorrect = {
   'cp-f3': "A'"
 };
 
-const FEATURE_OPTS = ['빠르고 강하다', '느리고 부드럽다'];
+const FEATURE_OPTS_BY_ID = {
+  'cp-f1': ['빠르고 강하다', '느리고 부드럽다'],
+  'cp-f2': [
+    '빠르고 강하며, 구간 1과 비슷한 느낌이다.',
+    '느리고 부드러우며, 구간 1과 대비되는 느낌이다.'
+  ],
+  'cp-f3': [
+    '빠르고 강하며, 구간 1과 비슷한 느낌이다.',
+    '느리고 부드러우며, 구간 1과 대비되는 느낌이다.'
+  ]
+};
 
 const featureCorrect = {
   'cp-f1': '빠르고 강하다',
-  'cp-f2': '느리고 부드럽다',
-  'cp-f3': '빠르고 강하다'
+  'cp-f2': '느리고 부드러우며, 구간 1과 대비되는 느낌이다.',
+  'cp-f3': '빠르고 강하며, 구간 1과 비슷한 느낌이다.'
 };
 
 function AbaDiagram() {
@@ -300,7 +310,7 @@ function CpForm({ go }) {
                 <div className="cp-form-segment-block cp-form-segment-features">
                   <div className="cp-form-segment-block-title">③ 이 구간의 특징은 무엇인가요?</div>
                   <div className="cp-form-feature-opts">
-                  {FEATURE_OPTS.map((opt) => {
+                  {(FEATURE_OPTS_BY_ID[card.id] || []).map((opt) => {
                     const isSel = featPick === opt;
                     let cls = 'choice-btn';
                     if (fbDone && isSel) cls += featureOk ? ' ok' : ' ng';
